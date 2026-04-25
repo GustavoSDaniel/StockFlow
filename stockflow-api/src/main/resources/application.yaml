@@ -1,0 +1,11 @@
+server:
+  port: 5050
+
+spring:
+  application:
+    name: stock-flow-api
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5051}/${POSTGRES_DB:db-stockflow}
+    username: ${POSTGRES_USER:gustavo}
+    password: ${POSTGRES_PASSWORD:123456}
+
