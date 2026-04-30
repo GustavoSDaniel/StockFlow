@@ -1,5 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.config;
 
+import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
+import com.gustavosdaniel.stock_flow_api.domain.enums.UnitMeasure;
 import org.springframework.core.convert.converter.Converter;
 import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +39,11 @@ public class R2dbcConfig {
         List<Converter<?, ?>> converters = List.of(
 
                 new StateUFWriteConverter(),
-                new StateUFReadConverter()
+                new StateUFReadConverter(),
+                new UnitMeasureWriteConverter(),
+                new UnitMeasureReadConverter(),
+                new ProductStatusWriteConverter(),
+                new ProductStatusReadConverter()
         );
         return R2dbcCustomConversions.of(PostgresDialect.INSTANCE, converters);
     }
@@ -57,6 +63,41 @@ public class R2dbcConfig {
         @Override
         public StateUF convert(String value) {
             return StateUF.valueOf(value);
+        }
+    }
+
+    @WritingConverter
+    static class UnitMeasureWriteConverter implements Converter<UnitMeasure, String>{
+
+        @Override
+        public String convert(UnitMeasure unitMeasure) {
+            return unitMeasure.name();
+        }
+    }
+
+    @ReadingConverter
+    static class UnitMeasureReadConverter implements Converter<String, UnitMeasure>{
+
+
+        @Override
+        public UnitMeasure convert(String value) {
+            return UnitMeasure.valueOf(value);
+        }
+    }
+
+    @WritingConverter
+    static class ProductStatusWriteConverter implements Converter<ProductStatus, String> {
+        @Override
+        public String convert(ProductStatus status) {
+            return status.name();
+        }
+    }
+
+    @ReadingConverter
+    static class ProductStatusReadConverter implements Converter<String, ProductStatus> {
+        @Override
+        public ProductStatus convert(String value) {
+            return ProductStatus.valueOf(value);
         }
 
     }
