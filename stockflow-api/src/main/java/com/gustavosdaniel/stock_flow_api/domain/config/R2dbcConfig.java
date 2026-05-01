@@ -1,9 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.config;
 
-import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
-import com.gustavosdaniel.stock_flow_api.domain.enums.UnitMeasure;
+import com.gustavosdaniel.stock_flow_api.domain.enums.*;
 import org.springframework.core.convert.converter.Converter;
-import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.convert.ReadingConverter;
@@ -43,7 +41,11 @@ public class R2dbcConfig {
                 new UnitMeasureWriteConverter(),
                 new UnitMeasureReadConverter(),
                 new ProductStatusWriteConverter(),
-                new ProductStatusReadConverter()
+                new ProductStatusReadConverter(),
+                new MovementReasonWriteConverter(),
+                new MovementReasonReadConverter(),
+                new MovementTypeWriteConverter(),
+                new MovementTypeReadConverter()
         );
         return R2dbcCustomConversions.of(PostgresDialect.INSTANCE, converters);
     }
@@ -99,6 +101,30 @@ public class R2dbcConfig {
         public ProductStatus convert(String value) {
             return ProductStatus.valueOf(value);
         }
-
     }
+
+    @WritingConverter
+    static class MovementTypeWriteConverter implements Converter<MovementType, String> {
+        @Override
+        public String convert(MovementType type) { return type.name(); }
+    }
+
+    @ReadingConverter
+    static class MovementTypeReadConverter implements Converter<String, MovementType> {
+        @Override
+        public MovementType convert(String value) { return MovementType.valueOf(value); }
+    }
+
+    @WritingConverter
+    static class MovementReasonWriteConverter implements Converter<MovementReason, String> {
+        @Override
+        public String convert(MovementReason reason) { return reason.name(); }
+    }
+
+    @ReadingConverter
+    static class MovementReasonReadConverter implements Converter<String, MovementReason> {
+        @Override
+        public MovementReason convert(String value) { return MovementReason.valueOf(value); }
+    }
+    
 }

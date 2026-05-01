@@ -18,7 +18,7 @@ public class Stock extends BaseEntity{
 
     public Stock(){}
 
-    public Stock(UUID productId, Integer minimumQuantity, Integer maximumQuantity, Integer reorderPoint, Integer reorderQuantity, String location) {
+    public Stock(UUID productId, Integer minimumQuantity, Integer maximumQuantity, Integer reorderPoint, Integer reorderQuantity, String location, String warehouseId) {
         this.productId = productId;
         this.currentQuantity = 0;
         this.minimumQuantity = minimumQuantity != null ? minimumQuantity :  DEFAULT_MIN_QUANTITY;
@@ -26,6 +26,7 @@ public class Stock extends BaseEntity{
         this.reorderPoint = reorderPoint != null ? reorderPoint : DEFAULT_REORDER_POINT;
         this.reorderQuantity = reorderQuantity != null ? reorderQuantity : DEFAULT_REORDER_QUANTITY;
         this.location = location;
+        this.warehouseId = warehouseId;
     }
 
     @Column("product_id")
@@ -47,6 +48,8 @@ public class Stock extends BaseEntity{
     private Integer reorderQuantity = DEFAULT_REORDER_QUANTITY;
 
     private String location;
+
+    private String warehouseId;
 
     public boolean isLowStock(){
 
@@ -145,5 +148,13 @@ public class Stock extends BaseEntity{
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(String warehouseId) {
+        this.warehouseId = warehouseId;
     }
 }
