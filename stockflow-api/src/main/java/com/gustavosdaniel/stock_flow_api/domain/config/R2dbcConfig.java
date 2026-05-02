@@ -45,7 +45,11 @@ public class R2dbcConfig {
                 new MovementReasonWriteConverter(),
                 new MovementReasonReadConverter(),
                 new MovementTypeWriteConverter(),
-                new MovementTypeReadConverter()
+                new MovementTypeReadConverter(),
+                new NotificationPriorityWriteConverter(),
+                new NotificationPriorityReadConverter(),
+                new NotificationTypeWriteConverter(),
+                new NotificationTypeReadConverter()
         );
         return R2dbcCustomConversions.of(PostgresDialect.INSTANCE, converters);
     }
@@ -125,6 +129,30 @@ public class R2dbcConfig {
     static class MovementReasonReadConverter implements Converter<String, MovementReason> {
         @Override
         public MovementReason convert(String value) { return MovementReason.valueOf(value); }
+    }
+
+    @WritingConverter
+    static class NotificationPriorityWriteConverter implements Converter<NotificationPriority, String> {
+        @Override
+        public String convert(NotificationPriority reason) { return reason.name(); }
+    }
+
+    @ReadingConverter
+    static class NotificationPriorityReadConverter implements Converter<String, NotificationPriority> {
+        @Override
+        public NotificationPriority convert(String value) { return NotificationPriority.valueOf(value); }
+    }
+
+    @WritingConverter
+    static class NotificationTypeWriteConverter implements Converter<NotificationType, String> {
+        @Override
+        public String convert(NotificationType reason) { return reason.name(); }
+    }
+
+    @ReadingConverter
+    static class NotificationTypeReadConverter implements Converter<String, NotificationType> {
+        @Override
+        public NotificationType convert(String value) { return NotificationType.valueOf(value); }
     }
     
 }
