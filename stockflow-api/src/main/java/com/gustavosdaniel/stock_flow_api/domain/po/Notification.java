@@ -8,12 +8,60 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Representa uma notificação gerada pelo sistema, geralmente relacionada a eventos de estoque
+ * (como estoque baixo, crítico, etc.) ou outros alertas de negócio.
+ * <p>
+ * Esta entidade estende {@link BaseEntity}, herdando os campos de auditoria, versão e identificador.
+ * As notificações podem ser lidas, resolvidas e atribuídas a um usuário específico.
+ * </p>
+ *
+ * <p><strong>Status da notificação:</strong>
+ * <ul>
+ *   <li>{@code read} – indica se a notificação foi visualizada pelo usuário (com timestamp {@code readAt}).</li>
+ *   <li>{@code resolved} – indica se a causa da notificação foi tratada (com timestamp {@code resolvedAt}).</li>
+ * </ul>
+ * Ao marcar como resolvida ({@link #markAsResolved()}), a notificação é automaticamente marcada como lida, caso ainda não esteja.
+ * </p>
+ *
+ * <p><strong>Tipos e prioridades:</strong>
+ * Os campos {@link NotificationType} e {@link NotificationPriority} permitem classificar a notificação
+ * para exibição adequada na interface do usuário (ex.: prioridade alta com destaque vermelho).</p>
+ *
+ * <p>A tabela correspondente no banco de dados chama-se <strong>notifications</strong>.
+ * Os mapeamentos de colunas são definidos explicitamente com {@code @Column}.</p>
+ *
+ * @see BaseEntity
+ * @see NotificationType
+ * @see NotificationPriority
+ */
 @Table("notifications")
-public class Notification extends BaseEntity{
+public class Notification extends BaseEntity {
 
-    public Notification(){}
+    /**
+     * Construtor padrão obrigatório para o JPA.
+     */
+    public Notification() {
+    }
 
-    public Notification(UUID productId, String productName, String productSku, NotificationType notificationType, NotificationPriority notificationPriority, String title, String message, Integer currentQuantity, Integer minimumQuantity, UUID assignedTo) {
+    /**
+     * Construtor para criação de uma notificação com os principais dados.
+     *
+     * @param productId          identificador do produto relacionado (opcional)
+     * @param productName        nome do produto no momento da notificação
+     * @param productSku         SKU do produto
+     * @param notificationType   tipo da notificação (baixo estoque, venda, etc.)
+     * @param notificationPriority prioridade da notificação (baixa, média, alta)
+     * @param title              título resumido da notificação
+     * @param message            mensagem detalhada
+     * @param currentQuantity    quantidade atual do produto (contexto)
+     * @param minimumQuantity    quantidade mínima configurada (contexto)
+     * @param assignedTo         UUID do usuário responsável (pode ser nulo)
+     */
+    public Notification(UUID productId, String productName, String productSku,
+                        NotificationType notificationType, NotificationPriority notificationPriority,
+                        String title, String message, Integer currentQuantity,
+                        Integer minimumQuantity, UUID assignedTo) {
         this.productId = productId;
         this.productName = productName;
         this.productSku = productSku;
@@ -26,64 +74,137 @@ public class Notification extends BaseEntity{
         this.assignedTo = assignedTo;
     }
 
+
+    /**
+     * Identificador do produto associado à notificação.
+     * Mapeado para a coluna {@code product_id}.
+     */
     @Column("product_id")
     private UUID productId;
 
+    /**
+     * Nome do produto no momento da geração da notificação (desnormalizado para histórico).
+     * Mapeado para a coluna {@code product_name}.
+     */
     @Column("product_name")
     private String productName;
 
+    /**
+     * SKU do produto no momento da notificação.
+     * Mapeado para a coluna {@code product_sku}.
+     */
     @Column("product_sku")
     private String productSku;
 
+    /**
+     * Tipo da notificação (ex.: {@code LOW_STOCK}, {@code OUT_OF_STOCK}).
+     * Mapeado para a coluna {@code notification_type}.
+     */
     @Column("notification_type")
     private NotificationType notificationType;
 
+    /**
+     * Prioridade da notificação (ex.: BAIXA, MÉDIA, ALTA).
+     * Mapeado para a coluna {@code notification_priority}.
+     */
     @Column("notification_priority")
     private NotificationPriority notificationPriority;
 
+    /**
+     * Título resumido da notificação.
+     */
     private String title;
 
+    /**
+     * Mensagem descritiva da notificação.
+     */
     private String message;
 
+    /**
+     * Quantidade atual do produto no momento da notificação.
+     * Mapeado para a coluna {@code current_quantity}.
+     */
     @Column("current_quantity")
     private Integer currentQuantity;
 
+    /**
+     * Quantidade mínima configurada para o produto (ponto de gatilho).
+     * Mapeado para a coluna {@code minimum_quantity}.
+     */
     @Column("minimum_quantity")
     private Integer minimumQuantity;
 
+    /**
+     * Indica se a notificação já foi lida pelo usuário. Padrão: {@code false}.
+     * Mapeado para a coluna {@code is_read}.
+     */
     @Column("is_read")
-    private boolean read =  false;
+    private boolean read = false;
 
+    /**
+     * Indica se a situação que gerou a notificação foi resolvida. Padrão: {@code false}.
+     * Mapeado para a coluna {@code is_resolved}.
+     */
     @Column("is_resolved")
     private boolean resolved = false;
 
+    /**
+     * UUID do usuário responsável por tratar a notificação.
+     * Mapeado para a coluna {@code assigned_to}.
+     */
     @Column("assigned_to")
     private UUID assignedTo;
 
+    /**
+     * Data/hora em que a notificação foi lida (preenchido por {@link #markAsRead()}).
+     * Mapeado para a coluna {@code read_at}.
+     */
     @Column("read_at")
     private LocalDateTime readAt;
 
+    /**
+     * Data/hora em que a notificação foi resolvida (preenchido por {@link #markAsResolved()}).
+     * Mapeado para a coluna {@code resolved_at}.
+     */
     @Column("resolved_at")
     private LocalDateTime resolvedAt;
 
-    public void assingTo(UUID userId){
+
+    /**
+     * Atribui a notificação a um usuário responsável.
+     *
+     * @param userId UUID do usuário (não pode ser nulo)
+     * @throws IllegalArgumentException se {@code userId} for {@code null}
+     */
+    public void assingTo(UUID userId) {
         if (userId == null) throw new IllegalArgumentException("Usuário não pode ser nulo");
         this.assignedTo = userId;
     }
 
-    public void markAsRead(){
+    /**
+     * Marca a notificação como lida.
+     * <p>Se já estiver lida, o método não faz nada. Define {@code read = true}
+     * e {@code readAt} como a data/hora atual.</p>
+     */
+    public void markAsRead() {
         if (this.read) return;
         this.read = true;
         this.readAt = LocalDateTime.now();
     }
 
-    public void markAsResolved(){
-
+    /**
+     * Marca a notificação como resolvida.
+     * <p>Se já estiver resolvida, o método não faz nada.
+     * Define {@code resolved = true} e {@code resolvedAt} agora.
+     * Além disso, se a notificação ainda não foi lida, chama automaticamente {@link #markAsRead()}.</p>
+     */
+    public void markAsResolved() {
         if (this.resolved) return;
         this.resolved = true;
         this.resolvedAt = LocalDateTime.now();
         if (!this.read) markAsRead();
     }
+
 
     public UUID getProductId() {
         return productId;
@@ -157,6 +278,11 @@ public class Notification extends BaseEntity{
         this.minimumQuantity = minimumQuantity;
     }
 
+    /**
+     * Verifica se a notificação foi lida.
+     *
+     * @return {@code true} se lida; {@code false} caso contrário
+     */
     public boolean isRead() {
         return read;
     }
@@ -165,6 +291,11 @@ public class Notification extends BaseEntity{
         this.read = read;
     }
 
+    /**
+     * Verifica se a notificação foi resolvida.
+     *
+     * @return {@code true} se resolvida; {@code false} caso contrário
+     */
     public boolean isResolved() {
         return resolved;
     }
@@ -181,12 +312,21 @@ public class Notification extends BaseEntity{
         this.assignedTo = assignedTo;
     }
 
+    /**
+     * Data/hora da leitura (preenchido automaticamente por {@link #markAsRead()}).
+     *
+     * @return {@link LocalDateTime} da leitura ou {@code null}
+     */
     public LocalDateTime getReadAt() {
         return readAt;
     }
 
+    /**
+     * Data/hora da resolução (preenchido automaticamente por {@link #markAsResolved()}).
+     *
+     * @return {@link LocalDateTime} da resolução ou {@code null}
+     */
     public LocalDateTime getResolvedAt() {
         return resolvedAt;
     }
-
 }
