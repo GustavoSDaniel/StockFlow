@@ -154,5 +154,9 @@ public class R2dbcConfig {
         @Override
         public NotificationType convert(String value) { return NotificationType.valueOf(value); }
     }
+
+
+
+
     
 }
