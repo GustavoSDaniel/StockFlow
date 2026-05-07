@@ -10,6 +10,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- TIPOS ENUMERADOS (ENUMS)
 -- ==========================================
 
+CREATE TYPE user_role AS ENUM (
+    'EMPLOYEE',
+    'MANAGER',
+    'ADMIN'
+)
+
 CREATE TYPE product_status AS ENUM (
     'ACTIVE',
     'INACTIVE',

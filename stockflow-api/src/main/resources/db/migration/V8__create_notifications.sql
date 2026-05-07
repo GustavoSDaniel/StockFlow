@@ -6,10 +6,9 @@
 CREATE TABLE notifications (
                                id                    UUID                  PRIMARY KEY DEFAULT uuid_generate_v4(),
                                version               BIGINT,
-    -- ON DELETE CASCADE: se o produto for deletado, notificações são deletadas
                                product_id            UUID                  REFERENCES products(id) ON DELETE CASCADE,
-                               product_name          VARCHAR(255)          NOT NULL,   -- snapshot do nome no momento
-                               product_sku           VARCHAR(100)          NOT NULL,   -- snapshot do sku no momento
+                               product_name          VARCHAR(255)          NOT NULL,
+                               product_sku           VARCHAR(100)          NOT NULL,
                                notification_type     notification_type     NOT NULL,
                                notification_priority notification_priority NOT NULL,
                                title                 VARCHAR(255)          NOT NULL,
@@ -18,14 +17,13 @@ CREATE TABLE notifications (
                                minimum_quantity      INTEGER,
                                is_read               BOOLEAN               NOT NULL DEFAULT FALSE,
                                is_resolved           BOOLEAN               NOT NULL DEFAULT FALSE,
-    -- Usuário responsável por resolver a notificação
-                               assigned_to           UUID                  REFERENCES users(id) ON DELETE SET NULL,
+                               assigned_to           UUID                  REFERENCES users(id) ON DELETE SET NULL, -- Mantido FK pois aqui se refere ao ID local atribuído
                                read_at               TIMESTAMPTZ,
                                resolved_at           TIMESTAMPTZ,
                                created_at            TIMESTAMPTZ           NOT NULL DEFAULT NOW(),
                                updated_at            TIMESTAMPTZ           NOT NULL DEFAULT NOW(),
-                               created_by            UUID                  REFERENCES users(id) ON DELETE SET NULL,
-                               updated_by            UUID                  REFERENCES users(id) ON DELETE SET NULL
+                               created_by            UUID,
+                               updated_by            UUID
 );
 
 -- ==========================================

@@ -12,7 +12,7 @@ CREATE TABLE products (
                           version      BIGINT,
                           name         VARCHAR(255)   NOT NULL,
                           description  TEXT,
-                          sku          VARCHAR(100)   NOT NULL UNIQUE,   -- identificador único do produto
+                          sku          VARCHAR(100)   NOT NULL UNIQUE,
                           barcode      VARCHAR(255),
                           category_id  UUID           NOT NULL REFERENCES categories(id),
                           supplier_id  UUID           NOT NULL REFERENCES suppliers(id),
@@ -22,10 +22,8 @@ CREATE TABLE products (
                           status       product_status NOT NULL DEFAULT 'ACTIVE',
                           created_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
                           updated_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-                          created_by   UUID           REFERENCES users(id) ON DELETE SET NULL,
-                          updated_by   UUID           REFERENCES users(id) ON DELETE SET NULL,
-
-    -- Preço de venda deve ser >= preço de custo
+                          created_by   UUID,
+                          updated_by   UUID,
                           CONSTRAINT chk_sale_price_gte_cost CHECK (sale_price >= cost_price)
 );
 
@@ -33,24 +31,20 @@ CREATE TABLE products (
 -- ESTOQUES
 -- ==========================================
 CREATE TABLE stocks (
-                        id               UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
+                        id               UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
                         version          BIGINT,
-    -- UNIQUE: 1 produto tem exatamente 1 estoque
-    -- ON DELETE CASCADE: se o produto for deletado, estoque é deletado
-                        product_id       UUID    NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE,
-                        current_quantity INTEGER NOT NULL DEFAULT 0 CHECK (current_quantity >= 0),
-                        minimum_quantity INTEGER NOT NULL DEFAULT 0 CHECK (minimum_quantity >= 0),
-                        maximum_quantity INTEGER NOT NULL DEFAULT 999999999,
-                        reorder_point    INTEGER NOT NULL DEFAULT 0 CHECK (reorder_point >= 0),
-                        reorder_quantity INTEGER NOT NULL DEFAULT 0 CHECK (reorder_quantity >= 0),
+                        product_id       UUID        NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE,
+                        current_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (current_quantity >= 0),
+                        minimum_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (minimum_quantity >= 0),
+                        maximum_quantity INTEGER     NOT NULL DEFAULT 999999999,
+                        reorder_point    INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_point >= 0),
+                        reorder_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_quantity >= 0),
                         location         VARCHAR(255),
                         warehouse_id     VARCHAR(255),
                         created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                        created_by       UUID    REFERENCES users(id) ON DELETE SET NULL,
-                        updated_by       UUID    REFERENCES users(id) ON DELETE SET NULL,
-
-    -- Estoque máximo deve ser maior que o mínimo
+                        created_by       UUID,
+                        updated_by       UUID,
                         CONSTRAINT chk_max_gte_min CHECK (maximum_quantity >= minimum_quantity)
 );
 

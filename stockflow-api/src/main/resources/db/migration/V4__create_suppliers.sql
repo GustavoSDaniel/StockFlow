@@ -14,12 +14,10 @@ CREATE TABLE suppliers (
                            notes           TEXT,
                            created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
                            updated_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-                           created_by      UUID          REFERENCES users(id) ON DELETE SET NULL,
-                           updated_by      UUID          REFERENCES users(id) ON DELETE SET NULL
+    -- CORRIGIDO: Removido o REFERENCES users(id)
+                           created_by      UUID,
+                           updated_by      UUID
 );
 
--- ==========================================
--- ÍNDICES
--- ==========================================
 CREATE INDEX idx_suppliers_cnpj ON suppliers(cnpj);
 CREATE INDEX idx_suppliers_name ON suppliers(name);

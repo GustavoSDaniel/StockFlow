@@ -1,4 +1,4 @@
-package com.gustavosdaniel.stock_flow_api.domain.config;
+package com.gustavosdaniel.stock_flow_api.config;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.*;
 import org.springframework.core.convert.converter.Converter;
@@ -49,7 +49,9 @@ public class R2dbcConfig {
                 new NotificationPriorityWriteConverter(),
                 new NotificationPriorityReadConverter(),
                 new NotificationTypeWriteConverter(),
-                new NotificationTypeReadConverter()
+                new NotificationTypeReadConverter(),
+                new UserRoleWriteConverter(),
+                new UserRoleReadConverter()
         );
         return R2dbcCustomConversions.of(PostgresDialect.INSTANCE, converters);
     }
@@ -155,8 +157,16 @@ public class R2dbcConfig {
         public NotificationType convert(String value) { return NotificationType.valueOf(value); }
     }
 
+    @WritingConverter
+    static class UserRoleWriteConverter implements Converter<UserRole, String> {
+        @Override
+        public String convert(UserRole reason) { return reason.name(); }
+    }
 
+    @ReadingConverter
+    static class UserRoleReadConverter implements Converter<String, UserRole> {
+        @Override
+        public UserRole convert(String value) { return UserRole.valueOf(value); }
+    }
 
-
-    
 }

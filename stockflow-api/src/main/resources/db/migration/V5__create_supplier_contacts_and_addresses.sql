@@ -9,7 +9,6 @@
 CREATE TABLE supplier_contact (
                                   id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
                                   version      BIGINT,
-    -- ON DELETE CASCADE: se o fornecedor for deletado, contatos são deletados
                                   supplier_id  UUID         NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
                                   contact_name VARCHAR(255) NOT NULL,
                                   email        VARCHAR(255),
@@ -17,8 +16,8 @@ CREATE TABLE supplier_contact (
                                   active       BOOLEAN      NOT NULL DEFAULT TRUE,
                                   created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
                                   updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                                  created_by   UUID         REFERENCES users(id) ON DELETE SET NULL,
-                                  updated_by   UUID         REFERENCES users(id) ON DELETE SET NULL
+                                  created_by   UUID,
+                                  updated_by   UUID
 );
 
 -- ==========================================
@@ -27,7 +26,6 @@ CREATE TABLE supplier_contact (
 CREATE TABLE addresses (
                            id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
                            version       BIGINT,
-    -- ON DELETE CASCADE: se o fornecedor for deletado, endereços são deletados
                            supplier_id   UUID         NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
                            label         VARCHAR(100),
                            street        VARCHAR(255) NOT NULL,
@@ -42,10 +40,14 @@ CREATE TABLE addresses (
                            active        BOOLEAN      NOT NULL DEFAULT TRUE,
                            created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
                            updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                           created_by    UUID         REFERENCES users(id) ON DELETE SET NULL,
-                           updated_by    UUID         REFERENCES users(id) ON DELETE SET NULL
+                           created_by    UUID,
+                           updated_by    UUID
 );
 
+CREATE INDEX idx_contacts_supplier_id ON supplier_contact(supplier_id);
+CREATE INDEX idx_contacts_active      ON supplier_contact(supplier_id, active) WHERE active = TRUE;
+CREATE INDEX idx_addresses_supplier_id ON addresses(supplier_id);
+CREATE UNIQUE INDEX idx_unique_main_address ON addresses(supplier_id) WHERE is_main = TRUE;
 -- ==========================================
 -- ÍNDICES
 -- ==========================================

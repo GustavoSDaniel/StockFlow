@@ -14,16 +14,13 @@ CREATE TABLE inventory_movement (
                                     quantity_before  INTEGER         NOT NULL CHECK (quantity_before >= 0),
                                     quantity_after   INTEGER         NOT NULL CHECK (quantity_after >= 0),
                                     reason           movement_reason NOT NULL,
-                                    reference_number VARCHAR(255),                           -- NF, pedido, etc.
+                                    reference_number VARCHAR(255),
                                     supplier_id      UUID            REFERENCES suppliers(id),
-                                    customer_id      UUID,                                   -- ID externo do cliente
+                                    customer_id      UUID,
                                     note             TEXT,
                                     unit_cost        NUMERIC(12,4)   CHECK (unit_cost >= 0),
-    -- Sem version  → registro imutável
-    -- Sem updated_at → nunca é atualizado
-    -- Sem updated_by → nunca é atualizado
                                     created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-                                    created_by       UUID            REFERENCES users(id) ON DELETE SET NULL
+                                    created_by       UUID
 );
 
 -- ==========================================
