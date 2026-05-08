@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.UserResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.User;
 import org.springframework.stereotype.Component;
 
@@ -14,5 +15,16 @@ public class UserMapper {
         }
 
         return new User(keycloak, userName);
+    }
+
+    public UserResponse toUserResponse(User user){
+
+        if (user == null) return null;
+
+        return new UserResponse(
+                user.getId(),
+                user.getUserName(),
+                user.getRole()
+        );
     }
 }
