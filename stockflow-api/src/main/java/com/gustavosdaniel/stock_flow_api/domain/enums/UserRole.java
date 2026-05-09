@@ -16,7 +16,7 @@ public enum UserRole {
         return level;
     }
 
-    public boolean canManager(UserRole target){
+    public boolean canManage(UserRole target){
 
         if (target == null) return false;
 

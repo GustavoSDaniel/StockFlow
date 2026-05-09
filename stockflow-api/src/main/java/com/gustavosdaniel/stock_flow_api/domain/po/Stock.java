@@ -1,7 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.po;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
-import com.gustavosdaniel.stock_flow_api.exception.InsuficientStockException;
+import com.gustavosdaniel.stock_flow_api.exception.InsufficientStockException;
 import com.gustavosdaniel.stock_flow_api.exception.InvalidQuantityException;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -30,7 +30,7 @@ import java.util.UUID;
  * @see BaseEntity
  * @see StockStatus
  * @see InvalidQuantityException   (exceção lançada para quantidade inválida)
- * @see InsuficientStockException  (exceção lançada quando a remoção excede o estoque atual)
+ * @see InsufficientStockException  (exceção lançada quando a remoção excede o estoque atual)
  */
 @Table("stocks")
 public class Stock extends BaseEntity {
@@ -189,11 +189,11 @@ public class Stock extends BaseEntity {
      *
      * @param quantity quantidade a ser removida (deve ser maior que zero)
      * @throws InvalidQuantityException     se {@code quantity <= 0}
-     * @throws InsuficientStockException    se {@code currentQuantity < quantity}
+     * @throws InsufficientStockException    se {@code currentQuantity < quantity}
      */
     public void removeStock(int quantity) {
         if (quantity <= 0) throw new InvalidQuantityException();
-        if (currentQuantity < quantity) throw new InsuficientStockException();
+        if (currentQuantity < quantity) throw new InsufficientStockException();
         this.currentQuantity -= quantity;
     }
 

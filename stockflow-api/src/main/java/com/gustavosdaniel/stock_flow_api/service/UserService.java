@@ -13,15 +13,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.nio.file.AccessDeniedException;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -30,20 +28,19 @@ public class UserService {
     private final UserMapper userMapper;
     private final Logger log = LoggerFactory.getLogger(UserService.class);
     private final SecurityUtils securityUtils;
+    private final KeycloakService keycloakService;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper, SecurityUtils securityUtils) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, SecurityUtils securityUtils, KeycloakService keycloakService) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.securityUtils = securityUtils;
+        this.keycloakService = keycloakService;
     }
 
     @Transactional
     public Mono<User> getCurrentUser(Jwt jwt){
 
-        if (jwt == null){
-
-            throw new UnauthorizedException();
-        }
+        validateJwt(jwt);
 
         String keycloakId = jwt.getSubject();
 
@@ -68,6 +65,7 @@ public class UserService {
                 .switchIfEmpty(Mono.defer(() ->createUSer(jwt, roleFromToken)));
     }
 
+    @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> findAllUsers(Pageable pageable){
 
         return userRepository.findAllBy(pageable)
@@ -79,6 +77,7 @@ public class UserService {
                 });
     }
 
+    @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> searchUsersByName(String userName, Pageable pageable){
 
         return userRepository.searchByName(userName, pageable)
@@ -90,13 +89,38 @@ public class UserService {
     }
 
     @Transactional
+    public Mono<Void> promoteUser(UUID targetUserId, UserRole newRole) {
+        return Mono.zip(
+                securityUtils.getCurrentUserRole(),
+                securityUtils.getCurrentKeycloakId(),
+                userRepository.findById(targetUserId)
+                        .switchIfEmpty(Mono.error(new UserNotFoundException()))
+        ).flatMap(tuple -> {
+            UserRole currentRole = tuple.getT1();
+            String   currentKcId = tuple.getT2();
+            User     targetUser  = tuple.getT3();
+
+            validateKeycloakId(targetUser.getKeycloakId(), currentKcId);
+            validateRole(currentRole, newRole);
+
+            return keycloakService
+                    .updateUserRoleInKeycloak(targetUser.getKeycloakId(), newRole)
+                    .then(Mono.defer(() -> {
+                        targetUser.setRole(newRole);
+                        return userRepository.save(targetUser);
+                    }));
+        }).then();
+    }
+
+
+    @Transactional
     public Mono<Void> disabledUser (UUID targetUserId){
 
         return Mono.zip(
                 securityUtils.getCurrentUserRole(),
                 securityUtils.getCurrentKeycloakId(),
                 userRepository.findById(targetUserId)
-                        .switchIfEmpty(Mono.error(new RuntimeException("Usuário alvo não encontrado.")))
+                        .switchIfEmpty(Mono.error(UserNotFoundException::new))
 
         ).flatMap(tuple -> {
 
@@ -104,18 +128,11 @@ public class UserService {
             String currentKeycloakId = tuple.getT2();
             User targetUser = tuple.getT3();
 
-            if (targetUser.getKeycloakId().equals(currentKeycloakId)){
-                return Mono.error(new IllegalArgumentException("Você não pode deletar sua própria conta."));
+            validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
+            validateRole(targetUser.getRole(), currentRole);
 
-            }
-
-            if (!currentRole.canManager(targetUser.getRole())){
-                return Mono.error(new AccessDeniedException(
-                        String.format("Acesso negado: Seu nível (%s) não permite deletar um usuário de nível (%s)",
-                                currentRole.name(), targetUser.getRole().name())
-                ));
-            }
-            log.info("Usuário {} desativado pelo usuário {}", currentKeycloakId, targetUser.getId());
+            log.info("Usuário {} desativado pelo usuário {}",
+                    currentKeycloakId, targetUser.getId());
             targetUser.setActive(false);
             return userRepository.save(targetUser).then();
         });
@@ -128,7 +145,7 @@ public class UserService {
                 securityUtils.getCurrentUserRole(),
                 securityUtils.getCurrentKeycloakId(),
                 userRepository.findById(targetUserId)
-                        .switchIfEmpty(Mono.error(new RuntimeException("Usuário alvo não encontrado.")))
+                        .switchIfEmpty(Mono.error(UserNotFoundException::new))
 
         ).flatMap(tuple -> {
 
@@ -136,17 +153,8 @@ public class UserService {
             String currentKeycloakId = tuple.getT2();
             User targetUser = tuple.getT3();
 
-            if (targetUser.getKeycloakId().equals(currentKeycloakId)){
-                return Mono.error(new IllegalArgumentException("Você não pode deletar sua própria conta."));
-
-            }
-
-            if (!currentRole.canManager(targetUser.getRole())){
-                return Mono.error(new AccessDeniedException(
-                        String.format("Acesso negado: Seu nível (%s) não permite deletar um usuário de nível (%s)",
-                                currentRole.name(), targetUser.getRole().name())
-                ));
-            }
+            validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
+            validateRole(targetUser.getRole(), currentRole);
             log.info("Usuário {} deletando o usuário {}", currentKeycloakId, targetUser.getId());
 
             return userRepository.delete(targetUser);
@@ -157,7 +165,7 @@ public class UserService {
     private Mono<User> createUSer(Jwt jwt, UserRole role){
 
         String keycloakId = jwt.getSubject();
-        String userName = jwt.getClaimAsString("name");
+        String userName = jwt.getClaimAsString("preferred_username");
 
         User newUser = userMapper.toUser(keycloakId, userName);
 
@@ -173,23 +181,43 @@ public class UserService {
 
     private UserRole extractHighestRoleFromJwt(Jwt jwt){
 
-        List<String> roles = jwt.getClaimAsStringList("roles");
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
 
-        if (roles == null || roles.isEmpty()){
+        if (realmAccess == null || !realmAccess.containsKey("roles"))
             return UserRole.EMPLOYEE;
-        }
+
+        @SuppressWarnings("unchecked")
+        List<String> roles = (List<String>) realmAccess.get("roles");
 
         return roles.stream()
-                .filter(r -> r.startsWith("ROLE_"))
-                .map(roleStr -> {
-                    try {
-                        return UserRole.valueOf(roleStr);
-                    } catch (IllegalArgumentException e) {
-                        return null;
-                    }
+                .map(r -> {
+                    try { return UserRole.valueOf(r.toUpperCase()); }
+                    catch (IllegalArgumentException e) { return null; }
                 })
-                .filter(java.util.Objects::nonNull)
-                .max(java.util.Comparator.comparingInt(UserRole::getLevel))
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingInt(UserRole::getLevel))
                 .orElse(UserRole.EMPLOYEE);
+    }
+
+    private void validateJwt(Jwt jwt) {
+        if (jwt == null) throw new UnauthorizedException("Token JWT ausente.");
+
+    }
+
+    private void validateKeycloakId (String targetKeycloakId, String currentKeycloakId){
+
+        if (targetKeycloakId.equals(currentKeycloakId))
+            throw new IllegalArgumentException("Você não pode realizar essa ação a sua própria conta.");
+
+
+    }
+
+    private void validateRole(UserRole targetRole, UserRole currentRole) {
+        if (!currentRole.canManage(targetRole)) {
+            throw new AccessDeniedException(
+                    "Acesso negado: Seu nível não permite realizar essa ação " +
+                            "a um usuário de nível " + targetRole.name()
+            );
+        }
     }
 }

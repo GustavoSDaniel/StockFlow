@@ -9,3 +9,15 @@ spring:
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL:http://localhost:5052}/realms/${KEYCLOAK_REALM:stock-flow-realm}
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_URL:http://localhost:5052}
+  realm: ${KEYCLOAK_REALM:stock-flow-realm}
+  client-id: ${KEYCLOAK_CLIENT_ID:stock-flow-api}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
