@@ -48,6 +48,7 @@ public class UserService {
 
         return userRepository
                 .findByKeycloakId(keycloakId)
+                .doOnNext(user -> log.info("User {} encontrado com sucesso", user.getUserName()))
                 .flatMap(existingUser -> {
                     if (existingUser.getRole() != roleFromToken) {
                         existingUser.setRole(roleFromToken);
@@ -195,7 +196,7 @@ public class UserService {
                 .doOnSuccess(saveUSer -> {
                     assert saveUSer != null;
                     log.info("Usuário {}, criado com sucesso",
-                            saveUSer.getKeycloakId());
+                            saveUSer.getUserName());
                 });
     }
 

@@ -14,14 +14,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.jwt.Jwt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,6 +43,67 @@ class UserServiceTest {
 
     @InjectMocks
     UserService userService;
+
+    @Nested
+    class createUser{
+
+        @Test
+        @DisplayName("Should created user with sucesso")
+        void shouldCreatedUSer(){
+
+            String userName = "Daniel";
+            String keycloakId = "id do possivel user";
+            UserRole role = UserRole.EMPLOYEE;
+            Jwt jwt = mock((Jwt.class));
+
+            User newUSer = new User(keycloakId, userName);
+            newUSer.setRole(role);
+
+            when(jwt.getSubject()).thenReturn(keycloakId);
+            when(jwt.getClaimAsString("preferred_username")).thenReturn(userName);
+            when(userRepository.findByKeycloakId(keycloakId)).thenReturn(Mono.empty());
+            when(userMapper.toUser(keycloakId, userName)).thenReturn(newUSer);
+            when(userRepository.save(any(User.class))).thenReturn(Mono.just(newUSer));
+
+            Mono<User> output = userService.getCurrentUser(jwt);
+
+            StepVerifier.create(output)
+                    .assertNext(user -> {
+                        assertEquals(keycloakId, user.getKeycloakId(), "O id do keycloak deve ser o mesmo");
+                        assertEquals(userName, user.getUserName(), "O nome do user deve ser o mesmo");
+                    })
+                    .verifyComplete();
+            verify(userRepository, times(1)).save(any(User.class));
+
+        }
+    }
+
+    @Nested
+    class getUser{
+
+        @Test
+        @DisplayName("SHould with sucesso get user")
+        void getUser(){
+
+            String keycloakId = "id do keyclaok do user";
+            String name = "Daniel";
+            User user = new User(keycloakId, name);
+
+            Jwt jwt = mock((Jwt.class));
+
+            when(jwt.getSubject()).thenReturn(keycloakId);
+            when(userRepository.findByKeycloakId(keycloakId)).thenReturn(Mono.just(user));
+
+            Mono<User> output = userService.getCurrentUser(jwt);
+
+            StepVerifier.create(output)
+                    .assertNext(user1 -> {
+
+                        assertEquals(keycloakId, user1.getKeycloakId(),"O id do keycloak deve ser o mesmo que do user");
+                    }).verifyComplete();
+            verify(userRepository, times(1)).findByKeycloakId(keycloakId);
+        }
+    }
 
     @Nested
     class findAllUSer {
