@@ -38,7 +38,7 @@ public class UserService {
     }
 
     @Transactional
-    public Mono<User> getCurrentUser(Jwt jwt){
+    public Mono<User> getCurrentUser(Jwt jwt) {
 
         validateJwt(jwt);
 
@@ -62,30 +62,42 @@ public class UserService {
                     }
                     return Mono.just(existingUser);
                 })
-                .switchIfEmpty(Mono.defer(() ->createUSer(jwt, roleFromToken)));
+                .switchIfEmpty(Mono.defer(() -> createUSer(jwt, roleFromToken)));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<UserResponse>> findAllUsers(Pageable pageable){
+    public Mono<Page<UserResponse>> findAllUsers(Pageable pageable) {
 
         return userRepository.findAllBy(pageable)
                 .map(userMapper::toUserResponse)
                 .collectList()
                 .zipWith(userRepository.count())
-                .map(tuple -> {
-                    return new PageImpl<>(tuple.getT1(), pageable, tuple.getT2());
+                .map(tuple -> (Page<UserResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Buscando todos os usuários do sistema."))
+                .doOnSuccess(page -> {
+                    assert page != null;
+                    log.info("O total de usuários encontrados foram de {}, usuários.",
+                            page.getTotalElements());
                 });
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<UserResponse>> searchUsersByName(String userName, Pageable pageable){
+    public Mono<Page<UserResponse>> searchUsersByName(String userName, Pageable pageable) {
 
         return userRepository.searchByName(userName, pageable)
                 .map(userMapper::toUserResponse)
                 .collectList()
                 .zipWith(userRepository.countByName(userName))
-                .map(tuple ->
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+                .map(tuple -> (Page<UserResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Iniciando busca por usuários com o nome: {}", userName))
+                .doOnSuccess(page -> {
+                    assert page != null;
+                    log.info(
+                            "Busca concluída, {} usuários encontrados para o nome {}, na pagina {}",
+                            page.getNumberOfElements(), userName, pageable.getPageNumber());
+                });
     }
 
     @Transactional
@@ -97,24 +109,27 @@ public class UserService {
                         .switchIfEmpty(Mono.error(new UserNotFoundException()))
         ).flatMap(tuple -> {
             UserRole currentRole = tuple.getT1();
-            String   currentKcId = tuple.getT2();
-            User     targetUser  = tuple.getT3();
+            String currentKcId = tuple.getT2();
+            User targetUser = tuple.getT3();
 
             validateKeycloakId(targetUser.getKeycloakId(), currentKcId);
-            validateRole(currentRole, newRole);
+            validateRole(targetUser.getRole(), currentRole);
+            validateRole(newRole, currentRole);
 
             return keycloakService
                     .updateUserRoleInKeycloak(targetUser.getKeycloakId(), newRole)
                     .then(Mono.defer(() -> {
                         targetUser.setRole(newRole);
                         return userRepository.save(targetUser);
-                    }));
+                    }))
+                    .doFirst(() -> log.info("Iniciando o processo para promover o funcionário: {}", targetUser.getUserName()))
+                    .doOnSuccess(savedUser -> log.info("Funcionário: {}, promovido com sucesso para o cargo de {}", targetUser.getUserName(), newRole));
         }).then();
     }
 
 
     @Transactional
-    public Mono<Void> disabledUser (UUID targetUserId){
+    public Mono<Void> disabledUser(UUID targetUserId) {
 
         return Mono.zip(
                 securityUtils.getCurrentUserRole(),
@@ -131,15 +146,19 @@ public class UserService {
             validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
             validateRole(targetUser.getRole(), currentRole);
 
-            log.info("Usuário {} desativado pelo usuário {}",
-                    currentKeycloakId, targetUser.getId());
             targetUser.setActive(false);
+
+            log.info("Usuário {} desativado com sucesso",
+                    targetUser.getUserName());
+
             return userRepository.save(targetUser).then();
         });
     }
 
     @Transactional
-    public Mono<Void> deleteUser(UUID targetUserId){
+    public Mono<Void> deleteUser(UUID targetUserId) {
+
+        log.warn("Iniciando processo para deletar o usuário do ID: {}", targetUserId);
 
         return Mono.zip(
                 securityUtils.getCurrentUserRole(),
@@ -155,14 +174,15 @@ public class UserService {
 
             validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
             validateRole(targetUser.getRole(), currentRole);
-            log.info("Usuário {} deletando o usuário {}", currentKeycloakId, targetUser.getId());
+            log.info("Usuário {} deletando com sucesso",
+                    targetUser.getUserName());
 
             return userRepository.delete(targetUser);
         });
     }
 
 
-    private Mono<User> createUSer(Jwt jwt, UserRole role){
+    private Mono<User> createUSer(Jwt jwt, UserRole role) {
 
         String keycloakId = jwt.getSubject();
         String userName = jwt.getClaimAsString("preferred_username");
@@ -179,7 +199,7 @@ public class UserService {
                 });
     }
 
-    private UserRole extractHighestRoleFromJwt(Jwt jwt){
+    private UserRole extractHighestRoleFromJwt(Jwt jwt) {
 
         Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
 
@@ -191,8 +211,11 @@ public class UserService {
 
         return roles.stream()
                 .map(r -> {
-                    try { return UserRole.valueOf(r.toUpperCase()); }
-                    catch (IllegalArgumentException e) { return null; }
+                    try {
+                        return UserRole.valueOf(r.toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
                 })
                 .filter(Objects::nonNull)
                 .max(Comparator.comparingInt(UserRole::getLevel))
@@ -204,7 +227,7 @@ public class UserService {
 
     }
 
-    private void validateKeycloakId (String targetKeycloakId, String currentKeycloakId){
+    private void validateKeycloakId(String targetKeycloakId, String currentKeycloakId) {
 
         if (targetKeycloakId.equals(currentKeycloakId))
             throw new IllegalArgumentException("Você não pode realizar essa ação a sua própria conta.");
