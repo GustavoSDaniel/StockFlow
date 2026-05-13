@@ -48,6 +48,7 @@ public class UserService {
 
         return userRepository
                 .findByKeycloakId(keycloakId)
+                .switchIfEmpty(Mono.defer(() -> createUSer(jwt, roleFromToken)))
                 .doOnNext(user -> log.info("User {} encontrado com sucesso", user.getUserName()))
                 .flatMap(existingUser -> {
                     if (existingUser.getRole() != roleFromToken) {
@@ -62,8 +63,8 @@ public class UserService {
 
                     }
                     return Mono.just(existingUser);
-                })
-                .switchIfEmpty(Mono.defer(() -> createUSer(jwt, roleFromToken)));
+                });
+
     }
 
     @Transactional(readOnly = true)
@@ -149,10 +150,10 @@ public class UserService {
 
             targetUser.setActive(false);
 
-            log.info("Usuário {} desativado com sucesso",
-                    targetUser.getUserName());
-
-            return userRepository.save(targetUser).then();
+            return userRepository.save(targetUser)
+                    .doOnNext(saved -> log.info(
+                            "Usuário {} desativado com sucesso", saved.getUserName()))
+                    .then();
         });
     }
 
@@ -175,10 +176,10 @@ public class UserService {
 
             validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
             validateRole(targetUser.getRole(), currentRole);
-            log.info("Usuário {} deletando com sucesso",
-                    targetUser.getUserName());
 
-            return userRepository.delete(targetUser);
+            return userRepository.delete(targetUser)
+                    .doOnSuccess(v -> log.info(
+                            "Usuário {} deletado com sucesso", targetUser.getUserName()));
         });
     }
 
@@ -193,11 +194,8 @@ public class UserService {
         newUser.setRole(role);
 
         return userRepository.save(newUser)
-                .doOnSuccess(saveUSer -> {
-                    assert saveUSer != null;
-                    log.info("Usuário {}, criado com sucesso",
-                            saveUSer.getUserName());
-                });
+                .doOnSuccess(saved -> log.info(
+                        "Usuário {} criado com sucesso", saved.getUserName()));
     }
 
     private UserRole extractHighestRoleFromJwt(Jwt jwt) {

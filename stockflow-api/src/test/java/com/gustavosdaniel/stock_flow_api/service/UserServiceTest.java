@@ -239,7 +239,7 @@ class UserServiceTest {
             when(securityUtils.getCurrentKeycloakId()).thenReturn(Mono.just(keycloakAdmin));
             when(userRepository.findById(userId)).thenReturn(Mono.just(targetUser));
 
-            when(userRepository.save(targetUser)).thenReturn(Mono.empty());
+            when(userRepository.save(targetUser)).thenReturn(Mono.just(targetUser));
 
             Mono<Void> output = userService.disabledUser(userId);
 
