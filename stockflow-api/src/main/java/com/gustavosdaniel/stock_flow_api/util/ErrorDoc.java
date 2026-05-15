@@ -14,6 +14,7 @@ public class ErrorDoc {
     private final Map<String, ErrorDocResponse> docs = new HashMap<>();
 
     public ErrorDoc() {
+
         docs.put("validacao", new ErrorDocResponse(
                 "Validação falhou",
                 "Erro de validação nos campos da requisição.",
@@ -21,6 +22,14 @@ public class ErrorDoc {
                 "Verifique 'fieldsErrors' na resposta e corrija os campos.",
                 400
         ));
+        docs.put("nome-existe", new ErrorDocResponse(
+                "Nome já em uso",
+                "O nome inserido já está em uso",
+                "O nome inserido já foi cadastrado",
+                "Caso ainda queira criar esse objeto, coloque outro nome",
+                400
+
+                ));
         docs.put("usuario-nao-encontrado", new ErrorDocResponse(
                 "Usuário não encontrado",
                 "Não foi possível encontrar o usuário.",
@@ -55,6 +64,13 @@ public class ErrorDoc {
                 "Erro não previsto no sistema.",
                 "Tente novamente. Se persistir, contate o suporte.",
                 500
+        ));
+        docs.put("categoria-nao-encontrado", new ErrorDocResponse(
+                "Categoria não encontrado",
+                "Não foi possível encontrar a categoria.",
+                "O ID fornecido não existe.",
+                "Verifique se o ID está correto.",
+                404
         ));
     }
 

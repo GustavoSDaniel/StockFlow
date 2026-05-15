@@ -1,9 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.exception.handle;
 
-import com.gustavosdaniel.stock_flow_api.exception.InsufficientStockException;
-import com.gustavosdaniel.stock_flow_api.exception.InvalidQuantityException;
-import com.gustavosdaniel.stock_flow_api.exception.UnauthorizedException;
-import com.gustavosdaniel.stock_flow_api.exception.UserNotFoundException;
+import com.gustavosdaniel.stock_flow_api.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -66,6 +63,18 @@ public class GlobalExceptionHandler {
         return response;
     }
 
+    @ExceptionHandler(NameExistException.class)
+    public ResponseEntity<ProblemDetail> handleNameExist(NameExistException exception){
+
+        log.warn("O nome inserido já esta em uso {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ProblemType.NAME_EXIST,
+                exception.getMessage()
+        );
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleUserNotFound(
             UserNotFoundException exception){
@@ -123,6 +132,18 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 ProblemType.INVALID_QUANTITY,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleCategoryNotFound(CategoryNotFoundException exception){
+
+        log.warn("Categoria não encontrada {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ProblemType.CATEGORY_NOT_FOUND,
                 exception.getMessage()
         );
     }

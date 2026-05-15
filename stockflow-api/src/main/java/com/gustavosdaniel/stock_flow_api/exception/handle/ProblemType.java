@@ -16,6 +16,11 @@ public enum ProblemType {
             "Não autorizado"
     ),
 
+    NAME_EXIST(
+            "urn:stockflow:nome-existe",
+            "Nome já existente"
+    ),
+
     USER_NOT_FOUND(
 
             "urn:stockflow:usuario-nao-encontrado",
@@ -35,6 +40,11 @@ public enum ProblemType {
 
             "urn:stockflow:quantidade-invalida",
             "Quantidade invalida"
+    ),
+
+    CATEGORY_NOT_FOUND(
+            "urn:stockflow:category-not-found",
+            "Categoria não encontrada"
     ),
 
     INTERNAL_ERROR(
