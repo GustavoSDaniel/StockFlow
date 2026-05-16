@@ -129,6 +129,35 @@ public class UserService {
         }).then();
     }
 
+    @Transactional
+    public Mono<Void> activeUser(UUID targetUserId){
+
+        return Mono.zip(
+                securityUtils.getCurrentUserRole(),
+                securityUtils.getCurrentKeycloakId(),
+                userRepository.findById(targetUserId)
+                        .switchIfEmpty(Mono.error(UserNotFoundException::new))
+
+        ).flatMap( tuple -> {
+                    UserRole currentRole = tuple.getT1();
+                    String currentKeycloakId = tuple.getT2();
+                    User targetUser = tuple.getT3();
+
+                    validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
+                    validateRole(targetUser.getRole(), currentRole);
+
+                    if (targetUser.isActive()) return Mono.empty();
+                    targetUser.setActive(true);
+                    return userRepository.save(targetUser)
+                            .doFirst(() -> log.info("Ativando usuário {}", targetUserId))
+                    .doOnNext(saved -> log.info(
+                            "Usuário {} ativado com sucesso", saved.getUserName()))
+                    .then();
+                });
+
+
+    }
+
 
     @Transactional
     public Mono<Void> disabledUser(UUID targetUserId) {
@@ -147,10 +176,12 @@ public class UserService {
 
             validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
             validateRole(targetUser.getRole(), currentRole);
+            if (!targetUser.isActive()) return Mono.empty();
 
             targetUser.setActive(false);
 
             return userRepository.save(targetUser)
+                    .doFirst(() -> log.info("Desativando usuário {}", targetUserId))
                     .doOnNext(saved -> log.info(
                             "Usuário {} desativado com sucesso", saved.getUserName()))
                     .then();

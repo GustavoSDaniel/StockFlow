@@ -220,6 +220,38 @@ class UserServiceTest {
     }
 
     @Nested
+    class activeUser{
+
+        @Test
+        @DisplayName("Should active user with sucesso")
+        void activeUser(){
+
+            UUID userId = UUID.randomUUID();
+            String userName = "Daniel";
+            String keycloakTrget = "chave keycloak target";
+            User targetUser = new User(keycloakTrget, userName);
+            targetUser.setActive(false);
+
+            UserRole roleAdmin = UserRole.ADMIN;
+            String keycloakAdmin = "chave_admin";
+
+            when(securityUtils.getCurrentUserRole()).thenReturn(Mono.just(roleAdmin));
+            when(securityUtils.getCurrentKeycloakId()).thenReturn(Mono.just(keycloakAdmin));
+            when(userRepository.findById(userId)).thenReturn(Mono.just(targetUser));
+
+            when(userRepository.save(targetUser)).thenReturn(Mono.just(targetUser));
+
+            Mono<Void> output = userService.activeUser(userId);
+
+            StepVerifier.create(output)
+                    .verifyComplete();
+
+            verify(userRepository, times(1)).save(targetUser);
+
+        }
+    }
+
+    @Nested
     class disableUser{
 
         @Test

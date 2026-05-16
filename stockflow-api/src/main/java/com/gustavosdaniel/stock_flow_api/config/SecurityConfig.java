@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/users/*/promote")
                         .hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/users/*/active")
+                        .hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/users/*/disable")
                         .hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasRole("ADMIN")

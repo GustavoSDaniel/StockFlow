@@ -68,6 +68,13 @@ public class UserController implements UserOpenApi {
                 .thenReturn(ResponseEntity. noContent().build());
     }
 
+    @PatchMapping("/{targetUserId}/active")
+    public Mono<ResponseEntity<Void>> activeUser(@PathVariable UUID targetUserId){
+
+        return userService.activeUser(targetUserId)
+                .thenReturn(ResponseEntity.noContent().build());
+    }
+
     @PatchMapping("/{targetUserId}/disable")
     public Mono<ResponseEntity<Void>> disableUser(
             @PathVariable UUID targetUserId

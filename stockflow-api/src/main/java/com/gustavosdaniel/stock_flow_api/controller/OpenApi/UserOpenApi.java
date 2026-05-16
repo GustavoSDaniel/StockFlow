@@ -93,6 +93,20 @@ public interface UserOpenApi {
                     example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID targetUserId);
 
+    @Operation(summary = "Ativar usuário",
+            description = "Ativa um usuário que estava inativo, permitindo seu acesso ao sistema")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Usuário ativado com sucesso (ou já estava ativo)"),
+            @ApiResponse(responseCode = "400", description = "UUID inválido", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
+    })
+    Mono<ResponseEntity<Void>> activeUser(
+            @Parameter(description = "ID do usuário a ser ativado", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable UUID targetUserId);
+
     @Operation(summary = "Excluir usuário",
             description = "Remove permanentemente um usuário")
     @ApiResponses(value = {

@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.CategoryRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.CategoryUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.CategoryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
 import org.springframework.stereotype.Component;
@@ -33,5 +34,14 @@ public class CategoryMapper {
                 category.getParentId(),
                 category.isActive()
         );
+    }
+
+    public void updateCategory(Category category, CategoryUpdateRequest request){
+
+        if (request.name() != null && !request.name().isBlank()) category.setName(request.name());
+
+
+        if (request.description() != null && !request.description().isBlank())
+            category.setDescription(request.description());
     }
 }
