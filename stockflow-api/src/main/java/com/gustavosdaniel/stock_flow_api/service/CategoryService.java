@@ -53,6 +53,11 @@ public class CategoryService {
                .map(categoryMapper::toCategoryResponse);
     }
 
+    public Mono<CategoryResponse> addSubCategories(){
+
+
+    }
+
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable){
 
@@ -82,6 +87,73 @@ public class CategoryService {
                 .doOnSuccess(page ->
                         log.info("Total de categorias ativas encontradas nesta página: {}",
                         page.getNumberOfElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> searchCategories(String name, Pageable pageable){
+
+        return categoryRepository.searchByName(name, pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countByName(name))
+                .map(tuple -> (Page<CategoryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Buscando categorias que contenham o nome: '{}'", name))
+                .doOnNext(page -> log.info("Total de categorias encontradas para '{}': {}",
+                        name, page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> searchActiveCategories(Pageable pageable, String name){
+
+        return categoryRepository.searchActiveByName(name, pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countActiveByName(name))
+                .map(tuple -> (Page<CategoryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Buscando categorias ativas pelo nome {}",
+                        name))
+                .doOnNext(page -> log.info("Total de categorias ativas encontradas para '{}': {}",
+                        name, page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> findAllSubCategories(UUID parentId, Pageable pageable){
+
+        return categoryRepository.findByParentId(parentId, pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countByParentId(parentId))
+                .map(duple -> (Page<CategoryResponse>)
+                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}", parentId))
+                .doOnNext(page -> log.info("Total de {} subcategorias encontradas para a categoria: {}",
+                page.getTotalElements(), parentId));
+    }
+
+    public Mono<Page<CategoryResponse>> findAllActiveSubCategories(Pageable pageable){
+
+
+    }
+
+    public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(Pageable pageable){
+
+
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> findAllDisabledCategories(Pageable pageable){
+
+        return categoryRepository.findByIsActiveFalse(pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countByIsActiveFalse())
+                .map(tuple -> (Page<CategoryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Buscando todas as categorias que se encontra desativadas"))
+                .doOnNext(page -> log.info("Todas as categorias encontradas com sucesso: {}",
+                        page.getTotalElements()));
     }
 
     @Transactional
@@ -114,6 +186,11 @@ public class CategoryService {
                         categoryId))
                 .doOnNext(v -> log.info("Categoria ativada com sucesso"))
                 .then();
+    }
+
+    public Mono<CategoryResponse> removeSubCategories(){
+
+
     }
 
     @Transactional
