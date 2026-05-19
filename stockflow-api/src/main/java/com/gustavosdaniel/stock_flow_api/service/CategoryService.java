@@ -56,8 +56,7 @@ public class CategoryService {
     @Transactional
     public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId){
 
-        if (parentId.equals(childId)) throw new BusinessRuleException(
-                "Uma categoria não pode ser subcategoria de si mesma");
+        validadteSubCategory(parentId, childId);
 
         return Mono.zip(
                 categoryRepository.findById(parentId)
@@ -82,7 +81,7 @@ public class CategoryService {
                 })
                 .doFirst(() -> log.info("Adiconando subCategoria: {} na categoria {}",
                         childId, parentId))
-                .doOnNext(savedChild -> log.info("Categoria '{}' vinculada com sucesso como filha."
+                .doOnNext(savedChild -> log.info("Categoria {} vinculada com sucesso como subcategoria."
                         ,savedChild.getName()))
                 .map(categoryMapper::toCategoryResponse);
 
@@ -242,8 +241,7 @@ public class CategoryService {
     @Transactional
     public Mono<Void> removeSubCategories(UUID parentId, UUID childId){
 
-        if (parentId.equals(childId)) Mono.error(new IllegalAccessError(
-                "Não é possivel remover uma subcategoria sendo que ela é uma Categoria pai"));
+        validadteSubCategory(parentId, childId);
 
         return Mono.zip(
 
@@ -335,6 +333,18 @@ public class CategoryService {
                     return Mono.just(existingCategory);
 
                 });
+    }
+
+    private void validadteSubCategory(UUID parentId, UUID childId){
+
+
+        if (parentId == null || childId == null)
+            throw new BusinessRuleException(
+                    "ParentId e ChildId não podem ser nulos"
+            );
+
+        if (parentId.equals(childId)) throw new BusinessRuleException(
+                "Uma categoria não pode ser subcategoria de si mesma");
     }
 
 }
