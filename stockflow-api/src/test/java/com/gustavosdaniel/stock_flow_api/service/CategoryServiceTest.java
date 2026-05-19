@@ -5,6 +5,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.CategoryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.CategoryMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
 import com.gustavosdaniel.stock_flow_api.repository.CategoryRepository;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -122,6 +123,45 @@ class CategoryServiceTest {
         Pageable pageable = Pageable.unpaged();
 
         Category category = new Category(name, description, null, true);
+        Category category2 = new Category(name1, description1, null, false);
+
+        CategoryResponse response =
+                new CategoryResponse(categoryId1, name, description, null, true );
+
+        CategoryResponse response2 = new CategoryResponse(
+                categoryId2, name1, description1, null, false);
+
+        when(categoryRepository.findAllBy(pageable)).thenReturn(Flux.just(category, category2));
+        when(categoryRepository.count()).thenReturn(Mono.just(2L));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category2)).thenReturn(response2);
+
+        Mono<Page<CategoryResponse>> output = categoryService.findAllCategories(pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+
+                    assertEquals(2, page.getNumberOfElements(), "Deve conter 2 alementos");;
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should all categories active")
+    void allActiveCategories(){
+
+        UUID categoryId1 = UUID.randomUUID();
+        UUID categoryId2 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name1 = "Moveis";
+
+        String description = "Eletronicos em geral";
+        String description1 = "Moveis de casa";
+
+        Pageable pageable = Pageable.unpaged();
+
+        Category category = new Category(name, description, null, true);
         Category category2 = new Category(name1, description1, null, true);
 
         CategoryResponse response =
@@ -130,12 +170,264 @@ class CategoryServiceTest {
         CategoryResponse response2 = new CategoryResponse(
                 categoryId2, name1, description1, null, true);
 
-        when(categoryRepository.findAllBy(pageable)).thenReturn(Flux.just(category, category2));
-        when(categoryRepository.count()).thenReturn(Mono.just(2L));
+        when(categoryRepository.findByIsActiveTrue(pageable)).thenReturn(Flux.just(category, category2));
+        when(categoryRepository.countByIsActiveTrue()).thenReturn(Mono.just(2L));
         when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
         when(categoryMapper.toCategoryResponse(category2)).thenReturn(response2);
 
-        Mono<Page<CategoryResponse>> output = categoryService.findAllCategories(pageable);
+        Mono<Page<CategoryResponse>> output = categoryService.findAllActiveCategories(pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+
+                    assertEquals(2, page.getNumberOfElements(), "Deve conter 2 alementos");;
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("should with sucesso search name, of category")
+    void shouldSearchName(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID categoryId1 = UUID.randomUUID();
+        UUID categoryId3 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name2 = "Eletrica";
+        String searchName = "elet";
+
+        String description = "Eletronicos em geral";
+        String description2 = "Materiais eletricos";
+
+        Category category = new Category(name, description, null, false);
+        Category category3 = new Category(name2, description2, null, true);
+
+        CategoryResponse response =
+                new CategoryResponse(categoryId1, name, description, null, false );
+
+
+        CategoryResponse response3 =
+                new CategoryResponse(categoryId3, name2, description2, null, true);
+
+        when(categoryRepository.searchByName(searchName, pageable))
+                .thenReturn(Flux.just(category, category3));
+        when(categoryRepository.countByName(searchName)).thenReturn(Mono.just(2L));
+
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category3)).thenReturn(response3);
+
+        Mono<Page<CategoryResponse>> output = categoryService.searchCategories(searchName, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+
+                    assertEquals(2, resultado.getTotalElements(), "Deve conter 2 elementos");
+                })
+                .verifyComplete();
+
+    }
+
+    @Test
+    @DisplayName("should with sucesso search name of category active")
+    void shouldSearchNameActive(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID categoryId1 = UUID.randomUUID();
+        UUID categoryId3 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name2 = "Eletrica";
+        String searchName = "elet";
+
+        String description = "Eletronicos em geral";
+        String description2 = "Materiais eletricos";
+
+        Category category = new Category(name, description, null, true);
+        Category category3 = new Category(name2, description2, null, true);
+
+        CategoryResponse response =
+                new CategoryResponse(categoryId1, name, description, null, true );
+
+
+        CategoryResponse response3 =
+                new CategoryResponse(categoryId3, name2, description2, null, true);
+
+        when(categoryRepository.searchActiveByName(searchName, pageable))
+                .thenReturn(Flux.just(category, category3));
+        when(categoryRepository.countActiveByName(searchName)).thenReturn(Mono.just(2L));
+
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category3)).thenReturn(response3);
+
+        Mono<Page<CategoryResponse>> output = categoryService.searchActiveCategories(searchName, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+
+                    assertEquals(2, resultado.getTotalElements(), "Deve conter 2 elementos");
+                })
+                .verifyComplete();
+
+    }
+
+    @Test
+    @DisplayName("Should with sucesso all subcategorie")
+    void shouldAllSubcategories(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID parentId = UUID.randomUUID();
+        UUID subcategoryId = UUID.randomUUID();
+        UUID subcategoryId2 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name2 = "Eletrica";
+
+        String description = "Eletronicos em geral";
+        String description2 = "Materiais eletricos";
+
+        Category category = new Category(name, description, parentId, true);
+        Category category3 = new Category(name2, description2, parentId, false);
+
+        CategoryResponse response =
+                new CategoryResponse(subcategoryId, name, description, parentId, true );
+
+
+        CategoryResponse response2 =
+                new CategoryResponse(subcategoryId2, name2, description2, parentId, false);
+
+        when(categoryRepository.findByParentId(parentId, pageable))
+                .thenReturn(Flux.just(category, category3));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category3)).thenReturn(response2);
+        when(categoryRepository.countByParentId(parentId)).thenReturn(Mono.just(2L));
+
+        Mono<Page<CategoryResponse>> output = categoryService.findAllSubCategories(parentId, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(2, page.getNumberOfElements());
+                })
+                .verifyComplete();
+
+    }
+
+    @Test
+    @DisplayName("Should with sucesso all subcategorie active")
+    void shouldAllActiveSubcategories(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID parentId = UUID.randomUUID();
+        UUID subcategoryId = UUID.randomUUID();
+        UUID subcategoryId2 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name2 = "Eletrica";
+
+        String description = "Eletronicos em geral";
+        String description2 = "Materiais eletricos";
+
+        Category category = new Category(name, description, parentId, true);
+        Category category3 = new Category(name2, description2, parentId, true);
+
+        CategoryResponse response =
+                new CategoryResponse(subcategoryId, name, description, parentId, true );
+
+
+        CategoryResponse response2 =
+                new CategoryResponse(subcategoryId2, name2, description2, parentId, true);
+
+        when(categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable))
+                .thenReturn(Flux.just(category, category3));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category3)).thenReturn(response2);
+        when(categoryRepository.countByParentIdAndIsActiveTrue(parentId)).thenReturn(Mono.just(2L));
+
+        Mono<Page<CategoryResponse>> output = categoryService.findAllActiveSubCategories(parentId, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(2, page.getNumberOfElements());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should with sucesso all subcategorie disabled")
+    void shouldAllDisabledSubcategories(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID parentId = UUID.randomUUID();
+        UUID subcategoryId = UUID.randomUUID();
+        UUID subcategoryId2 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name2 = "Eletrica";
+
+        String description = "Eletronicos em geral";
+        String description2 = "Materiais eletricos";
+
+        Category category = new Category(name, description, parentId, false);
+        Category category3 = new Category(name2, description2, parentId, false);
+
+        CategoryResponse response =
+                new CategoryResponse(subcategoryId, name, description, parentId, false );
+
+
+        CategoryResponse response2 =
+                new CategoryResponse(subcategoryId2, name2, description2, parentId, false);
+
+        when(categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable))
+                .thenReturn(Flux.just(category, category3));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category3)).thenReturn(response2);
+        when(categoryRepository.countByParentIdAndIsActiveFalse(parentId)).thenReturn(Mono.just(2L));
+
+        Mono<Page<CategoryResponse>> output = categoryService
+                .findAllDisabledSubCategories(parentId, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(2, page.getNumberOfElements());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should all categories disabled")
+    void allDisabledCategories(){
+
+        UUID categoryId1 = UUID.randomUUID();
+        UUID categoryId2 = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String name1 = "Moveis";
+
+        String description = "Eletronicos em geral";
+        String description1 = "Moveis de casa";
+
+        Pageable pageable = Pageable.unpaged();
+
+        Category category = new Category(name, description, null, false);
+        Category category2 = new Category(name1, description1, null, false);
+
+        CategoryResponse response =
+                new CategoryResponse(categoryId1, name, description, null, false );
+
+        CategoryResponse response2 = new CategoryResponse(
+                categoryId2, name1, description1, null, false);
+
+        when(categoryRepository.findByIsActiveFalse(pageable)).thenReturn(Flux.just(category, category2));
+        when(categoryRepository.countByIsActiveFalse()).thenReturn(Mono.just(2L));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+        when(categoryMapper.toCategoryResponse(category2)).thenReturn(response2);
+
+        Mono<Page<CategoryResponse>> output = categoryService.findAllDisabledCategories(pageable);
 
         StepVerifier.create(output)
                 .assertNext(page -> {

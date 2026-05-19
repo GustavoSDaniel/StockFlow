@@ -133,7 +133,7 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> searchActiveCategories(Pageable pageable, String name){
+    public Mono<Page<CategoryResponse>> searchActiveCategories(String name, Pageable pageable){
 
         return categoryRepository.searchActiveByName(name, pageable)
                 .map(categoryMapper::toCategoryResponse)
@@ -170,7 +170,7 @@ public class CategoryService {
                 .zipWith(categoryRepository.countByParentIdAndIsActiveTrue(parentId))
                 .map(duple -> (Page<CategoryResponse>)
                         new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
-                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria ativa: {}",
+                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}",
                         parentId))
                 .doOnNext(page -> log.info("Total de {} subcategorias ativas encontradas para a categoria: {}",
                         page.getTotalElements(), parentId));
@@ -185,7 +185,7 @@ public class CategoryService {
                 .zipWith(categoryRepository.countByParentIdAndIsActiveFalse(parentId))
                 .map(duple -> (Page<CategoryResponse>)
                         new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
-                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria desativada: {}",
+                .doFirst(() -> log.info("Buscando todas as subcategorias desativadas da categoria: {}",
                         parentId))
                 .doOnNext(page -> log.info("Total de {} subcategorias desativadas encontradas para a categoria: {}",
                         page.getTotalElements(), parentId));
@@ -201,13 +201,12 @@ public class CategoryService {
                 .map(tuple -> (Page<CategoryResponse>)
                         new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
                 .doFirst(() -> log.info("Buscando todas as categorias que se encontra desativadas"))
-                .doOnNext(page -> log.info("Todas as categorias encontradas com sucesso: {}",
+                .doOnNext(page -> log.info("Todas as categorias desativadas encontradaso: {}",
                         page.getTotalElements()));
     }
 
     @Transactional
     public Mono<CategoryResponse> updateCategory(UUID categoryId ,CategoryUpdateRequest request){
-
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
