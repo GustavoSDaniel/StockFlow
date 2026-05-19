@@ -8,7 +8,7 @@ public record CategoryResponse (
         String name,
         String description,
         UUID parentId,
-        boolean isActive
+        boolean active
 
 ) {
 }

@@ -15,6 +15,14 @@ public class ErrorDoc {
 
     public ErrorDoc() {
 
+        docs.put("regra-de-negocio", new ErrorDocResponse(
+                "Violação de regra de negócio",
+                "A operação solicitada viola uma regra do sistema.",
+                "Exemplos: categoria já ativa, usuário tentando agir sobre si mesmo, " +
+                        "categoria já possui pai.",
+                "Verifique a mensagem de erro para entender qual regra foi violada.",
+                422
+        ));
         docs.put("validacao", new ErrorDocResponse(
                 "Validação falhou",
                 "Erro de validação nos campos da requisição.",

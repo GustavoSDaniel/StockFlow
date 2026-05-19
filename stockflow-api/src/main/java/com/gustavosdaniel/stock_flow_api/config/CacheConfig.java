@@ -1,10 +1,13 @@
 package com.gustavosdaniel.stock_flow_api.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -16,38 +19,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@EnableWebFlux
 public class CacheConfig {
 
+    @Value("${cache.ttl.default}")
+    private long defaultTtl;
+
     @Bean
-    public RedisCacheManager cacheManager(
-            RedisConnectionFactory redisConnectionFactory,
+    public ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
+            ReactiveRedisConnectionFactory factory,
             ObjectMapper objectMapper){
 
         GenericJacksonJsonRedisSerializer jsonSerializer =
                 new GenericJacksonJsonRedisSerializer(objectMapper);
 
-        RedisCacheConfiguration configuration = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes())
-                .disableCachingNullValues()
-                .serializeKeysWith(
-                        RedisSerializationContext.SerializationPair
-                                .fromSerializer(RedisSerializer.string())
-                )
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair
-                                .fromSerializer(jsonSerializer)
-                );
+        RedisSerializationContext<String,Object> context =
+                RedisSerializationContext.<String, Object>newSerializationContext()
+                        .key(RedisSerializer.string())
+                        .value(jsonSerializer)
+                        .hashKey(RedisSerializer.string())
+                        .hashValue(jsonSerializer)
+                        .build();
 
-        Map<String, RedisCacheConfiguration> cacheConfiguration = new HashMap<>();
+        return new ReactiveRedisTemplate<>(factory, context);
 
+    }
 
+    @Bean
+    public Duration defaultCacheTtl(){
 
-
-        return RedisCacheManager.builder(redisConnectionFactory)
-                .cacheDefaults(configuration)
-                .withCacheConfiguration(cacheConfiguration)
-                .build();
+        return Duration.ofSeconds(defaultTtl);
     }
 }
 

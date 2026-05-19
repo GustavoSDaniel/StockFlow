@@ -5,6 +5,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.request.CategoryUpdateReques
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.CategoryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.CategoryMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
+import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.CategoryNotFoundException;
 import com.gustavosdaniel.stock_flow_api.exception.NameExistException;
 import com.gustavosdaniel.stock_flow_api.repository.CategoryRepository;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
-import java.nio.file.LinkOption;
 import java.util.UUID;
 
 @Service
@@ -53,8 +53,38 @@ public class CategoryService {
                .map(categoryMapper::toCategoryResponse);
     }
 
-    public Mono<CategoryResponse> addSubCategories(){
+    @Transactional
+    public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId){
 
+        if (parentId.equals(childId)) throw new BusinessRuleException(
+                "Uma categoria não pode ser subcategoria de si mesma");
+
+        return Mono.zip(
+                categoryRepository.findById(parentId)
+                        .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
+
+                categoryRepository.findById(childId)
+                        .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
+        )
+                .flatMap(tuple -> {
+
+                    Category parent = tuple.getT1();
+                    Category child = tuple.getT2();
+
+                    if (!child.isRootCategory())
+                        return Mono.error(new BusinessRuleException(
+                                "Categoria já possui uma categoria pai"
+                        ));
+
+                    parent.addSubCategory(child);
+
+                    return categoryRepository.save(child);
+                })
+                .doFirst(() -> log.info("Adiconando subCategoria: {} na categoria {}",
+                        childId, parentId))
+                .doOnNext(savedChild -> log.info("Categoria '{}' vinculada com sucesso como filha."
+                        ,savedChild.getName()))
+                .map(categoryMapper::toCategoryResponse);
 
     }
 
@@ -132,14 +162,34 @@ public class CategoryService {
                 page.getTotalElements(), parentId));
     }
 
-    public Mono<Page<CategoryResponse>> findAllActiveSubCategories(Pageable pageable){
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> findAllActiveSubCategories(UUID parentId, Pageable pageable){
 
-
+        return categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countByParentIdAndIsActiveTrue(parentId))
+                .map(duple -> (Page<CategoryResponse>)
+                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria ativa: {}",
+                        parentId))
+                .doOnNext(page -> log.info("Total de {} subcategorias ativas encontradas para a categoria: {}",
+                        page.getTotalElements(), parentId));
     }
 
-    public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(Pageable pageable){
+    @Transactional(readOnly = true)
+    public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(UUID parentId, Pageable pageable){
 
-
+        return categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable)
+                .map(categoryMapper::toCategoryResponse)
+                .collectList()
+                .zipWith(categoryRepository.countByParentIdAndIsActiveFalse(parentId))
+                .map(duple -> (Page<CategoryResponse>)
+                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+                .doFirst(() -> log.info("Buscando todas as subcategorias da categoria desativada: {}",
+                        parentId))
+                .doOnNext(page -> log.info("Total de {} subcategorias desativadas encontradas para a categoria: {}",
+                        page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
@@ -178,7 +228,8 @@ public class CategoryService {
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
                 .flatMap(category -> {
-                    if (category.isActive()) return Mono.empty();
+                    if (category.isActive()) return Mono.error(
+                            new BusinessRuleException("Categoria já está ativa"));
                     category.setActive(true);
                     return categoryRepository.save(category);
                 })
@@ -188,8 +239,45 @@ public class CategoryService {
                 .then();
     }
 
-    public Mono<CategoryResponse> removeSubCategories(){
+    @Transactional
+    public Mono<Void> removeSubCategories(UUID parentId, UUID childId){
 
+        if (parentId.equals(childId)) Mono.error(new IllegalAccessError(
+                "Não é possivel remover uma subcategoria sendo que ela é uma Categoria pai"));
+
+        return Mono.zip(
+
+            categoryRepository.findById(parentId)
+                    .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
+
+            categoryRepository.findById(childId)
+                    .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
+
+        )
+                .flatMap(tuple -> {
+
+                    Category parent = tuple.getT1();
+
+                    Category child = tuple.getT2();
+
+                    if (child.isRootCategory())
+                        return Mono.error(new BusinessRuleException(
+                                "Categoria não possui categoria pai para ser removida"
+                        ));
+
+                    if (!parent.getId().equals(child.getParentId()))
+                        return Mono.error(new BusinessRuleException(
+                                "A categoria informada não é pai desta subcategoria"
+                        ));
+
+                    parent.removeSubCategory(child);
+
+                    return categoryRepository.save(child);
+                })
+                .doFirst(() -> log.info("Removendo subcategoria {}, da categoria {}",
+                        parentId, childId))
+                .doOnNext(categoryRemoved -> log.info("Categoria, removida com sucesso"))
+                .then();
 
     }
 
@@ -199,6 +287,7 @@ public class CategoryService {
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
                 .filter(Category::isActive)
+                .switchIfEmpty(Mono.error(new BusinessRuleException("Categoria já está desativada")))
                 .flatMap(category -> {
 
                     category.setActive(false);
@@ -216,7 +305,16 @@ public class CategoryService {
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
-                .flatMap(categoryRepository::delete)
+                .flatMap(category -> {
+
+                    if (category.isRootCategory()) {
+                        log.warn("Deletando categoria raiz: {} — subcategorias " +
+                                        "serão desvinculadas (ON DELETE SET NULL)",
+                                category.getName());
+                    }
+
+                    return categoryRepository.delete(category);
+                })
                 .doFirst(() -> log.warn("Iniciando processo para deletar a categoria {}",
                         categoryId))
                 .doOnSuccess(v -> log.info("Categoria deletada com sucesso"))

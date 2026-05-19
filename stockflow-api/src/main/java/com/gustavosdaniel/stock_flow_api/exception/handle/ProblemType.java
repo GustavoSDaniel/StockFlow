@@ -4,6 +4,12 @@ import java.net.URI;
 
 public enum ProblemType {
 
+    BUSINESS_RULE(
+
+            "urn:stockflows:regra-de-negocio",
+            "Violação de regra de negócio"
+    ),
+
     VALIDATE_ERROR(
 
             "urn:stockflow:erro-de-validacao",

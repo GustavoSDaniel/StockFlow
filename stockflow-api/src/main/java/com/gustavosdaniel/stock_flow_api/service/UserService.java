@@ -4,6 +4,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.UserResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.UserRole;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.UserMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.User;
+import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.UnauthorizedException;
 import com.gustavosdaniel.stock_flow_api.exception.UserNotFoundException;
 import com.gustavosdaniel.stock_flow_api.repository.UserRepository;
@@ -260,7 +261,7 @@ public class UserService {
     private void validateKeycloakId(String targetKeycloakId, String currentKeycloakId) {
 
         if (targetKeycloakId.equals(currentKeycloakId))
-            throw new IllegalArgumentException("Você não pode realizar essa ação a sua própria conta.");
+            throw new BusinessRuleException("Você não pode realizar essa ação a sua própria conta.");
 
 
     }

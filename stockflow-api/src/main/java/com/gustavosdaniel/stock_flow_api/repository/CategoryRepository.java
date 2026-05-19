@@ -23,18 +23,26 @@ public interface CategoryRepository extends R2dbcRepository<Category, UUID> {
 
     Flux<Category> findByParentId(UUID parentId,Pageable pageable);
 
+    Flux<Category> findByParentIdAndIsActiveTrue(UUID parentId,Pageable pageable);
+
+    Flux<Category> findByParentIdAndIsActiveFalse(UUID parentId,Pageable pageable);
+
     Mono<Long> countByParentId(UUID parentId);
 
-    @Query("SELECT * FROM category WHERE name ILIKE CONCAT('%', :name, '%')")
+    Mono<Long> countByParentIdAndIsActiveTrue(UUID parentId);
+
+    Mono<Long> countByParentIdAndIsActiveFalse(UUID parentId);
+
+    @Query("SELECT * FROM categories WHERE name ILIKE CONCAT('%', :name, '%')")
     Flux<Category> searchByName(String name, Pageable pageable);
 
-    @Query("SELECT COUNT(*) FROM category WHERE name ILIKE CONCAT('%', :name, '%')")
+    @Query("SELECT COUNT(*) FROM categories WHERE name ILIKE CONCAT('%', :name, '%')")
     Mono<Long> countByName(String name);
 
-    @Query("SELECT * FROM category WHERE name ILIKE CONCAT('%', :name, '%') AND is_active = true")
+    @Query("SELECT * FROM categories WHERE name ILIKE CONCAT('%', :name, '%') AND active = true")
     Flux<Category> searchActiveByName(String name, Pageable pageable);
 
-    @Query("SELECT COUNT(*) FROM category WHERE name ILIKE CONCAT('%', :name, '%') AND is_active = true")
+    @Query("SELECT COUNT(*) FROM categories WHERE name ILIKE CONCAT('%', :name, '%') AND active = true")
     Mono<Long> countActiveByName(String name);
 
     Flux<Category> findByIsActiveFalse(Pageable pageable);

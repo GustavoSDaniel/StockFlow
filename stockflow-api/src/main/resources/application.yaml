@@ -9,6 +9,15 @@ spring:
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+cache:
+  ttl:
+    default: 1800
+
   security:
     oauth2:
       resource server:

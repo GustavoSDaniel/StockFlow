@@ -32,6 +32,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(problemDetail);
     }
 
+    @ExceptionHandler(BusinessRuleException.class)
+    public ResponseEntity<ProblemDetail> handleBusinessRule(BusinessRuleException exception){
+
+        log.warn("Regra de negócio violada: {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                ProblemType.BUSINESS_RULE,
+                exception.getMessage()
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleGeneric(Exception ex) {
         log.error("Erro inesperado: {}", ex.getMessage(), ex);
