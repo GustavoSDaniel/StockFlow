@@ -1,11 +1,11 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.CategoryRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.CategoryUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.CategoryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.CategoryMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
 import com.gustavosdaniel.stock_flow_api.repository.CategoryRepository;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,11 +14,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
+
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -437,4 +438,145 @@ class CategoryServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    @DisplayName("Should with sucesso update category")
+    void shouldUpdateCategory(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String nameUpdate = "Diversos eletronicos";
+
+        String description = "Produtos eletronicos";
+        String descriptionUpdate = "Diversos eletronicos atualizados";
+
+        Category category = new Category(name, description, null, true);
+        ReflectionTestUtils.setField(category,"id", categoryId);
+
+        CategoryUpdateRequest request = new CategoryUpdateRequest(nameUpdate, descriptionUpdate);
+
+        CategoryResponse response = new CategoryResponse(categoryId, name, description, null, true);
+
+        when(categoryRepository.existsByNameIgnoreCase(nameUpdate)).thenReturn(Mono.just(false));
+        when(categoryRepository.findById(categoryId)).thenReturn(Mono.just(category));
+        doNothing().when(categoryMapper).updateCategory(any(Category.class), any(CategoryUpdateRequest.class));
+        when(categoryRepository.save(category)).thenReturn(Mono.just(category));
+        when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
+
+        Mono<CategoryResponse> output = categoryService.updateCategory(categoryId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+
+                    assertEquals(categoryId, resultado.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(categoryRepository, times(1)).findById(categoryId);
+        verify(categoryRepository, times(1)).save(any(Category.class));
+    }
+
+    @Test
+    @DisplayName("Should active cateegory with sucesso")
+    void shouldActiveCategory(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        Category category = new Category(name, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Mono.just(category));
+        when(categoryRepository.save(any(Category.class))).thenReturn(Mono.just(category));
+
+        Mono<Void> output = categoryService.activeCategory(categoryId);
+
+        StepVerifier.create(output)
+                        .verifyComplete();
+
+        verify(categoryRepository, times(1)).findById(categoryId);
+        verify(categoryRepository, times(1)).save(category);
+
+        assertEquals(true, category.isActive(), "A categoria tem que está ativo");
+
+    }
+
+    @Test
+    @DisplayName("Should remove subcategory with sucesso")
+    void shouldRemoveSubcategory(){
+
+        UUID categoryRootId = UUID.randomUUID();
+        UUID subCategoryId = UUID.randomUUID();
+
+        String nameRoot = "Eletronicos";
+        String descriptionRoot = "Produtoos eletronicos";
+
+        String name = "Celulares";
+        String description = "Todos os celulares";
+
+        Category categoryRoot = new Category(nameRoot, descriptionRoot, null, true);
+        ReflectionTestUtils.setField(categoryRoot, "id", categoryRootId);
+
+        Category subCategory = new Category(name, description, categoryRootId, true);
+
+        when(categoryRepository.findById(subCategoryId)).thenReturn(Mono.just(subCategory));
+        when(categoryRepository.findById(categoryRootId)).thenReturn(Mono.just(categoryRoot));
+        when(categoryRepository.save(any(Category.class))).thenReturn(Mono.just(subCategory));
+
+        Mono<Void> output = categoryService.removeSubCategories(categoryRootId, subCategoryId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(categoryRepository, times(1)).findById(subCategoryId);
+        verify(categoryRepository, times(1)).findById(categoryRootId);
+        verify(categoryRepository, times(1)).save(subCategory);
+
+    }
+
+    @Test
+    @DisplayName("Should disable with sucesso category")
+    void shouldDisableCategory(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        Category category = new Category(name, description, null, true);
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Mono.just(category));
+        when(categoryRepository.save(any(Category.class))).thenReturn(Mono.just(category));
+
+        Mono<Void> output = categoryService.disableCategory(categoryId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(categoryRepository, times(1)).findById(categoryId);
+        verify(categoryRepository, times(1)).save(category);
+    }
+
+
+    @Test
+    @DisplayName("Should delete category with sucesso")
+    void shouldDeleteCategory(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        String name = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        Category category = new Category(name, description, null, true);
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Mono.just(category));
+        when(categoryRepository.delete(any(Category.class))).thenReturn(Mono.empty());
+
+        Mono<Void> output = categoryService.deleteCategory(categoryId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(categoryRepository, times(1)).findById(categoryId);
+        verify(categoryRepository, times(1)).delete(category);
+    }
 }
