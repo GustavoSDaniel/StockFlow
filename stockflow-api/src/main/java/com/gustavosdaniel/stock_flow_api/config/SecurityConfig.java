@@ -52,6 +52,17 @@ public class SecurityConfig {
                         .hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasRole("ADMIN")
 
+                        //CATEGORY
+                        .pathMatchers(HttpMethod.GET, "/api/v1/categories/**").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/categories")
+                        .hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/categories/**")
+                        .hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/categories/*/activate")
+                        .hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/categories/*/disable")
+                        .hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasRole("ADMIN")
 
                         .anyExchange().authenticated()
                 )
