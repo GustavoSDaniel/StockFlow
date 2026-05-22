@@ -44,10 +44,6 @@ CREATE TABLE addresses (
                            updated_by    UUID
 );
 
-CREATE INDEX idx_contacts_supplier_id ON supplier_contact(supplier_id);
-CREATE INDEX idx_contacts_active      ON supplier_contact(supplier_id, active) WHERE active = TRUE;
-CREATE INDEX idx_addresses_supplier_id ON addresses(supplier_id);
-CREATE UNIQUE INDEX idx_unique_main_address ON addresses(supplier_id) WHERE is_main = TRUE;
 -- ==========================================
 -- ÍNDICES
 -- ==========================================

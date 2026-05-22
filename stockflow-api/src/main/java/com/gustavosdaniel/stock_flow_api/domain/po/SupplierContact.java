@@ -43,11 +43,13 @@ public class SupplierContact extends BaseEntity {
      * <p>Os campos de auditoria (herdados) e o {@code supplierId} não são definidos
      * neste construtor – devem ser preenchidos posteriormente.</p>
      *
+     * @param supplierId id do fornecedor
      * @param contactName nome do contato (ex.: "João Silva")
      * @param email       endereço de e-mail do contato
      * @param phoneNumber número de telefone do contato
      */
-    public SupplierContact(String contactName, String email, String phoneNumber) {
+    public SupplierContact(UUID supplierId, String contactName, String email, String phoneNumber) {
+        this.supplierId = supplierId;
         this.contactName = contactName;
         this.email = email;
         this.phoneNumber = phoneNumber;

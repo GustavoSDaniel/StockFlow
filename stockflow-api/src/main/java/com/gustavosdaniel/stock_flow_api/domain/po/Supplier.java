@@ -43,22 +43,18 @@ public class Supplier extends BaseEntity {
      * @param name          razão social do fornecedor
      * @param cnpj          CNPJ do fornecedor (formato esperado: apenas números)
      * @param tradeName     nome fantasia (pode ser igual à razão social)
-     * @param contacts      lista inicial de contatos (pode ser {@code null})
      * @param website       site do fornecedor
      * @param minOrderValue valor mínimo para fechamento de pedido com este fornecedor
      * @param notes         observações internas (não visíveis ao fornecedor)
-     * @param addresses     lista inicial de endereços (pode ser {@code null})
      */
-    public Supplier(String name, String cnpj, String tradeName, List<SupplierContact> contacts,
-                    String website, BigDecimal minOrderValue, String notes, List<Address> addresses) {
+    public Supplier(String name, String cnpj, String tradeName,
+                    String website, BigDecimal minOrderValue, String notes) {
         this.name = name;
         this.cnpj = cnpj;
         this.tradeName = tradeName;
-        this.contacts = contacts != null ? contacts : new ArrayList<>();
         this.website = website;
         this.minOrderValue = minOrderValue;
         this.notes = notes;
-        this.addresses = addresses != null ? addresses : new ArrayList<>();
     }
 
 
@@ -78,14 +74,6 @@ public class Supplier extends BaseEntity {
     private String tradeName;
 
     /**
-     * Lista de contatos associados a este fornecedor.
-     * <p>Anotada com {@code @Transient} – não é persistida na tabela {@code suppliers}.
-     * A associação é mantida pela chave {@code supplierId} na entidade {@link SupplierContact}.</p>
-     */
-    @Transient
-    private List<SupplierContact> contacts = new ArrayList<>();
-
-    /**
      * Website do fornecedor.
      */
     private String website;
@@ -100,75 +88,6 @@ public class Supplier extends BaseEntity {
      * Observações internas sobre o fornecedor.
      */
     private String notes;
-
-    /**
-     * Lista de endereços associados a este fornecedor.
-     * <p>Anotada com {@code @Transient} – a persistência é feita via chave estrangeira {@code supplierId}
-     * na entidade {@link Address}.</p>
-     */
-    @Transient
-    private List<Address> addresses = new ArrayList<>();
-
-
-    /**
-     * Retorna o endereço principal do fornecedor, se existir.
-     * <p>Um endereço é considerado principal quando o método {@link Address#isMain()} retorna {@code true}.
-     * Na ausência de um endereço principal, o {@code Optional} será vazio.</p>
-     *
-     * @return {@code Optional} contendo o endereço principal, ou vazio se não houver
-     */
-    @Transient
-    public Optional<Address> getMainAddress() {
-        return addresses.stream()
-                .filter(Address::isMain)
-                .findFirst();
-    }
-
-    /**
-     * Adiciona um endereço à lista de endereços do fornecedor e define automaticamente o ID do fornecedor
-     * no endereço.
-     *
-     * @param address endereço a ser adicionado (não pode ser {@code null})
-     */
-    public void addAddress(Address address) {
-        address.setSupplierId(this.getId());
-        this.addresses.add(address);
-    }
-
-    /**
-     * Adiciona um contato à lista de contatos do fornecedor e define automaticamente o ID do fornecedor
-     * no contato.
-     *
-     * @param contact contato a ser adicionado (não pode ser {@code null})
-     */
-    public void addContact(SupplierContact contact) {
-        contact.setSupplierId(this.getId());
-        this.contacts.add(contact);
-    }
-
-    /**
-     * Remove um endereço da lista interna e desassocia o fornecedor (define {@code supplierId} como {@code null}).
-     *
-     * @param address endereço a ser removido; se {@code null}, o método não faz nada
-     */
-    public void removeAddress(Address address) {
-        if (address == null) return;
-        this.addresses.remove(address);
-        address.setSupplierId(null);
-    }
-
-    /**
-     * Remove um contato da lista interna e desassocia o fornecedor (define {@code supplierId} como {@code null}).
-     *
-     * @param contact contato a ser removido; se {@code null}, o método remove sem exceção
-     */
-    public void removeContact(SupplierContact contact) {
-        this.contacts.remove(contact);
-        if (contact != null) {
-            contact.setSupplierId(null);
-        }
-    }
-
 
     /**
      * Retorna a razão social do fornecedor.
@@ -225,17 +144,6 @@ public class Supplier extends BaseEntity {
     }
 
     /**
-     * Retorna uma visualização não modificável da lista de contatos.
-     * <p>Isso impede que a lista interna seja alterada externamente sem o uso dos métodos
-     * {@link #addContact(SupplierContact)} e {@link #removeContact(SupplierContact)}.</p>
-     *
-     * @return lista imutável de contatos
-     */
-    public List<SupplierContact> getContacts() {
-        return Collections.unmodifiableList(contacts);
-    }
-
-    /**
      * Retorna o website do fornecedor.
      *
      * @return URL do site
@@ -289,12 +197,4 @@ public class Supplier extends BaseEntity {
         this.notes = notes;
     }
 
-    /**
-     * Retorna uma visualização não modificável da lista de endereços.
-     *
-     * @return lista imutável de endereços
-     */
-    public List<Address> getAddresses() {
-        return Collections.unmodifiableList(addresses);
-    }
 }
