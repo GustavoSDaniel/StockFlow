@@ -47,4 +47,12 @@ public record AddressRequest(
                 if (country != null) country = country.trim();
                 if (label != null) label = label.trim();
         }
+
+        public boolean hasManualAddress(){
+
+                return street != null && !street.isBlank() &&
+                        neighborhood != null && !neighborhood.isBlank() &&
+                        city != null && !city.isBlank() &&
+                        stateUF != null;
+        }
 }

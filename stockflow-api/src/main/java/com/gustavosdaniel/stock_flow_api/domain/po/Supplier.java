@@ -57,7 +57,6 @@ public class Supplier extends BaseEntity {
         this.notes = notes;
     }
 
-
     /**
      * Razão social do fornecedor.
      */
