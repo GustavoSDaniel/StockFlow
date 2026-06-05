@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface SuppliersRepository extends R2dbcRepository<Supplier, UUID> {
 
     Mono<Boolean> existsByCnpj(String cnpj);
+    Mono<Supplier> findByCnpj(String cnpj);
 }
