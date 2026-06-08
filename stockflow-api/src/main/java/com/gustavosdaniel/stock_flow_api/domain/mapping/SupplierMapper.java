@@ -7,6 +7,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.AddressResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierContactResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
@@ -162,5 +163,19 @@ public class SupplierMapper {
                 address.getCountry(),
                 address.isMain()
         );
+    }
+
+    public SupplierSummaryResponse toSupplierSummaryResponse(Supplier supplier){
+
+        if (supplier == null) return null;
+
+        return new SupplierSummaryResponse(
+
+                supplier.getId(),
+                supplier.getCnpj(),
+                supplier.getName(),
+                supplier.getTradeName()
+        );
+
     }
 }

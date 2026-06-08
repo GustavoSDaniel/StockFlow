@@ -1,22 +1,22 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.SupplierMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
 import com.gustavosdaniel.stock_flow_api.domain.po.SupplierContact;
 import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
-import com.gustavosdaniel.stock_flow_api.exception.CnpjNotFoundException;
-import com.gustavosdaniel.stock_flow_api.exception.NameExistException;
+import com.gustavosdaniel.stock_flow_api.exception.SupplierNotFoundException;
 import com.gustavosdaniel.stock_flow_api.repository.AddressRepository;
 import com.gustavosdaniel.stock_flow_api.repository.SupplierContactRepository;
 import com.gustavosdaniel.stock_flow_api.repository.SuppliersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -33,15 +33,13 @@ public class SupplierService {
     private final SupplierContactRepository supplierContactRepository;
     private final SuppliersRepository suppliersRepository;
     private final SupplierMapper supplierMapper;
-    private final MappingContext mappingContext;
 
 
-    public SupplierService(AddressRepository addressRepository, SupplierContactRepository supplierContactRepository, SuppliersRepository suppliersRepository, SupplierMapper supplierMapper, MappingContext mappingContext) {
+    public SupplierService(AddressRepository addressRepository, SupplierContactRepository supplierContactRepository, SuppliersRepository suppliersRepository, SupplierMapper supplierMapper) {
         this.addressRepository = addressRepository;
         this.supplierContactRepository = supplierContactRepository;
         this.suppliersRepository = suppliersRepository;
         this.supplierMapper = supplierMapper;
-        this.mappingContext = mappingContext;
     }
 
     @Transactional
@@ -100,7 +98,7 @@ public class SupplierService {
     public Mono<SupplierResponse> findSupplierByCnpj(String cnpj){
 
         return suppliersRepository.findByCnpj(cnpj)
-                .switchIfEmpty(Mono.error(new CnpjNotFoundException()))
+                .switchIfEmpty(Mono.error(new SupplierNotFoundException()))
                 .doFirst(() -> log.info("Buscando fornecedor pelo numero do CNPJ {}", cnpj))
                 .flatMap(supplier -> {
 
@@ -122,5 +120,39 @@ public class SupplierService {
                 })
                 .doOnNext(suppler ->
                         log.info("Fornecedor encontrado com sucesso {}", suppler.name()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<SupplierSummaryResponse>> searchSupplierByName(String name, Pageable pageable){
+
+        return suppliersRepository.searchByName(name, pageable)
+                .doFirst(() -> log.info("Buscando fornecedor pelo nome: {}", name))
+                .map(supplierMapper::toSupplierSummaryResponse)
+                .collectList()
+                .zipWith(suppliersRepository.countByName(name))
+                .map(tuple -> (Page<SupplierSummaryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doOnSuccess(page ->
+                        log.info("Busca concluída, {} fornecedores encontrados para o nome {}, na pagina {}",
+                                page.getNumberOfElements(), name, pageable.getPageNumber())
+                );
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<SupplierSummaryResponse>> searchSupplierByTradeName(String tradeName, Pageable pageable){
+
+        return suppliersRepository.searchByTradeName(tradeName, pageable)
+                .doFirst(() -> log.info("Buscando fornecedor pelo nome fantasia: {}", tradeName))
+                .map(supplierMapper::toSupplierSummaryResponse)
+                .collectList()
+                .zipWith(suppliersRepository.countByTradeName(tradeName))
+                .map(tuple -> (Page<SupplierSummaryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doOnSuccess(page -> {
+                    log.info(
+                            "Busca concluída, {} fornecedores encontrados para o nome fantasia {}, " +
+                                    "na pagina {}",
+                            page.getNumberOfElements(), tradeName, pageable.getPageNumber());
+                });
     }
 }

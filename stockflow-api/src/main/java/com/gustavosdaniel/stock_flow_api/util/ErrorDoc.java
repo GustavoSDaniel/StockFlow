@@ -80,6 +80,14 @@ public class ErrorDoc {
                 "Verifique se o ID está correto.",
                 404
         ));
+        docs.put("fornecedor-nao-encontrado", new ErrorDocResponse(
+                "Fornecedor não encontrado",
+                "Não foi possível encontrar o fornecedor.",
+                "O dado fornecido não existe.",
+                "Verifique se o dado está correto.",
+                404
+        ));
+
     }
 
     public  Map<String, ErrorDocResponse> findAll(){

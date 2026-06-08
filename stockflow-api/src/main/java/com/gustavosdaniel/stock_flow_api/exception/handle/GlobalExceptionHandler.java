@@ -159,4 +159,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
     }
+
+    @ExceptionHandler(SupplierNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleSupplierNoitFound(SupplierNotFoundException exception){
+
+        log.warn("Fornecedor não encontrado {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ProblemType.SUPPLIER_NOT_FOUND,
+                exception.getMessage()
+        );
+    }
 }

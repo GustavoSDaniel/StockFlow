@@ -56,6 +56,11 @@ public enum ProblemType {
     INTERNAL_ERROR(
             "urn:stockflow:erro-interno",
             "Erro interno"
+    ),
+    SUPPLIER_NOT_FOUND(
+
+            "urn:stockflow:supplier-not-found",
+            "Fornecedor não encontrada"
     );
 
     private final URI uri;

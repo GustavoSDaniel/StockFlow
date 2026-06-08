@@ -79,7 +79,6 @@ public class UserService {
                         new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
                 .doFirst(() -> log.info("Buscando todos os usuários do sistema."))
                 .doOnSuccess(page -> {
-                    assert page != null;
                     log.info("O total de usuários encontrados foram de {}, usuários.",
                             page.getTotalElements());
                 });
@@ -96,7 +95,6 @@ public class UserService {
                         new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
                 .doFirst(() -> log.info("Iniciando busca por usuários com o nome: {}", userName))
                 .doOnSuccess(page -> {
-                    assert page != null;
                     log.info(
                             "Busca concluída, {} usuários encontrados para o nome {}, na pagina {}",
                             page.getNumberOfElements(), userName, pageable.getPageNumber());
