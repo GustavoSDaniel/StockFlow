@@ -1,6 +1,10 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.AddressResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierContactResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.SupplierMapper;
@@ -23,6 +27,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -154,5 +159,85 @@ public class SupplierService {
                                     "na pagina {}",
                             page.getNumberOfElements(), tradeName, pageable.getPageNumber());
                 });
+    }
+
+    @Transactional
+    public Mono<AddressResponse> addAddress(UUID supplierId,AddressRequest request){
+
+        return suppliersRepository.existsById(supplierId)
+                .flatMap(existSupplier -> {
+
+                    if (!existSupplier) return Mono.error(new SupplierNotFoundException());
+
+                    return supplierMapper.toAddress(supplierId, request)
+                            .flatMap(addressRepository::save);
+                })
+                .doFirst(() -> log.info("Adicionando endereço para o fornecedor: {}", supplierId))
+                .map(supplierMapper::toAddressResponse)
+                .doOnNext(resultado ->
+                        log.info("Endereço: {} adicionado com sucesso para o fornecedor: {}",
+                                resultado.id(), supplierId));
+    }
+
+    @Transactional
+    public Mono<Void> removeAddress(UUID addressId){
+
+        return addressRepository.findById(addressId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessRuleException("O endereço inserido náo existe")))
+                .flatMap(addressRepository::delete)
+                .doFirst(() -> log.warn("Iniciando processo para deletar endereço: {}", addressId))
+                .doOnSuccess(v -> log.info("Endereço deletado com sucesso"));
+    }
+
+    @Transactional
+    public Mono<SupplierContactResponse> addSupplierContact(
+            UUID supplierId, SupplierContactRequest request){
+
+        return suppliersRepository.existsById(supplierId)
+                .flatMap(existsSupplier -> {
+
+                    if (!existsSupplier) return Mono.error(new SupplierNotFoundException());
+
+                    SupplierContact  newContact = supplierMapper.toSupplierContact(supplierId, request);
+
+                    return supplierContactRepository.save(newContact);
+
+                })
+                .map(supplierMapper::toSupplierContactResponse)
+                .doFirst(() -> log.info("Adicionando um novo contato, para o fornecedor: {}", supplierId))
+                .doOnNext(resultado ->
+                        log.info("Contato: {}, adicionado com sucesso para o fornecedor {}",
+                                resultado.id(), supplierId));
+    }
+
+    @Transactional
+    public Mono<Void> removeContact(UUID contactId){
+
+        return supplierContactRepository.findById(contactId)
+                .switchIfEmpty(Mono.error(new BusinessRuleException("O contato inserido náo existe")))
+                .flatMap(supplierContactRepository::delete)
+                .doFirst(() -> log.warn("Iniciando processo para deletar contato: {}", contactId))
+                .doOnSuccess(v -> log.info("Contato deletado com sucesso"));
+    }
+
+    @Transactional
+    public Mono<Void> deleteSupplier(UUID supplierId){
+
+        return suppliersRepository.findById(supplierId)
+                .switchIfEmpty(Mono.error(new SupplierNotFoundException()))
+                .flatMap(supplier -> {
+
+                    Mono<Void> deleteContacts = supplierContactRepository.deleteAllBySupplierId(supplierId);
+                    Mono<Void> deleteAddress = addressRepository.deleteAllBySupplierId(supplierId);
+
+                    return Mono.when(deleteContacts, deleteAddress)
+                            .then(suppliersRepository.delete(supplier));
+
+                })
+                .doFirst(() -> log.warn("Iniciando processo para deletar fornecedor: {}. " +
+                                "Esse processo é irreversível e todos os contatos e endereços serão deletados junto.",
+                        supplierId))
+                .doOnSuccess(unused -> log.info("Fornecedor e suas dependências deletados com sucesso"));
     }
 }
