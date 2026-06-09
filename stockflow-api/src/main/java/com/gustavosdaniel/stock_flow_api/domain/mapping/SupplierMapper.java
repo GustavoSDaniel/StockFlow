@@ -4,10 +4,8 @@ import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepClient;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.AddressResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierContactResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierUpdateRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.*;
 import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
@@ -177,5 +175,35 @@ public class SupplierMapper {
                 supplier.getTradeName()
         );
 
+    }
+
+    public void toSupplierUpdateRequest(Supplier supplier, SupplierUpdateRequest request){
+
+        if (request.tradeName() != null && !request.tradeName().isBlank())
+            supplier.setTradeName(request.tradeName());
+
+        if (request.website() != null && !request.website().isBlank())
+            supplier.setWebsite(request.website());
+
+        if (request.minOrderValue() != null) supplier.setMinOrderValue(request.minOrderValue());
+
+        if (request.notes() != null && !request.notes().isBlank()) supplier.setNotes(request.notes());
+
+    }
+
+    public SupplierUpdateResponse toSupplierUpdateResponse(Supplier supplier){
+
+        if (supplier == null) return null;
+
+        return new SupplierUpdateResponse(
+
+                supplier.getId(),
+                supplier.getName(),
+                supplier.getCnpj(),
+                supplier.getTradeName(),
+                supplier.getWebsite(),
+                supplier.getMinOrderValue(),
+                supplier.getNotes()
+        );
     }
 }

@@ -39,6 +39,7 @@ public record SupplierRequest(
 
         if (name != null) name = name.trim();
         if (tradeName != null) tradeName = tradeName.trim();
-        if (cnpj != null)      cnpj      = cnpj.trim().replaceAll("[^0-9]", "");
+        if (cnpj != null) cnpj = cnpj.trim().replaceAll("[^0-9]", "");
+        if (website != null) website = website.trim();
     }
 }

@@ -3,10 +3,8 @@ package com.gustavosdaniel.stock_flow_api.service;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.AddressResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierContactResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierUpdateRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.*;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.SupplierMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
@@ -97,6 +95,20 @@ public class SupplierService {
                 .doOnNext(response ->
                         log.info("Fornecedor criado com sucesso: {}", response.name())
                 );
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<SupplierSummaryResponse>> getAllSupplier(Pageable pageable){
+
+        return suppliersRepository.findAllBy(pageable)
+                .map(supplierMapper::toSupplierSummaryResponse)
+                .collectList()
+                .zipWith(suppliersRepository.count())
+                .map(tuple -> (Page<SupplierSummaryResponse>)
+                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+                .doFirst(() -> log.info("Buscando todos os fornecedores"))
+                .doOnSuccess(response ->
+                        log.info("Total de fornecedores encontrados {}", response.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
@@ -219,6 +231,22 @@ public class SupplierService {
                 .flatMap(supplierContactRepository::delete)
                 .doFirst(() -> log.warn("Iniciando processo para deletar contato: {}", contactId))
                 .doOnSuccess(v -> log.info("Contato deletado com sucesso"));
+    }
+
+    @Transactional
+    public Mono<SupplierUpdateResponse> updateSupplier(UUID supplierId, SupplierUpdateRequest request){
+
+        return suppliersRepository.findById(supplierId)
+                .switchIfEmpty(Mono.error(new SupplierNotFoundException()))
+                .flatMap(supplier -> {
+
+                    supplierMapper.toSupplierUpdateRequest(supplier, request);
+                    return suppliersRepository.save(supplier);
+                })
+                .map(supplierMapper::toSupplierUpdateResponse)
+                .doFirst(() -> log.info("Atualizando informações do fornecedor: {}", supplierId))
+                .doOnNext(response ->
+                        log.info("Fornecedor: {} atualizado com sucesso", response.name()));
     }
 
     @Transactional
