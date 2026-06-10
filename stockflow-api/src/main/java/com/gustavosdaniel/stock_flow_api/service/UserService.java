@@ -8,6 +8,7 @@ import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.UnauthorizedException;
 import com.gustavosdaniel.stock_flow_api.exception.UserNotFoundException;
 import com.gustavosdaniel.stock_flow_api.repository.UserRepository;
+import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import com.gustavosdaniel.stock_flow_api.util.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,6 @@ public class UserService {
 
                         return userRepository.save(existingUser)
                                 .doOnSuccess(saveUSer -> {
-                                    assert saveUSer != null;
                                     log.info("Sincronização: Role do usuário {} atualizada para {}",
                                             saveUSer.getUserName(), roleFromToken);
                                 });
@@ -71,12 +71,13 @@ public class UserService {
     @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> findAllUsers(Pageable pageable) {
 
-        return userRepository.findAllBy(pageable)
-                .map(userMapper::toUserResponse)
-                .collectList()
-                .zipWith(userRepository.count())
-                .map(tuple -> (Page<UserResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        userRepository.findAllBy(pageable),
+                        userRepository.count(),
+                        userMapper::toUserResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todos os usuários do sistema."))
                 .doOnSuccess(page -> {
                     log.info("O total de usuários encontrados foram de {}, usuários.",
@@ -87,12 +88,13 @@ public class UserService {
     @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> searchUsersByName(String userName, Pageable pageable) {
 
-        return userRepository.searchByName(userName, pageable)
-                .map(userMapper::toUserResponse)
-                .collectList()
-                .zipWith(userRepository.countByName(userName))
-                .map(tuple -> (Page<UserResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        userRepository.searchByName(userName, pageable),
+                        userRepository.countByName(userName),
+                        userMapper::toUserResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Iniciando busca por usuários com o nome: {}", userName))
                 .doOnSuccess(page -> {
                     log.info(
@@ -153,8 +155,6 @@ public class UserService {
                             "Usuário {} ativado com sucesso", saved.getUserName()))
                     .then();
                 });
-
-
     }
 
 

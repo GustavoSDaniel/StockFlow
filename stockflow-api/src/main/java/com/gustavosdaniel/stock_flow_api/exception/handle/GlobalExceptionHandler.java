@@ -69,7 +69,6 @@ public class GlobalExceptionHandler {
                 "Erro de validação nos campos"
         );
 
-        assert response.getBody() != null;
         response.getBody().setProperty("fieldsErrors", errors);
 
         return response;
@@ -161,7 +160,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SupplierNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleSupplierNoitFound(SupplierNotFoundException exception){
+    public ResponseEntity<ProblemDetail> handleSupplierNotFound(SupplierNotFoundException exception){
 
         log.warn("Fornecedor não encontrado {}", exception.getMessage());
 

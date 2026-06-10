@@ -9,10 +9,10 @@ import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.CategoryNotFoundException;
 import com.gustavosdaniel.stock_flow_api.exception.NameExistException;
 import com.gustavosdaniel.stock_flow_api.repository.CategoryRepository;
+import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +56,7 @@ public class CategoryService {
     @Transactional
     public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId){
 
-        validadteSubCategory(parentId, childId);
+        validateSubCategory(parentId, childId);
 
         return Mono.zip(
                 categoryRepository.findById(parentId)
@@ -90,28 +90,27 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable){
 
-        return categoryRepository.findAllBy(pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.count())
-                .map(tuple -> (Page<CategoryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2())
-                )
-                .doFirst(() -> log.info("Buscando todas as categorias"))
-                .doOnSuccess(page -> log.info("Total de categorias encontradas foram de {}",
-                        page.getTotalElements()));
+        return PageUtils.toPage(
+                        categoryRepository.findAllBy(pageable),
+                        categoryRepository.count(),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+        ).doFirst(() -> log.info("Buscando todas as categorias"))
+                .doOnSuccess(page ->
+                        log.info("Total de categorias encontradas foram de {}", page.getTotalElements()));
 
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllActiveCategories(Pageable pageable){
 
-        return categoryRepository.findByIsActiveTrue(pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByIsActiveTrue())
-                .map(tuple -> (Page<CategoryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.findByIsActiveTrue(pageable),
+                        categoryRepository.countByIsActiveTrue(),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todas as categorias ativas"))
                 .doOnSuccess(page ->
                         log.info("Total de categorias ativas encontradas nesta página: {}",
@@ -121,87 +120,102 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> searchCategories(String name, Pageable pageable){
 
-        return categoryRepository.searchByName(name, pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByName(name))
-                .map(tuple -> (Page<CategoryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.searchByName(name, pageable),
+                        categoryRepository.countByName(name),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+
+        )
                 .doFirst(() -> log.info("Buscando categorias que contenham o nome: '{}'", name))
-                .doOnNext(page -> log.info("Total de categorias encontradas para '{}': {}",
+                .doOnNext(page ->
+                        log.info("Total de categorias encontradas para '{}': {}",
                         name, page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> searchActiveCategories(String name, Pageable pageable){
 
-        return categoryRepository.searchActiveByName(name, pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countActiveByName(name))
-                .map(tuple -> (Page<CategoryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.searchActiveByName(name, pageable),
+                        categoryRepository.countActiveByName(name),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+
+        )
                 .doFirst(() -> log.info("Buscando categorias ativas pelo nome {}",
                         name))
-                .doOnNext(page -> log.info("Total de categorias ativas encontradas para '{}': {}",
+                .doOnNext(page ->
+                        log.info("Total de categorias ativas encontradas para '{}': {}",
                         name, page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllSubCategories(UUID parentId, Pageable pageable){
 
-        return categoryRepository.findByParentId(parentId, pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByParentId(parentId))
-                .map(duple -> (Page<CategoryResponse>)
-                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.findByParentId(parentId, pageable),
+                        categoryRepository.countByParentId(parentId),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+
+        )
                 .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}", parentId))
-                .doOnNext(page -> log.info("Total de {} subcategorias encontradas para a categoria: {}",
+                .doOnNext(page ->
+                        log.info("Total de {} subcategorias encontradas para a categoria: {}",
                 page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllActiveSubCategories(UUID parentId, Pageable pageable){
 
-        return categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByParentIdAndIsActiveTrue(parentId))
-                .map(duple -> (Page<CategoryResponse>)
-                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable),
+                        categoryRepository.countByParentIdAndIsActiveTrue(parentId),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}",
                         parentId))
-                .doOnNext(page -> log.info("Total de {} subcategorias ativas encontradas para a categoria: {}",
+                .doOnNext(page ->
+                        log.info("Total de {} subcategorias ativas encontradas para a categoria: {}",
                         page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(UUID parentId, Pageable pageable){
 
-        return categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByParentIdAndIsActiveFalse(parentId))
-                .map(duple -> (Page<CategoryResponse>)
-                        new PageImpl<>(duple.getT1(), pageable, duple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable),
+                        categoryRepository.countByParentIdAndIsActiveFalse(parentId),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todas as subcategorias desativadas da categoria: {}",
                         parentId))
-                .doOnNext(page -> log.info("Total de {} subcategorias desativadas encontradas para a categoria: {}",
+                .doOnNext(page ->
+                        log.info("Total de {} subcategorias desativadas encontradas para a categoria: {}",
                         page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllDisabledCategories(Pageable pageable){
 
-        return categoryRepository.findByIsActiveFalse(pageable)
-                .map(categoryMapper::toCategoryResponse)
-                .collectList()
-                .zipWith(categoryRepository.countByIsActiveFalse())
-                .map(tuple -> (Page<CategoryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        categoryRepository.findByIsActiveFalse(pageable),
+                        categoryRepository.countByIsActiveFalse(),
+                        categoryMapper::toCategoryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todas as categorias que se encontra desativadas"))
-                .doOnNext(page -> log.info("Todas as categorias desativadas encontradaso: {}",
+                .doOnNext(page ->
+                        log.info("Todas as categorias desativadas encontradaso: {}",
                         page.getTotalElements()));
     }
 
@@ -240,7 +254,7 @@ public class CategoryService {
     @Transactional
     public Mono<Void> removeSubCategories(UUID parentId, UUID childId){
 
-        validadteSubCategory(parentId, childId);
+        validateSubCategory(parentId, childId);
 
         return Mono.zip(
 
@@ -334,7 +348,7 @@ public class CategoryService {
                 });
     }
 
-    private void validadteSubCategory(UUID parentId, UUID childId){
+    private void validateSubCategory(UUID parentId, UUID childId){
 
 
         if (parentId == null || childId == null)

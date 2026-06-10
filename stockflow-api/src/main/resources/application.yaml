@@ -4,7 +4,14 @@ server:
 spring:
   application:
     name: stock-flow-api
+
   r2dbc:
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 50
+      max-idle-time: 30m
+      max-acquire-time: 10s
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5051}/${POSTGRES_DB:db-stockflow}
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
@@ -14,15 +21,32 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  security:
+    oauth2:
+      resource server: #
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL:http://localhost:5052}/realms/${KEYCLOAK_REALM:stock-flow-realm}
+
 cache:
   ttl:
     default: 1800
 
-  security:
-    oauth2:
-      resource server:
-        jwt:
-          issuer-uri: ${KEYCLOAK_URL:http://localhost:5052}/realms/${KEYCLOAK_REALM:stock-flow-realm}
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+    instances:
+      viacep:
+        base-config: default
+        sliding-window-type: count_based
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
 
 keycloak:
   auth-server-url: ${KEYCLOAK_URL:http://localhost:5052}
@@ -33,4 +57,6 @@ keycloak:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+
 

@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.util;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.UserRole;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -8,10 +9,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Component
 public class SecurityUtils {

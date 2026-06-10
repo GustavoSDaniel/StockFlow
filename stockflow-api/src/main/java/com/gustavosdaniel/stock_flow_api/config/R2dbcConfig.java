@@ -1,6 +1,8 @@
 package com.gustavosdaniel.stock_flow_api.config;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +24,21 @@ import java.util.UUID;
 @EnableR2dbcAuditing(auditorAwareRef = "auditorAware")
 public class R2dbcConfig {
 
+    private final Logger log = LoggerFactory.getLogger(R2dbcConfig.class);
+
     @Bean
     public ReactiveAuditorAware<UUID> auditorAware() {
         return () -> ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(Authentication::isAuthenticated)
-                .map(auth -> UUID.fromString(auth.getName()))
+                .mapNotNull(auth -> {
+                    try {
+                        return UUID.fromString(auth.getName());
+                    } catch (IllegalArgumentException e) {
+                        log.warn("JWT subject is not a valid UUID: {}", auth.getName());
+                        return null;
+                    }
+                })
                 .switchIfEmpty(Mono.empty());
     }
 

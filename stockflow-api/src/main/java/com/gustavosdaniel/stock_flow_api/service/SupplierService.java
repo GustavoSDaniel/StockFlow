@@ -14,6 +14,7 @@ import com.gustavosdaniel.stock_flow_api.exception.SupplierNotFoundException;
 import com.gustavosdaniel.stock_flow_api.repository.AddressRepository;
 import com.gustavosdaniel.stock_flow_api.repository.SupplierContactRepository;
 import com.gustavosdaniel.stock_flow_api.repository.SuppliersRepository;
+import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -100,12 +101,13 @@ public class SupplierService {
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> getAllSupplier(Pageable pageable){
 
-        return suppliersRepository.findAllBy(pageable)
-                .map(supplierMapper::toSupplierSummaryResponse)
-                .collectList()
-                .zipWith(suppliersRepository.count())
-                .map(tuple -> (Page<SupplierSummaryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
+        return PageUtils.toPage(
+
+                        suppliersRepository.findAllBy(pageable),
+                        suppliersRepository.count(),
+                        supplierMapper::toSupplierSummaryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando todos os fornecedores"))
                 .doOnSuccess(response ->
                         log.info("Total de fornecedores encontrados {}", response.getTotalElements()));
@@ -142,15 +144,17 @@ public class SupplierService {
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> searchSupplierByName(String name, Pageable pageable){
 
-        return suppliersRepository.searchByName(name, pageable)
+        return PageUtils.toPage(
+
+                        suppliersRepository.searchByName(name, pageable),
+                        suppliersRepository.countByName(name),
+                        supplierMapper::toSupplierSummaryResponse,
+                        pageable
+        )
                 .doFirst(() -> log.info("Buscando fornecedor pelo nome: {}", name))
-                .map(supplierMapper::toSupplierSummaryResponse)
-                .collectList()
-                .zipWith(suppliersRepository.countByName(name))
-                .map(tuple -> (Page<SupplierSummaryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
                 .doOnSuccess(page ->
-                        log.info("Busca concluída, {} fornecedores encontrados para o nome {}, na pagina {}",
+                        log.info("Busca concluída, {} fornecedores encontrados para o nome {}, " +
+                                        "na pagina {}",
                                 page.getNumberOfElements(), name, pageable.getPageNumber())
                 );
     }
@@ -158,13 +162,15 @@ public class SupplierService {
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> searchSupplierByTradeName(String tradeName, Pageable pageable){
 
-        return suppliersRepository.searchByTradeName(tradeName, pageable)
+        return PageUtils.toPage(
+
+                        suppliersRepository.searchByTradeName(tradeName, pageable),
+                        suppliersRepository.countByTradeName(tradeName),
+                        supplierMapper::toSupplierSummaryResponse,
+                        pageable
+
+        )
                 .doFirst(() -> log.info("Buscando fornecedor pelo nome fantasia: {}", tradeName))
-                .map(supplierMapper::toSupplierSummaryResponse)
-                .collectList()
-                .zipWith(suppliersRepository.countByTradeName(tradeName))
-                .map(tuple -> (Page<SupplierSummaryResponse>)
-                        new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()))
                 .doOnSuccess(page -> {
                     log.info(
                             "Busca concluída, {} fornecedores encontrados para o nome fantasia {}, " +

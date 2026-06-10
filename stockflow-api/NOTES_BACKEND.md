@@ -1,320 +1,187 @@
-🔴 Problemas e Sugestões de Melhoria
+# 📊 Relatório Completo de Análise — StockFlow API
 
-1. 🔴 CRÍTICO — @Transactional com R2DBC não funciona como esperado
+**Data:** 2026-06-09  
+**Stack:** Java 21, Spring Boot 4.0.6, WebFlux, R2DBC, PostgreSQL, Redis, Keycloak  
+**Analisado por:** Claude Code (especialista Java/Spring Boot/WebFlux)
 
-Arquivos: CategoryService.java:35, SupplierService.java:48, UserService.java:41
-
-@Transactional  // ⚠️ Isso NÃO funciona com R2DBC da forma tradicional
-public Mono<CategoryResponse> createCategory(CategoryRequest request) { ... }
-
-Problema: Spring @Transactional é baseado em ThreadLocal, mas o WebFlux executa em event loop — uma requisição pode passar por múltiplas threads. O R2DBC requer
-TransactionalOperator ou um ConnectionFactoryTransactionManager configurado explicitamente.
-
-Por que é crítico: Suas operações que envolvem múltiplos saves (ex: createSupplier que salva supplier + contacts + addresses) podem ficar sem atomicidade real.
-Se um addressRepository.saveAll() falhar, o supplier já foi persistido.
-
-Sugestão:
-// Configurar TransactionManager
-@Bean
-public ReactiveTransactionManager transactionManager(
-ConnectionFactory connectionFactory) {
-return new R2dbcTransactionManager(connectionFactory);
-}
-
-// E no serviço usar TransactionalOperator ao invés de @Transactional
-private final TransactionalOperator transactionalOperator;
-
-public Mono<SupplierResponse> createSupplier(SupplierRequest request) {
-return suppliersRepository.existsByCnpj(request.cnpj())
-.flatMap(exists -> ...)
-.flatMap(supplier -> ...)
-.as(transactionalOperator::transactional);  // Garante atomicidade reativa
-}
-
-  ---
-2. 🟠 ALTO — SupplierMapper com efeito colateral (chamada HTTP)
-
-Arquivo: SupplierMapper.java:60-103
-
-public Mono<Address> toAddress(UUID supplierId, AddressRequest request) {
-return viaCepClient.findByAddressByZipCode(request.zipCode())  // HTTP call no mapper!
-.map(viaCep -> new Address(...))
-
-Problema: Mapper é um componente de transformação pura. Colocar uma chamada HTTP aqui viola o princípio de responsabilidade única e torna o código difícil de
-testar e entender. O nome toAddress sugere uma simples conversão, mas há uma operação de I/O assíncrona escondida.
-
-Sugestão: Mova a chamada ViaCEP para o SupplierService ou crie um AddressEnrichmentService:
-// No serviço:
-return addressEnrichmentService.enrichAddress(request)
-.map(enrichedData -> addressMapper.toAddress(supplierId, request, enrichedData));
-      
 ---
-3. 🟠 ALTO — Cache configurado mas não utilizado
 
-Arquivo: CacheConfig.java
 
-Problema: Você configurou ReactiveRedisTemplate, GenericJacksonJsonRedisSerializer, defaultCacheTtl... mas nenhum serviço usa @Cacheable, @CachePut, @CacheEvict
-ou o CacheManager reativo. A infraestrutura existe, o Redis está rodando, mas o cache não é aproveitado.
+## 🟠 ALTO (P2) — Performance e Resiliência
 
-Por que importa: Performance. Operações como findAllCategories, findByCnpj, searchByName são excelentes candidatas a cache. Sem cache, cada requisição bate no
-PostgreSQL.
 
-Sugestão: Para WebFlux, use o ReactiveRedisCacheManager:
-@Bean
-public ReactiveRedisCacheManager cacheManager(
-ReactiveRedisConnectionFactory factory, ObjectMapper mapper) {
-RedisCacheConfiguration config = RedisCacheConfiguration
-.defaultCacheConfig()
-.entryTtl(Duration.ofSeconds(defaultTtl))
-.serializeValuesWith(RedisSerializationContext.SerializationPair
-.fromSerializer(new GenericJacksonJsonRedisSerializer(mapper)));
-return ReactiveRedisCacheManager.builder(factory)
-.cacheDefaults(config)
-.build();
-}       
-E nos serviços:
-@Cacheable("categories")
-public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable) { ... }
-  
+### 2.3 — N+1 Queries no `findSupplierByCnpj` e `createSupplier`
+
+**Arquivo:** `SupplierService.java:117-142`
+
+**Problema:** Para buscar um fornecedor completo, são feitas 3 consultas separadas:
+1. `suppliersRepository.findByCnpj(cnpj)`
+2. `supplierContactRepository.findAllBySupplierId(supplerId)`
+3. `addressRepository.findAllBySupplierId(supplerId)`
+
+Embora executadas em paralelo via `Mono.zip`, cada uma é uma query separada ao banco. Para um sistema com muitos acessos, isso gera sobrecarga.
+
+**Sugestão:** Criar uma query customizada com JOIN quando necessário, ou cachear os contatos e endereços no Redis.
+
 ---
-4. 🟡 MÉDIO — Paginação manual duplicada
 
-Arquivos: CategoryService.java, SupplierService.java, UserService.java
 
-Este padrão aparece mais de 12 vezes:
-return repository.findAllBy(pageable)
-.map(mapper::toResponse)
-.collectList()
-.zipWith(repository.count())
-.map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
 
-Problema: Duplicação massiva. Qualquer mudança na lógica de paginação precisa ser replicada em 12+ lugares. Além disso, collectList() carrega todos os registros
-em memória antes de paginar — o banco já está paginando, mas você está bufferizando tudo.
+## 🟡 MÉDIO (P3) — Arquitetura e Boas Práticas
 
-Sugestão: Crie um utilitário reativo:
+### 3.1 — SupplierMapper com chamada HTTP (violação SRP)
+
+**Arquivo:** `SupplierMapper.java:60-103`
+
+**Problema:** O método `toAddress()` no mapper faz uma chamada HTTP ao ViaCEP. Um mapper deve ser **transformação pura** (dados → dados), sem efeitos colaterais de I/O.
+
+**Solução:** Mover a lógica do ViaCEP para o `SupplierService` ou criar um `AddressEnrichmentService`:
+
+```java
+// No SupplierService:
+return addressEnrichmentService.enrich(request)
+    .map(enriched -> supplierMapper.toAddress(supplierId, request, enriched));
+```
+
+
+---
+
+## 🟢 BAIXO (P4) — Código Limpo e Manutenibilidade
+
+### 4.1 — Typos e erros de grafia
+
+| Arquivo | Linha | Erro | Correção |
+|---------|-------|------|----------|
+| `UserService.java` | 52, 217 | `createUSer` | `createUser` |
+| `UserService.java` | 59 | `saveUSer` | `savedUser` |
+| `SupplierService.java` | 73 | `salvedContacts` | `savedContacts` |
+| `SecurityConfig.java` | 102 | `resourceAccess` com nome errado `stock-flow-app` | pode não bater com configuração do Keycloak |
+| `CategoryService.java` | 82 | `Adiconando` | `Adicionando` |
+| `CategoryService.java` | 218 | `encontradaso` | `encontradas` |
+| `SupplierService.java` | 205 | `náo` (acento agudo) | `não` (til) |
+| Vários lugares | vários | `validadte` | `validate` |
+| `GlobalExceptionHandler.java` | 24 | `localDateTime.now()` | deveria usar `Instant.now()` para UTC |
+
+### 4.2 — Logger: inconsistência `doOnNext` vs `doOnSuccess`
+
+**Arquivos:** `CategoryService.java`, `SupplierService.java`, `UserService.java`
+
+**Problema:** Para métodos retornando `Mono<Void>`:
+- `doOnNext` **nunca dispara** (não há elemento para emitir quando o tipo é Void)
+- `doOnSuccess` dispara corretamente
+
+Em `activeCategory()` (linha 249), `doOnNext` é usado mas nunca será chamado porque o retorno é `.then()` (Mono<Void>). O log "Categoria ativada com sucesso" nunca aparece.
+
+Em `disableCategory()` (linha 309), `doOnNext` funciona porque é chamado antes do `.then()` (ainda há um elemento Category).
+
+**Verificação sistemática necessária:** Todo `doOnNext` em fluxo que termina com `.then()` deve ser `doOnSuccess`.
+
+---
+
+### 4.3 — Logs em português misturados com código em inglês
+
+O código (nomes de classes, métodos, variáveis) está em inglês (correto para um projeto Java), mas os logs estão em português. Isso não é um problema grave, mas dificulta ferramentas de agregação de logs (ELK, Grafana) que esperam inglês.
+
+---
+
+### 4.4 — `PageUtils` como utility class — alternativa com extensão Reativa
+
+**Arquivo:** `PageUtils.java`
+
+**Problema:** O padrão `PageUtils.toPage(flux, count, mapper, pageable)` já é uma melhoria sobre a duplicação anterior, mas ainda requer passar 4 argumentos em cada chamada.
+
+**Sugestão:** Criar uma extensão reativa customizada:
+```java
 public class ReactivePageUtils {
-public static <T, R> Mono<Page<R>> toPage(
-Flux<T> data, Mono<Long> count,
-Function<T, R> mapper, Pageable pageable) {
-return data.map(mapper)
-.collectList()
-.zipWith(count)
-.map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
-}       
+    public static <T, R> Function<Flux<T>, Mono<Page<R>>> toPage(
+            Mono<Long> count, Function<T, R> mapper, Pageable pageable) {
+        return data -> data.map(mapper)
+            .collectList()
+            .zipWith(count)
+            .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+    }
 }
-  
+```
+
 ---
-5. 🟡 MÉDIO — Ausência de interfaces de serviço
 
-Problema: Todas as services são classes concretas (CategoryService, SupplierService, UserService). Não há interfaces como ICategoryService ou CategoryUseCase.
+### 4.5 — Repositórios: método `count()` nativo vs derivado
 
-Por que importa em Clean Architecture: A camada de domínio não deve depender de implementações concretas. Com interfaces, você consegue:
-- Testar controllers mockando serviços facilmente
-- Trocar implementações (ex: CachedSupplierService decorando SupplierServiceImpl)
-- Documentar o contrato da camada de serviço
+**Arquivos:** `CategoryRepository.java`, `SuppliersRepository.java`, `UserRepository.java`
 
-  ---
-6. 🟡 MÉDIO — Naming e typos
+**Problema:** Métodos como `countByIsActiveTrue()`, `countByParentId()`, etc., são derivados pelo Spring Data — funcionam, mas geram queries com performance imprevisível.
 
-┌─────────────────────────────────┬───────────────────────────────────┬───────────────────────────────┐
-│              Local              │             Problema              │           Sugestão            │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ SecurityConfig.java:29          │ /erros/** (typo)                  │ /errors/**                    │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ CategoryService.java:59,243,337 │ validadteSubCategory              │ validateSubCategory           │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ GlobalExceptionHandler.java:163 │ handleSupplierNoitFound           │ handleSupplierNotFound        │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ SupplierService.java:135        │ supplerId                         │ supplierId                    │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ CategoryService.java:154        │ duple                             │ tuple                         │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ ProblemType                     │ urn:stockflows: vs urn:stockflow: │ Inconsistente                 │
-├─────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
-│ Pacote domain.po                │ "PO" = JPA Persistent Object      │ domain.model ou domain.entity │
-└─────────────────────────────────┴───────────────────────────────────┴───────────────────────────────┘
+**Sugestão:** Para queries de contagem críticas, use `@Query` explícito com índices adequados.
 
-  ---
-7. 🟡 MÉDIO — ViaCepClient sem circuit breaker
-
-Arquivo: ViaCepClient.java
-
-Problema: Apenas timeout de 5 segundos. Se o ViaCEP estiver fora do ar, toda requisição de criação de fornecedor vai esperar 5 segundos antes do fallback. Sem
-circuit breaker, você paga esse custo em todas as requisições.
-
-Sugestão: Adicione Resilicence4j:
-<dependency>
-<groupId>io.github.resilience4j</groupId>
-<artifactId>resilience4j-reactor</artifactId>
-</dependency>
-@CircuitBreaker(name = "viacep", fallbackMethod = "fallbackAddress")
-public Mono<ViaCepResponse> findByAddressByZipCode(String zipCode) { ... }
-  
 ---
-8. 🟡 MÉDIO — SecurityConfig importa JAX-RS em projeto Spring
 
-Arquivo: SecurityConfig.java:3
+## 📊 Tabelas de Avaliação
 
-import jakarta.ws.rs.HttpMethod;  // JAX-RS? Em projeto Spring?
+### Arquitetura Limpa: 7.5/10
 
-Problema: Você está importando jakarta.ws.rs.HttpMethod em vez de org.springframework.http.HttpMethod. Funciona porque as constantes têm os mesmos valores, mas
-demonstra dependência errada e pode causar problemas se o JAX-RS não estiver no classpath em produção (funciona aqui porque o Keycloak admin client traz JAX-RS
-transitivamente).
+| Critério | Nota | Comentário |
+|----------|------|------------|
+| Separação de camadas | 9/10 | Controller → Service → Repository bem definida |
+| Domínio rico | 8/10 | Entidades com comportamento, enums inteligentes |
+| DTOs/Records | 9/10 | Separação clara request/response, imutabilidade |
+| Interfaces de serviço | 3/10 | Inexistentes — serviços são concretos |
+| Inversão de dependência | 6/10 | Boa injeção, mas sem abstrações |
+| Eventos de domínio | 7/10 | Iniciado mas não integrado |
 
-Sugestão: Troque para import org.springframework.http.HttpMethod;
+### Código Limpo: 7.0/10
 
-  ---
-9. 🟡 MÉDIO — Propagation loss no KeycloakService
+| Critério | Nota | Comentário |
+|----------|------|------------|
+| Nomenclatura | 7/10 | Bons nomes, mas com typos |
+| Imutabilidade | 9/10 | Records, BaseImmutableEntity — excelente |
+| DRY | 7/10 | PageUtils reduziu bastante a duplicação |
+| Tratamento de erros | 7/10 | Bom, mas AccessDeniedException errado |
+| Testabilidade | 6/10 | Testes existem mas incompletos |
+| Documentação | 8/10 | JavaDoc detalhado, OpenAPI bem configurada |
 
-Arquivo: KeycloakService.java:33
+### Performance: 5.5/10
 
-return Mono.fromRunnable(() -> { ... })
-.subscribeOn(Schedulers.boundedElastic())
-.then();
+| Critério | Nota | Comentário |
+|----------|------|------------|
+| Stack reativa | 9/10 | WebFlux + R2DBC é o caminho certo |
+| Cache | 2/10 | Infraestrutura pronta mas não utilizada |
+| Resiliência | 3/10 | resilience4j no pom mas sem uso |
+| Índices de banco | 8/10 | Flyway com índices parciais |
+| Transações | 4/10 | @Transactional com R2DBC é incerto |
+| Pool de conexões | 5/10 | Sem tuning explícito |
 
-Problema: Quando você muda para boundedElastic(), perde o contexto reativo (SecurityContext, tracing, MDC). Se o Keycloak lançar exceção, o log não terá
-informações de tracing da requisição original.
-
-Sugestão: Use Hooks.enableAutomaticContextPropagation() (Spring Boot 3.2+) ou propague manualmente com deferContextual.
-
-  ---
-10. 🟢 BAIXO — Falta de testes de controller e integração
-
-Problema: Você tem testes unitários para CategoryService e UserService, mas:
-- Nenhum teste para SupplierService (a service mais complexa)
-- Nenhum teste de controller (@WebFluxTest)
-- Nenhum teste de integração com Testcontainers (PostgreSQL, Redis)
-
-Para uma API reativa, @WebFluxTest + WebTestClient são extremamente valiosos.
-
-  ---
-11. 🟢 BAIXO — R2dbcConfig.auditorAware pode quebrar com UUID inválido
-
-Arquivo: R2dbcConfig.java:30
-
-.map(auth -> UUID.fromString(auth.getName()))
-
-Problema: auth.getName() retorna o sub do JWT, que no Keycloak é um UUID, mas se por qualquer motivo não for um UUID válido, UUID.fromString() lança
-IllegalArgumentException não tratada, causando 500.
-
-Sugestão: Trate o erro:
-.map(auth -> {
-try {
-return UUID.fromString(auth.getName());
-} catch (IllegalArgumentException e) {
-log.warn("JWT subject is not a valid UUID: {}", auth.getName());
-return null;  // ou UUID vazio
-}   
-})
-  
 ---
-12. 🟢 BAIXO — assert em código de produção
 
-Arquivos: GlobalExceptionHandler.java:72, UserService.java:60
+## 🎯 Plano de Ação Priorizado
 
-assert response.getBody() != null;
-assert saveUSer != null;
+| # | Prioridade | Ação | Esforço | Impacto |
+|---|-----------|------|---------|---------|
+| 1 | 🔴 P1 | Substituir `@Transactional` por `TransactionalOperator` | 4h | Integridade de dados |
+| 2 | 🔴 P1 | Adicionar `@EnableCaching` no `App.java` | 1min | Cache funcional |
+| 3 | 🔴 P1 | Corrigir indentação do `application.yaml` (`security` sob `spring`) | 5min | Configuração funcional |
+| 4 | 🔴 P1 | Corrigir import `AccessDeniedException` em `SecurityUtils` | 1min | Bug fix |
+| 5 | 🟠 P2 | Ativar `@Cacheable` nos serviços (agora com `@EnableCaching`) | 3h | Performance leitura |
+| 6 | 🟠 P2 | Adicionar `@CircuitBreaker` no ViaCEP | 1h | Resiliência |
+| 7 | 🟡 P3 | Corrigir dependência SpringDoc (webmvc → webflux) | 5min | Compatibilidade |
+| 8 | 🟡 P3 | Mover chamada ViaCEP do Mapper para Service | 2h | Arquitetura limpa |
+| 9 | 🟡 P3 | Integrar Domain Events com ApplicationEventPublisher | 3h | Desacoplamento |
+| 10 | 🟡 P3 | Adicionar interfaces de serviço | 2h | Clean Architecture |
+| 11 | 🟡 P3 | Configurar pool de conexões R2DBC | 30min | Performance |
+| 12 | 🟢 P4 | Corrigir typos e nomenclatura | 1h | Profissionalismo |
+| 13 | 🟢 P4 | Revisar `doOnNext` vs `doOnSuccess` em fluxos Void | 30min | Logs corretos |
+| 14 | 🟢 P4 | Adicionar testes para SupplierService e controllers | 6h | Qualidade |
 
-Problema: assert é desabilitado em produção (a JVM ignora com flag -da). Use validação real:
-if (response.getBody() == null) {
-return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-}
-  
 ---
-📈 Notas
 
-Arquitetura Limpa (Clean Architecture): 7.5 / 10
+## ✅ O que está Excelente
 
-┌─────────────────────────┬──────┬─────────────────────────────────────────────────────────┐
-│        Critério         │ Nota │                       Comentário                        │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ Separação de camadas    │ 9    │ Controller → Service → Repository bem definida          │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ Domínio rico            │ 8    │ Entidades com comportamento, enums inteligentes         │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ DTOs/Records            │ 9    │ Separação clara request/response, imutabilidade         │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ Interfaces de serviço   │ 3    │ Inexistentes — serviços são concretos                   │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ Inversão de dependência │ 6    │ Boa injeção, mas sem abstrações                         │
-├─────────────────────────┼──────┼─────────────────────────────────────────────────────────┤
-│ Eventos de domínio      │ 7    │ Iniciado mas não integrado (eventos não são publicados) │
-└─────────────────────────┴──────┴─────────────────────────────────────────────────────────┘
-
-Justificativa: Você tem 80% da estrutura correta. A base é sólida — domínio rico, DTOs separados, eventos de domínio iniciados. O que puxa a nota para baixo é a
-ausência de interfaces/abstrações entre camadas e o fato do SupplierMapper quebrar a pureza da camada de transformação com chamada HTTP.
-
-  ---
-Código Limpo (Clean Code): 7.0 / 10
-
-┌─────────────────────────────┬──────┬──────────────────────────────────────────────────────┐
-│          Critério           │ Nota │                      Comentário                      │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ Nomenclatura                │ 7    │ Bons nomes em geral, mas com typos e inconsistências │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ Imutabilidade               │ 9    │ Records, BaseImmutableEntity — excelente             │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ DRY (Don't Repeat Yourself) │ 5    │ Paginação duplicada 12+ vezes                        │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ Tratamento de erros         │ 7    │ Bom, mas assert em produção e fallback frágil        │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ Testabilidade               │ 6    │ Testes existem mas incompletos                       │
-├─────────────────────────────┼──────┼──────────────────────────────────────────────────────┤
-│ Documentação                │ 7    │ OpenAPI bem documentada, comentários úteis           │
-└─────────────────────────────┴──────┴──────────────────────────────────────────────────────┘
-
-Justificativa: O código é legível e bem organizado. A duplicação da paginação é o principal redutor. Os typos (validadte, supplerId, erros, duple) são pequenos
-mas frequentes. O uso de records e validações Jakarta é exemplar.
-
-  ---
-Performance: 6.0 / 10
-
-┌──────────────────┬──────┬───────────────────────────────────────────────────┐
-│     Critério     │ Nota │                    Comentário                     │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Stack reativa    │ 9    │ WebFlux + R2DBC é o caminho certo                 │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Cache            │ 2    │ Infraestrutura pronta, mas não utilizada          │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Resiliência      │ 3    │ Sem circuit breaker no ViaCEP                     │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Índices de banco │ 8    │ Flyway com índices parciais e únicos bem pensados │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Transações       │ 4    │ @Transactional com R2DBC é uma incógnita          │
-├──────────────────┼──────┼───────────────────────────────────────────────────┤
-│ Conexões         │ 6    │ Sem tuning explícito de pool                      │
-└──────────────────┴──────┴───────────────────────────────────────────────────┘
-
-Justificativa: A fundação reativa é excelente, mas você está deixando performance na mesa:
-- Redis existe mas não é usado — todo read vai ao PostgreSQL
-- ViaCEP sem circuit breaker — paga 5s de timeout em cascata
-- Transações potencialmente quebradas — risco de inconsistência de dados
-- Paginação com collectList() — bufferiza resultados que o banco já paginou
-
-  ---
-📊 Nota Final: 6.8 / 10
-
-▎ Contexto importante: O projeto não está finalizado e você está construindo sozinho. Para o estágio atual, a nota é promissora — a arquitetura base está no
-▎ caminho certo e os problemas apontados são todos solucionáveis com ajustes pontuais.
-
-Resumo: O que priorizar
-
-┌────────────┬──────────────────────────────────────────────────┬────────────────────────┐
-│ Prioridade │                       Ação                       │        Impacto         │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🔴 P1      │ Corrigir @Transactional → TransactionalOperator  │ Integridade de dados   │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟠 P2      │ Ativar cache Redis nos serviços                  │ Performance (leituras) │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟠 P3      │ Mover chamada ViaCEP do Mapper para Service      │ Arquitetura limpa      │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟡 P4      │ Extrair utilitário de paginação                  │ DRY, manutenibilidade  │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟡 P5      │ Adicionar interfaces de serviço                  │ Clean Architecture     │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟡 P6      │ Adicionar Circuit Breaker no ViaCEP              │ Resiliência            │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟢 P7      │ Corrigir typos e naming                          │ Profissionalismo       │
-├────────────┼──────────────────────────────────────────────────┼────────────────────────┤
-│ 🟢 P8      │ Adicionar testes de controller e SupplierService │ Qualidade              │
-└────────────┴──────────────────────────────────────────────────┴────────────────────────┘
+1. **Domínio rico e bem modelado** — `Category` com `addSubCategory`/`removeSubCategory`, `UserRole` com hierarquia `canManage()`, enums com comportamento
+2. **Uso de Records para DTOs** — imutabilidade, validação Jakarta, construtor compacto para sanitização
+3. **BaseEntity/BaseImmutableEntity** — reuso de auditoria com `@CreatedBy`, `@CreatedDate`, `@Version`
+4. **Conversores R2DBC customizados** — mapeamento limpo entre enums Java e VARCHAR no PostgreSQL
+5. **Flyway** para versionamento de schema (embora as migrations não estejam visíveis no diretório analisado)
+6. **OpenAPI/Swagger** bem documentada com tags, schemas de segurança e documentação de erros
+7. **Segurança bem granular** — regras específicas por endpoint e método HTTP no `SecurityConfig`
+8. **JWT role extraction** com fallback hierárquico (realm_access → resource_access → EMPLOYEE)
+9. **KeycloakService** com sincronização JIT de roles — evita Dual Write problem
+10. **ReactorContextConfig** com `Hooks.enableAutomaticContextPropagation()` — necessário para transações reativas
