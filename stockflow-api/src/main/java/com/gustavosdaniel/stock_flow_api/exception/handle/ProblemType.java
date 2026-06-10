@@ -61,6 +61,10 @@ public enum ProblemType {
 
             "urn:stockflow:supplier-not-found",
             "Fornecedor não encontrada"
+    ),
+    EXTERNAL_SERVICE(
+            "urn:stockflow:external-service",
+            "Serviço temporariamente indisponível"
     );
 
     private final URI uri;

@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.exception.handle;
 
 import com.gustavosdaniel.stock_flow_api.exception.*;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +29,7 @@ public class GlobalExceptionHandler {
 
         problemDetail.setType(type.getUri());
         problemDetail.setTitle(type.getTitle());
-        problemDetail.setProperty("timestamp", LocalDateTime.now());
+        problemDetail.setProperty("timestamp", Instant.now());
 
         return ResponseEntity.status(status).body(problemDetail);
     }
@@ -167,6 +169,18 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.NOT_FOUND,
                 ProblemType.SUPPLIER_NOT_FOUND,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ProblemDetail> handleCircuitBreaker(CallNotPermittedException exception){
+
+        log.warn("CircuitBreaker interceptou requisição: O serviço ViaCEP está fora do ar.");
+
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                ProblemType.EXTERNAL_SERVICE,
                 exception.getMessage()
         );
     }

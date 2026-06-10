@@ -43,10 +43,7 @@ resilience4j:
       viacep:
         base-config: default
         sliding-window-type: count_based
-  timelimiter:
-    configs:
-      default:
-        timeout-duration: 5s
+
 
 keycloak:
   auth-server-url: ${KEYCLOAK_URL:http://localhost:5052}

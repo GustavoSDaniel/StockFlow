@@ -32,11 +32,13 @@ public class ViaCepClient {
         return webClient.get()
                 .uri("/{zipCode}/json", zipCode)
                 .retrieve()
-                .onStatus(
-                        HttpStatusCode::isError,
-                        response -> Mono.error(new BusinessRuleException(
-                                "Erro ao consultar o ViaCEP"
-                        ))
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                        clientResponse.bodyToMono(String.class)
+                                .defaultIfEmpty("Sem corpo de resposta")
+                                .flatMap(body -> Mono.error(new BusinessRuleException(
+                                        String.format("Erro na API ViaCEP [Status: %s] - Detalhes: %s",
+                                                clientResponse.statusCode(), body)
+                                )))
                 )
                 .bodyToMono(ViaCepResponse.class)
                 .filter(response -> !response.erro())

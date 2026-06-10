@@ -33,38 +33,38 @@ public class CategoryService {
     }
 
     @Transactional
-    public Mono<CategoryResponse> createCategory(CategoryRequest request){
+    public Mono<CategoryResponse> createCategory(CategoryRequest request) {
 
-       return categoryRepository
-               .existsByNameIgnoreCase(request.name())
-               .flatMap(exists -> {
+        return categoryRepository
+                .existsByNameIgnoreCase(request.name())
+                .flatMap(exists -> {
 
-                   if (exists) return Mono.error(new NameExistException());
+                    if (exists) return Mono.error(new NameExistException());
 
-                   Category newCategory = categoryMapper.toCategory(request);
+                    Category newCategory = categoryMapper.toCategory(request);
 
-                   return categoryRepository.save(newCategory)
-                           .doFirst(() -> log.info("Iniciando processo de criar categoria"))
-                           .doOnNext(saveCategory -> log.info("Categoria: {} criada com sucesso",
-                                   saveCategory.getName()));
+                    return categoryRepository.save(newCategory)
+                            .doFirst(() -> log.info("Iniciando processo de criar categoria"))
+                            .doOnNext(saveCategory -> log.info("Categoria: {} criada com sucesso",
+                                    saveCategory.getName()));
 
-               })
+                })
 
-               .map(categoryMapper::toCategoryResponse);
+                .map(categoryMapper::toCategoryResponse);
     }
 
     @Transactional
-    public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId){
+    public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId) {
 
         validateSubCategory(parentId, childId);
 
         return Mono.zip(
-                categoryRepository.findById(parentId)
-                        .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
+                        categoryRepository.findById(parentId)
+                                .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
 
-                categoryRepository.findById(childId)
-                        .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
-        )
+                        categoryRepository.findById(childId)
+                                .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
+                )
                 .flatMap(tuple -> {
 
                     Category parent = tuple.getT1();
@@ -79,30 +79,30 @@ public class CategoryService {
 
                     return categoryRepository.save(child);
                 })
-                .doFirst(() -> log.info("Adiconando subCategoria: {} na categoria {}",
+                .doFirst(() -> log.info("Adicionando subCategoria: {} na categoria {}",
                         childId, parentId))
                 .doOnNext(savedChild -> log.info("Categoria {} vinculada com sucesso como subcategoria."
-                        ,savedChild.getName()))
+                        , savedChild.getName()))
                 .map(categoryMapper::toCategoryResponse);
 
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable) {
 
         return PageUtils.toPage(
                         categoryRepository.findAllBy(pageable),
                         categoryRepository.count(),
                         categoryMapper::toCategoryResponse,
                         pageable
-        ).doFirst(() -> log.info("Buscando todas as categorias"))
+                ).doFirst(() -> log.info("Buscando todas as categorias"))
                 .doOnSuccess(page ->
                         log.info("Total de categorias encontradas foram de {}", page.getTotalElements()));
 
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllActiveCategories(Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllActiveCategories(Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -110,15 +110,15 @@ public class CategoryService {
                         categoryRepository.countByIsActiveTrue(),
                         categoryMapper::toCategoryResponse,
                         pageable
-        )
+                )
                 .doFirst(() -> log.info("Buscando todas as categorias ativas"))
                 .doOnSuccess(page ->
                         log.info("Total de categorias ativas encontradas nesta página: {}",
-                        page.getNumberOfElements()));
+                                page.getNumberOfElements()));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> searchCategories(String name, Pageable pageable){
+    public Mono<Page<CategoryResponse>> searchCategories(String name, Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -127,15 +127,15 @@ public class CategoryService {
                         categoryMapper::toCategoryResponse,
                         pageable
 
-        )
+                )
                 .doFirst(() -> log.info("Buscando categorias que contenham o nome: '{}'", name))
                 .doOnNext(page ->
                         log.info("Total de categorias encontradas para '{}': {}",
-                        name, page.getTotalElements()));
+                                name, page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> searchActiveCategories(String name, Pageable pageable){
+    public Mono<Page<CategoryResponse>> searchActiveCategories(String name, Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -144,16 +144,16 @@ public class CategoryService {
                         categoryMapper::toCategoryResponse,
                         pageable
 
-        )
+                )
                 .doFirst(() -> log.info("Buscando categorias ativas pelo nome {}",
                         name))
                 .doOnNext(page ->
                         log.info("Total de categorias ativas encontradas para '{}': {}",
-                        name, page.getTotalElements()));
+                                name, page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllSubCategories(UUID parentId, Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllSubCategories(UUID parentId, Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -162,15 +162,15 @@ public class CategoryService {
                         categoryMapper::toCategoryResponse,
                         pageable
 
-        )
+                )
                 .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}", parentId))
                 .doOnNext(page ->
                         log.info("Total de {} subcategorias encontradas para a categoria: {}",
-                page.getTotalElements(), parentId));
+                                page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllActiveSubCategories(UUID parentId, Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllActiveSubCategories(UUID parentId, Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -178,16 +178,16 @@ public class CategoryService {
                         categoryRepository.countByParentIdAndIsActiveTrue(parentId),
                         categoryMapper::toCategoryResponse,
                         pageable
-        )
+                )
                 .doFirst(() -> log.info("Buscando todas as subcategorias da categoria: {}",
                         parentId))
                 .doOnNext(page ->
                         log.info("Total de {} subcategorias ativas encontradas para a categoria: {}",
-                        page.getTotalElements(), parentId));
+                                page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(UUID parentId, Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(UUID parentId, Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -195,16 +195,16 @@ public class CategoryService {
                         categoryRepository.countByParentIdAndIsActiveFalse(parentId),
                         categoryMapper::toCategoryResponse,
                         pageable
-        )
+                )
                 .doFirst(() -> log.info("Buscando todas as subcategorias desativadas da categoria: {}",
                         parentId))
                 .doOnNext(page ->
                         log.info("Total de {} subcategorias desativadas encontradas para a categoria: {}",
-                        page.getTotalElements(), parentId));
+                                page.getTotalElements(), parentId));
     }
 
     @Transactional(readOnly = true)
-    public Mono<Page<CategoryResponse>> findAllDisabledCategories(Pageable pageable){
+    public Mono<Page<CategoryResponse>> findAllDisabledCategories(Pageable pageable) {
 
         return PageUtils.toPage(
 
@@ -212,15 +212,15 @@ public class CategoryService {
                         categoryRepository.countByIsActiveFalse(),
                         categoryMapper::toCategoryResponse,
                         pageable
-        )
+                )
                 .doFirst(() -> log.info("Buscando todas as categorias que se encontra desativadas"))
                 .doOnNext(page ->
-                        log.info("Todas as categorias desativadas encontradaso: {}",
-                        page.getTotalElements()));
+                        log.info("Todas as categorias desativadas encontradas: {}",
+                                page.getTotalElements()));
     }
 
     @Transactional
-    public Mono<CategoryResponse> updateCategory(UUID categoryId ,CategoryUpdateRequest request){
+    public Mono<CategoryResponse> updateCategory(UUID categoryId, CategoryUpdateRequest request) {
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
@@ -235,7 +235,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public Mono<Void> activeCategory(UUID categoryId){
+    public Mono<Void> activeCategory(UUID categoryId) {
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
@@ -247,24 +247,24 @@ public class CategoryService {
                 })
                 .doFirst(() -> log.info("Ativando categoria {} que se encontra desativada",
                         categoryId))
-                .doOnNext(v -> log.info("Categoria ativada com sucesso"))
+                .doOnSuccess(v -> log.info("Categoria ativada com sucesso"))
                 .then();
     }
 
     @Transactional
-    public Mono<Void> removeSubCategories(UUID parentId, UUID childId){
+    public Mono<Void> removeSubCategories(UUID parentId, UUID childId) {
 
         validateSubCategory(parentId, childId);
 
         return Mono.zip(
 
-            categoryRepository.findById(parentId)
-                    .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
+                        categoryRepository.findById(parentId)
+                                .switchIfEmpty(Mono.error(new CategoryNotFoundException())),
 
-            categoryRepository.findById(childId)
-                    .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
+                        categoryRepository.findById(childId)
+                                .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
 
-        )
+                )
                 .flatMap(tuple -> {
 
                     Category parent = tuple.getT1();
@@ -287,13 +287,13 @@ public class CategoryService {
                 })
                 .doFirst(() -> log.info("Removendo subcategoria {}, da categoria {}",
                         parentId, childId))
-                .doOnNext(categoryRemoved -> log.info("Categoria, removida com sucesso"))
+                .doOnSuccess(categoryRemoved -> log.info("Categoria, removida com sucesso"))
                 .then();
 
     }
 
     @Transactional
-    public Mono<Void> disableCategory(UUID categoryId){
+    public Mono<Void> disableCategory(UUID categoryId) {
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
@@ -306,13 +306,13 @@ public class CategoryService {
                     return categoryRepository.save(category);
                 })
                 .doFirst(() -> log.info("Iniciando processo para desativa a categoria {}", categoryId))
-                .doOnNext(savedCategory -> log.info("Categoria {} desativada com sucesso",
+                .doOnSuccess(savedCategory -> log.info("Categoria {} desativada com sucesso",
                         savedCategory.getName()))
                 .then();
     }
 
     @Transactional
-    public Mono<Void> deleteCategory(UUID categoryId){
+    public Mono<Void> deleteCategory(UUID categoryId) {
 
         return categoryRepository.findById(categoryId)
                 .switchIfEmpty(Mono.error(new CategoryNotFoundException()))
@@ -332,7 +332,7 @@ public class CategoryService {
                 .then();
     }
 
-    private Mono<Category> validateNameDuplication(Category existingCategory ,String requestName){
+    private Mono<Category> validateNameDuplication(Category existingCategory, String requestName) {
 
         if (requestName == null || requestName.isBlank() ||
                 requestName.equalsIgnoreCase(existingCategory.getName()))
@@ -348,7 +348,7 @@ public class CategoryService {
                 });
     }
 
-    private void validateSubCategory(UUID parentId, UUID childId){
+    private void validateSubCategory(UUID parentId, UUID childId) {
 
 
         if (parentId == null || childId == null)

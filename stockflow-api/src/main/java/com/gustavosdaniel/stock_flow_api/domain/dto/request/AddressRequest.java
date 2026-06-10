@@ -10,7 +10,6 @@ public record AddressRequest(
 
         String label,
 
-        @NotBlank(message = "É obrigatório informar a rua do fornecedor")
         String street,
 
         @NotBlank(message = "É obrigatório informar o número do estabelecimento")
@@ -18,17 +17,14 @@ public record AddressRequest(
 
         String complement,
 
-        @NotBlank(message = "É obrigatório informar o bairro do fornecedor")
         String neighborhood,
 
-        @NotBlank(message = "É obrigatório informar a cidade")
         String city,
 
         @NotBlank(message = "O CEP do fornecedor é obrigatório")
         @Pattern(regexp = "\\d{8}", message = "CEP deve conter 8 dígitos numéricos")
         String zipCode,
 
-        @NotNull(message = "É obrigatório informar em qual estado está o fornecedor")
         StateUF stateUF,
 
         @NotBlank(message = "É obrigatório informar o país")

@@ -87,6 +87,13 @@ public class ErrorDoc {
                 "Verifique se o dado está correto.",
                 404
         ));
+        docs.put("servico-externo-indisponivel", new ErrorDocResponse(
+                "Serviço externo indisponível",
+                "O serviço de consulta de CEP está temporariamente indisponível.",
+                "O sistema de proteção (Circuit Breaker) foi ativado para evitar lentidão devido a instabilidades no ViaCEP.",
+                "Por favor, tente novamente em instantes. Se o problema persistir, insira os dados do endereço manualmente.",
+                503
+        ));
 
     }
 

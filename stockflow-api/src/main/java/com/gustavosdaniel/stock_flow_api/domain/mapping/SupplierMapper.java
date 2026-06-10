@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
 import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepClient;
+import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
@@ -21,13 +22,6 @@ import java.util.UUID;
 
 @Component
 public class SupplierMapper {
-
-    private final ViaCepClient viaCepClient;
-    private final Logger log = LoggerFactory.getLogger(SupplierMapper.class);
-
-    public SupplierMapper(ViaCepClient viaCepClient) {
-        this.viaCepClient = viaCepClient;
-    }
 
     public Supplier toSupplier(SupplierRequest request){
 
@@ -57,49 +51,43 @@ public class SupplierMapper {
         );
     }
 
-    public Mono<Address> toAddress(UUID supplierId, AddressRequest request){
+    public Address toAddress(UUID supplierId, AddressRequest request, ViaCepResponse viaCepResponse){
 
-        if (request == null) return Mono.empty();
+        if (request == null) return null;
 
-        return viaCepClient.findByAddressByZipCode(request.zipCode())
-                .map(viaCep -> new Address(
+        return new Address(
                         supplierId,
                         request.label(),
-                        viaCep.logradouro(),
+                        viaCepResponse.logradouro(),
                         request.streetNumber(),
                         request.complement(),
-                        viaCep.bairro(),
-                        viaCep.localidade(),
+                        viaCepResponse.bairro(),
+                        viaCepResponse.localidade(),
                         request.zipCode(),
-                        StateUF.fromName(viaCep.uf()),
+                        StateUF.fromName(viaCepResponse.uf()),
                         "Brasil",
                         request.isMain()
-                ))
-                .onErrorResume(e -> {
-                    log.warn("ViaCEP falhou ou CEP {} não encontrado. Usando fallback manual.",
-                            request.zipCode());
+                );
+    }
 
-                    if (!request.hasManualAddress()){
-                        return Mono.error(new BusinessRuleException(
-                                "ViaCEP indisponível. Preencha os campos: street," +
-                                        " neighborhood, city e stateUF manualmente."
-                        ));
-                    }
+    public Address toManualAddress(UUID supplierId, AddressRequest request) {
 
-                    return Mono.just(new Address(
-                            supplierId,
-                            request.label(),
-                            request.street(),
-                            request.streetNumber(),
-                            request.complement(),
-                            request.neighborhood(),
-                            request.city(),
-                            request.zipCode(),
-                            request.stateUF(),
-                            request.country() != null ? request.country() : "Brasil",
-                            request.isMain()
-                    ));
-                });
+        if (request == null) return null;
+
+        return new Address(
+
+                supplierId,
+                request.label(),
+                request.street(),
+                request.streetNumber(),
+                request.complement(),
+                request.neighborhood(),
+                request.city(),
+                request.zipCode(),
+                request.stateUF(),
+                request.country(),
+                request.isMain()
+        );
     }
 
     public SupplierResponse toSupplierResponse(

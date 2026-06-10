@@ -57,9 +57,9 @@ public class UserService {
                         existingUser.setRole(roleFromToken);
 
                         return userRepository.save(existingUser)
-                                .doOnSuccess(saveUSer -> {
+                                .doOnSuccess(saveUser -> {
                                     log.info("Sincronização: Role do usuário {} atualizada para {}",
-                                            saveUSer.getUserName(), roleFromToken);
+                                            saveUser.getUserName(), roleFromToken);
                                 });
 
                     }
@@ -151,7 +151,7 @@ public class UserService {
                     targetUser.setActive(true);
                     return userRepository.save(targetUser)
                             .doFirst(() -> log.info("Ativando usuário {}", targetUserId))
-                    .doOnNext(saved -> log.info(
+                    .doOnSuccess(saved -> log.info(
                             "Usuário {} ativado com sucesso", saved.getUserName()))
                     .then();
                 });
@@ -181,7 +181,7 @@ public class UserService {
 
             return userRepository.save(targetUser)
                     .doFirst(() -> log.info("Desativando usuário {}", targetUserId))
-                    .doOnNext(saved -> log.info(
+                    .doOnSuccess(saved -> log.info(
                             "Usuário {} desativado com sucesso", saved.getUserName()))
                     .then();
         });

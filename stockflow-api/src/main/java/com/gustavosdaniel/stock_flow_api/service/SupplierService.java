@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
+import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepClient;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
@@ -37,13 +38,16 @@ public class SupplierService {
     private final SupplierContactRepository supplierContactRepository;
     private final SuppliersRepository suppliersRepository;
     private final SupplierMapper supplierMapper;
+    private final ViaCepClient viaCepClient;
 
 
-    public SupplierService(AddressRepository addressRepository, SupplierContactRepository supplierContactRepository, SuppliersRepository suppliersRepository, SupplierMapper supplierMapper) {
+
+    public SupplierService(AddressRepository addressRepository, SupplierContactRepository supplierContactRepository, SuppliersRepository suppliersRepository, SupplierMapper supplierMapper, ViaCepClient viaCepClient) {
         this.addressRepository = addressRepository;
         this.supplierContactRepository = supplierContactRepository;
         this.suppliersRepository = suppliersRepository;
         this.supplierMapper = supplierMapper;
+        this.viaCepClient = viaCepClient;
     }
 
     @Transactional
@@ -70,20 +74,24 @@ public class SupplierService {
                                     .toSupplierContact(supplierId, contactRequest))
                             .toList();
 
-                    Mono<List<SupplierContact>> salvedContacts = supplierContactRepository
+                    Mono<List<SupplierContact>> savedContacts = supplierContactRepository
                             .saveAll(contactsToSave)
                             .collectList();
 
                     Mono<List<Address>> savedAddresses = Flux.fromIterable(supplierRequest.addresses())
-                            .flatMap(addressRequest -> supplierMapper
-                                    .toAddress(supplierId, addressRequest))
+                            .flatMap(addressRequest ->
+                                    viaCepClient.findByAddressByZipCode(addressRequest.zipCode())
+                                            .map(viaCepResponse ->
+                                                    supplierMapper.toAddress(
+                                                            supplierId, addressRequest, viaCepResponse))
+                            )
                             .collectList()
-                            .flatMap(addressesToSave -> addressRepository
-                                    .saveAll(addressesToSave).collectList());
+                            .flatMap(addressesToSave ->
+                                    addressRepository.saveAll(addressesToSave).collectList());
 
                     return Mono.zip(
                             Mono.just(supplierSave),
-                            salvedContacts,
+                            savedContacts,
                             savedAddresses
                     ).map(tuple -> {
 
@@ -187,7 +195,17 @@ public class SupplierService {
 
                     if (!existSupplier) return Mono.error(new SupplierNotFoundException());
 
-                    return supplierMapper.toAddress(supplierId, request)
+                    if (request.hasManualAddress()) {
+
+                        Address manualAddress = supplierMapper.toManualAddress(supplierId, request);
+
+                        return addressRepository.save(manualAddress);
+                    }
+
+                    return viaCepClient.findByAddressByZipCode(request.zipCode())
+                            .map(viaCepResponse ->
+                                    supplierMapper.toAddress(supplierId, request, viaCepResponse)
+                            )
                             .flatMap(addressRepository::save);
                 })
                 .doFirst(() -> log.info("Adicionando endereço para o fornecedor: {}", supplierId))
@@ -202,7 +220,7 @@ public class SupplierService {
 
         return addressRepository.findById(addressId)
                 .switchIfEmpty(Mono.error(
-                        new BusinessRuleException("O endereço inserido náo existe")))
+                        new BusinessRuleException("O endereço inserido não existe")))
                 .flatMap(addressRepository::delete)
                 .doFirst(() -> log.warn("Iniciando processo para deletar endereço: {}", addressId))
                 .doOnSuccess(v -> log.info("Endereço deletado com sucesso"));
