@@ -60,9 +60,9 @@ public class SupplierService {
                     if (existeCnpj) return Mono.error(
                             new BusinessRuleException("CNPJ já está cadastrado no sistema."));
 
-                    Supplier supplierSave = supplierMapper.toSupplier(supplierRequest);
+                    Supplier newSupplier = supplierMapper.toSupplier(supplierRequest);
 
-                    return suppliersRepository.save(supplierSave);
+                    return suppliersRepository.save(newSupplier);
                     
                 })
                 .flatMap(supplierSave -> {
