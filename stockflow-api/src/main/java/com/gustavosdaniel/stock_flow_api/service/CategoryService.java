@@ -106,8 +106,8 @@ public class CategoryService {
 
         return PageUtils.toPage(
 
-                        categoryRepository.findByIsActiveTrue(pageable),
-                        categoryRepository.countByIsActiveTrue(),
+                        categoryRepository.findByActiveTrue(pageable),
+                        categoryRepository.countByActiveTrue(),
                         categoryMapper::toCategoryResponse,
                         pageable
                 )
@@ -174,8 +174,8 @@ public class CategoryService {
 
         return PageUtils.toPage(
 
-                        categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable),
-                        categoryRepository.countByParentIdAndIsActiveTrue(parentId),
+                        categoryRepository.findByParentIdAndActiveTrue(parentId, pageable),
+                        categoryRepository.countByParentIdAndActiveTrue(parentId),
                         categoryMapper::toCategoryResponse,
                         pageable
                 )
@@ -191,8 +191,8 @@ public class CategoryService {
 
         return PageUtils.toPage(
 
-                        categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable),
-                        categoryRepository.countByParentIdAndIsActiveFalse(parentId),
+                        categoryRepository.findByParentIdAndActiveFalse(parentId, pageable),
+                        categoryRepository.countByParentIdAndActiveFalse(parentId),
                         categoryMapper::toCategoryResponse,
                         pageable
                 )
@@ -208,8 +208,8 @@ public class CategoryService {
 
         return PageUtils.toPage(
 
-                        categoryRepository.findByIsActiveFalse(pageable),
-                        categoryRepository.countByIsActiveFalse(),
+                        categoryRepository.findByActiveFalse(pageable),
+                        categoryRepository.countByActiveFalse(),
                         categoryMapper::toCategoryResponse,
                         pageable
                 )

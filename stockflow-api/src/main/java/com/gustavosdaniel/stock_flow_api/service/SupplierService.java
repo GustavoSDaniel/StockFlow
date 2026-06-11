@@ -213,7 +213,7 @@ public class SupplierService {
                 .map(supplierMapper::toAddressResponse)
                 .doOnNext(resultado ->
                         log.info("Endereço: {} adicionado com sucesso para o fornecedor: {}",
-                                resultado.id(), supplierId));
+                                resultado.street(), supplierId));
     }
 
     @Transactional

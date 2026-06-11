@@ -17,21 +17,21 @@ public interface CategoryRepository extends R2dbcRepository<Category, UUID> {
 
     Flux<Category> findAllBy(Pageable pageable);
 
-    Flux<Category> findByIsActiveTrue(Pageable pageable);
+    Flux<Category> findByActiveTrue(Pageable pageable);
 
-    Mono<Long> countByIsActiveTrue();
+    Mono<Long> countByActiveTrue();
 
     Flux<Category> findByParentId(UUID parentId,Pageable pageable);
 
-    Flux<Category> findByParentIdAndIsActiveTrue(UUID parentId,Pageable pageable);
+    Flux<Category> findByParentIdAndActiveTrue(UUID parentId,Pageable pageable);
 
-    Flux<Category> findByParentIdAndIsActiveFalse(UUID parentId,Pageable pageable);
+    Flux<Category> findByParentIdAndActiveFalse(UUID parentId,Pageable pageable);
 
     Mono<Long> countByParentId(UUID parentId);
 
-    Mono<Long> countByParentIdAndIsActiveTrue(UUID parentId);
+    Mono<Long> countByParentIdAndActiveTrue(UUID parentId);
 
-    Mono<Long> countByParentIdAndIsActiveFalse(UUID parentId);
+    Mono<Long> countByParentIdAndActiveFalse(UUID parentId);
 
     @Query("SELECT * FROM categories WHERE name ILIKE CONCAT('%', :name, '%')")
     Flux<Category> searchByName(String name, Pageable pageable);
@@ -45,7 +45,7 @@ public interface CategoryRepository extends R2dbcRepository<Category, UUID> {
     @Query("SELECT COUNT(*) FROM categories WHERE name ILIKE CONCAT('%', :name, '%') AND active = true")
     Mono<Long> countActiveByName(String name);
 
-    Flux<Category> findByIsActiveFalse(Pageable pageable);
+    Flux<Category> findByActiveFalse(Pageable pageable);
 
-    Mono<Long> countByIsActiveFalse();
+    Mono<Long> countByActiveFalse();
 }

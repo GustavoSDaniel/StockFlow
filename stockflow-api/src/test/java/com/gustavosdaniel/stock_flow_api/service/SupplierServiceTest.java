@@ -363,4 +363,218 @@ class SupplierServiceTest {
         verify(supplierMapper).toSupplierSummaryResponse(supplier);
 
     }
+
+    @Test
+    @DisplayName("Should with ssucesso by name supplier")
+    void searchSupplierByTradeName(){
+
+        UUID supplierId = UUID.randomUUID();
+        String cnpj = "11122233344455";
+        String name = "Fornecedor";
+        String tradeName = "Nome fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(532);
+
+        Pageable pageable = Pageable.unpaged();
+
+        Supplier supplier = new Supplier(name, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        SupplierSummaryResponse response = new SupplierSummaryResponse(
+                supplierId, cnpj, name, tradeName
+        );
+
+        when(suppliersRepository.searchByTradeName(tradeName, pageable)).thenReturn(Flux.just(supplier));
+        when(suppliersRepository.countByTradeName(tradeName)).thenReturn(Mono.just(1L));
+        when(supplierMapper.toSupplierSummaryResponse(supplier)).thenReturn(response);
+
+        Mono<Page<SupplierSummaryResponse>> output = supplierService
+                .searchSupplierByTradeName(tradeName, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(resultado ->{
+                    assertNotNull(resultado);
+                    assertEquals(1, resultado.getTotalElements(),
+                            "O banco deve retornar 1 elemento");
+                    assertEquals(1, resultado.getContent().size(),
+                            "Deve retornar 1 DTO");
+                    assertEquals(supplierId, resultado.getContent().get(0).id(),
+                            "O ID do fornecedor deve ser o mesmo que o 'supplierId'");
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).searchByTradeName(tradeName, pageable);
+        verify(suppliersRepository).countByTradeName(tradeName);
+        verify(supplierMapper).toSupplierSummaryResponse(supplier);
+
+    }
+
+    @Test
+    @DisplayName("Shoul with sucesso add address")
+    void addAddressManual(){
+
+        UUID supplierId = UUID.randomUUID();
+        String cnpj = "11122233344455";
+        String name = "Fornecedor";
+        String tradeName = "Nome fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(532);
+
+        UUID addressId = UUID.randomUUID();
+        String label = "Barraçao 1";
+        String street = "Rua dos programadores";
+        String streetNumber = "2233333";
+        String complement = "Perto do mar";
+        String neighborhood = "Bairro dos programadores";
+        String city = "Franca";
+        String zipCode = "11222666";
+        String country = "Brasil";
+        StateUF uf = StateUF.SP;
+        Boolean isMain = false;
+
+        Supplier supplier = new Supplier(name, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        AddressRequest request = new AddressRequest(
+                label, street, streetNumber, complement, neighborhood,
+                city, zipCode, uf ,country, isMain
+        );
+
+        Address address = new Address(
+                supplierId, label, street, streetNumber, complement, neighborhood,
+                city, zipCode, uf ,country, isMain
+        );
+        ReflectionTestUtils.setField(address, "id", addressId);
+
+        AddressResponse response = new AddressResponse(
+                addressId, label, street, streetNumber, complement, neighborhood, city, zipCode,
+                uf, country, isMain
+        );
+
+        when(suppliersRepository.existsById(supplierId)).thenReturn(Mono.just(true));
+        when(supplierMapper.toManualAddress(supplierId, request)).thenReturn(address);
+        when(addressRepository.save(any(Address.class))).thenReturn(Mono.just(address));
+        when(supplierMapper.toAddressResponse(address)).thenReturn(response);
+
+        Mono<AddressResponse> output = supplierService.addAddress(supplierId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertNotNull(resultado);
+                    assertEquals(address.getId(), resultado.id(), "O ID deve ser o mesmo");
+
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).existsById(supplierId);
+        verify(supplierMapper).toManualAddress(supplierId, request);
+        verify(addressRepository).save(any(Address.class));
+        verify(supplierMapper).toAddressResponse(address);
+    }
+
+    @Test
+    @DisplayName("Shoul with sucesso add address")
+    void addAddressViaCep(){
+
+        UUID supplierId = UUID.randomUUID();
+        String cnpj = "11122233344455";
+        String name = "Fornecedor";
+        String tradeName = "Nome fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(532);
+
+        UUID addressId = UUID.randomUUID();
+        String label = "Barraçao 1";
+        String street = "Rua dos programadores";
+        String streetNumber = "2233333";
+        String complement = "Perto do mar";
+        String neighborhood = "Bairro dos programadores";
+        String city = "Franca";
+        String zipCode = "11222666";
+        String country = "Brasil";
+        StateUF uf = StateUF.SP;
+        Boolean isMain = false;
+
+        Supplier supplier = new Supplier(name, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        AddressRequest request = new AddressRequest(
+                label, null, streetNumber, complement, null,
+                null, zipCode, null ,country, isMain
+        );
+
+        Address address = new Address(
+                supplierId, label, street, streetNumber, complement, neighborhood,
+                city, zipCode, uf ,country, isMain
+        );
+        ReflectionTestUtils.setField(address, "id", addressId);
+
+        AddressResponse response = new AddressResponse(
+                addressId, label, street, streetNumber, complement, neighborhood, city, zipCode,
+                uf, country, isMain
+        );
+
+        ViaCepResponse viaCepResponse = new ViaCepResponse(zipCode, street, complement, neighborhood,
+                city, "SP", false);
+
+        when(suppliersRepository.existsById(supplierId)).thenReturn(Mono.just(true));
+        when(viaCepClient.findByAddressByZipCode(request.zipCode()))
+                .thenReturn(Mono.just(viaCepResponse));
+        when(supplierMapper.toAddress(supplierId, request, viaCepResponse)).thenReturn(address);
+        when(addressRepository.save(any(Address.class))).thenReturn(Mono.just(address));
+        when(supplierMapper.toAddressResponse(address)).thenReturn(response);
+
+        Mono<AddressResponse> output = supplierService.addAddress(supplierId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertNotNull(resultado);
+                    assertEquals(address.getId(), resultado.id(), "O ID deve ser o mesmo");
+                    assertEquals(street, resultado.street(), "A rua deve ser a rua do ViaCEP");
+
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).existsById(supplierId);
+        verify(viaCepClient).findByAddressByZipCode(request.zipCode());
+        verify(supplierMapper).toAddress(supplierId, request, viaCepResponse);
+        verify(addressRepository).save(any(Address.class));
+        verify(supplierMapper).toAddressResponse(address);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso delete address")
+    void deleteAddress(){
+
+        UUID supplierId = UUID.randomUUID();
+
+        UUID addressId = UUID.randomUUID();
+        String label = "Barraçao 1";
+        String street = "Rua dos programadores";
+        String streetNumber = "2233333";
+        String complement = "Perto do mar";
+        String neighborhood = "Bairro dos programadores";
+        String city = "Franca";
+        String zipCode = "11222666";
+        String country = "Brasil";
+        StateUF uf = StateUF.SP;
+        Boolean isMain = false;
+
+        Address address = new Address(
+                supplierId, label, street, streetNumber, complement, neighborhood,
+                city, zipCode, uf ,country, isMain
+        );
+        ReflectionTestUtils.setField(address, "id", addressId);
+
+        when(addressRepository.findById(addressId)).thenReturn(Mono.just(address));
+        when(addressRepository.delete(any(Address.class))).thenReturn(Mono.empty());
+
+        Mono<Void> output = supplierService.removeAddress(addressId);
+
+        StepVerifier.create(output)
+                .verifyComplete();
+
+        verify(addressRepository).findById(addressId);
+        verify(addressRepository).delete(any(Address.class));
+    }
 }

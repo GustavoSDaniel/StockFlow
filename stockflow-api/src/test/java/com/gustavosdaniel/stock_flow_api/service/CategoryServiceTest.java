@@ -171,8 +171,8 @@ class CategoryServiceTest {
         CategoryResponse response2 = new CategoryResponse(
                 categoryId2, name1, description1, null, true);
 
-        when(categoryRepository.findByIsActiveTrue(pageable)).thenReturn(Flux.just(category, category2));
-        when(categoryRepository.countByIsActiveTrue()).thenReturn(Mono.just(2L));
+        when(categoryRepository.findByActiveTrue(pageable)).thenReturn(Flux.just(category, category2));
+        when(categoryRepository.countByActiveTrue()).thenReturn(Mono.just(2L));
         when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
         when(categoryMapper.toCategoryResponse(category2)).thenReturn(response2);
 
@@ -342,11 +342,11 @@ class CategoryServiceTest {
         CategoryResponse response2 =
                 new CategoryResponse(subcategoryId2, name2, description2, parentId, true);
 
-        when(categoryRepository.findByParentIdAndIsActiveTrue(parentId, pageable))
+        when(categoryRepository.findByParentIdAndActiveTrue(parentId, pageable))
                 .thenReturn(Flux.just(category, category3));
         when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
         when(categoryMapper.toCategoryResponse(category3)).thenReturn(response2);
-        when(categoryRepository.countByParentIdAndIsActiveTrue(parentId)).thenReturn(Mono.just(2L));
+        when(categoryRepository.countByParentIdAndActiveTrue(parentId)).thenReturn(Mono.just(2L));
 
         Mono<Page<CategoryResponse>> output = categoryService.findAllActiveSubCategories(parentId, pageable);
 
@@ -383,11 +383,11 @@ class CategoryServiceTest {
         CategoryResponse response2 =
                 new CategoryResponse(subcategoryId2, name2, description2, parentId, false);
 
-        when(categoryRepository.findByParentIdAndIsActiveFalse(parentId, pageable))
+        when(categoryRepository.findByParentIdAndActiveFalse(parentId, pageable))
                 .thenReturn(Flux.just(category, category3));
         when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
         when(categoryMapper.toCategoryResponse(category3)).thenReturn(response2);
-        when(categoryRepository.countByParentIdAndIsActiveFalse(parentId)).thenReturn(Mono.just(2L));
+        when(categoryRepository.countByParentIdAndActiveFalse(parentId)).thenReturn(Mono.just(2L));
 
         Mono<Page<CategoryResponse>> output = categoryService
                 .findAllDisabledSubCategories(parentId, pageable);
@@ -423,8 +423,8 @@ class CategoryServiceTest {
         CategoryResponse response2 = new CategoryResponse(
                 categoryId2, name1, description1, null, false);
 
-        when(categoryRepository.findByIsActiveFalse(pageable)).thenReturn(Flux.just(category, category2));
-        when(categoryRepository.countByIsActiveFalse()).thenReturn(Mono.just(2L));
+        when(categoryRepository.findByActiveFalse(pageable)).thenReturn(Flux.just(category, category2));
+        when(categoryRepository.countByActiveFalse()).thenReturn(Mono.just(2L));
         when(categoryMapper.toCategoryResponse(category)).thenReturn(response);
         when(categoryMapper.toCategoryResponse(category2)).thenReturn(response2);
 
