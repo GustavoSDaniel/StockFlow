@@ -135,7 +135,8 @@ public class SupplierService {
                             .findAllBySupplierId(supplerId)
                             .collectList();
 
-                    Mono<List<Address>> address = addressRepository.findAllBySupplierId(supplerId)
+                    Mono<List<Address>> address = addressRepository
+                            .findAllBySupplierId(supplerId)
                             .collectList();
 
                     return Mono.zip(
@@ -146,7 +147,7 @@ public class SupplierService {
                             .toSupplierResponse(tuple.getT1(), tuple.getT2(), tuple.getT3()));
                 })
                 .doOnNext(suppler ->
-                        log.info("Fornecedor encontrado com sucesso {}", suppler.name()));
+                        log.info("Fornecedor encontrado com sucesso: '{}'", suppler.name()));
     }
 
     @Transactional(readOnly = true)
@@ -163,7 +164,7 @@ public class SupplierService {
                 .doOnSuccess(page ->
                         log.info("Busca concluída, {} fornecedores encontrados para o nome {}, " +
                                         "na pagina {}",
-                                page.getNumberOfElements(), name, pageable.getPageNumber())
+                                page.getNumberOfElements(), name, page.getNumber())
                 );
     }
 
@@ -183,7 +184,7 @@ public class SupplierService {
                     log.info(
                             "Busca concluída, {} fornecedores encontrados para o nome fantasia {}, " +
                                     "na pagina {}",
-                            page.getNumberOfElements(), tradeName, pageable.getPageNumber());
+                            page.getNumberOfElements(), tradeName, page.getNumber());
                 });
     }
 
