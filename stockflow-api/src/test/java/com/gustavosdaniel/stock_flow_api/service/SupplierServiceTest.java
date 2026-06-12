@@ -5,10 +5,8 @@ import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.AddressResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierContactResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.SupplierSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierUpdateRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.*;
 import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.SupplierMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
@@ -576,5 +574,187 @@ class SupplierServiceTest {
 
         verify(addressRepository).findById(addressId);
         verify(addressRepository).delete(any(Address.class));
+    }
+
+    @Test
+    @DisplayName("Should with sucesso add contact")
+    void addContact(){
+
+        UUID supplierId = UUID.randomUUID();
+
+        UUID contactId = UUID.randomUUID();
+        String contactName = "Gustavo";
+        String email = "gustavo@gmail.com";
+        String phoneNumber = "16122334455";
+
+        SupplierContactRequest request = new SupplierContactRequest(
+                contactName, email, phoneNumber
+        );
+
+        SupplierContact newContact = new SupplierContact(
+                supplierId, contactName, email, phoneNumber
+        );
+        ReflectionTestUtils.setField(newContact, "id", contactId);
+
+        SupplierContactResponse response = new SupplierContactResponse(
+                contactId, contactName, email, phoneNumber
+        );
+
+        when(suppliersRepository.existsById(supplierId)).thenReturn(Mono.just(true));
+        when(supplierMapper.toSupplierContact(supplierId, request)).thenReturn(newContact);
+        when(supplierContactRepository.save(any(SupplierContact.class))).thenReturn(Mono.just(newContact));
+        when(supplierMapper.toSupplierContactResponse(newContact)).thenReturn(response);
+
+        Mono<SupplierContactResponse> output = supplierService.addSupplierContact(supplierId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertNotNull(resultado);
+                    assertEquals(newContact.getId(), resultado.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).existsById(supplierId);
+        verify(supplierMapper).toSupplierContact(supplierId, request);
+        verify(supplierContactRepository).save(any(SupplierContact.class));
+        verify(supplierMapper).toSupplierContactResponse(newContact);
+
+    }
+
+    @Test
+    @DisplayName("Should with sucesso remove contact")
+    void removeContact(){
+
+        UUID supplierId = UUID.randomUUID();
+
+        UUID contactId = UUID.randomUUID();
+        String contactName = "Gustavo";
+        String email = "gustavo@gmail.com";
+        String phoneNumber = "16122334455";
+
+        SupplierContact contact = new SupplierContact(
+                supplierId, contactName, email, phoneNumber
+        );
+        ReflectionTestUtils.setField(contact, "id", contactId);
+
+        when(supplierContactRepository.findById(contactId)).thenReturn(Mono.just(contact));
+        when(supplierContactRepository.delete(any(SupplierContact.class))).thenReturn(Mono.empty());
+
+        Mono<Void> output = supplierService.removeContact(contactId);
+
+        StepVerifier.create(output)
+                .verifyComplete();
+
+        verify(supplierContactRepository).findById(contactId);
+        verify(supplierContactRepository).delete(any(SupplierContact.class));
+    }
+
+    @Test
+    @DisplayName("Should with sucesso update supplier")
+    void updateSupplier(){
+
+        UUID supplierId = UUID.randomUUID();
+        String name = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        String tradeNameUpdate = "Nome fantazia atualizada";
+        String webSite = "meusite.com";
+        BigDecimal minOrderValueUpdate = BigDecimal.valueOf(200);
+
+        SupplierUpdateRequest request = new SupplierUpdateRequest(
+                tradeNameUpdate,webSite, minOrderValueUpdate, null
+        );
+
+        Supplier supplier = new Supplier(name, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        SupplierUpdateResponse response = new SupplierUpdateResponse(
+                supplierId, name, cnpj, tradeNameUpdate, webSite, minOrderValueUpdate, null
+        );
+
+        when(suppliersRepository.findById(supplierId)).thenReturn(Mono.just(supplier));
+        doNothing().when(supplierMapper)
+                .toSupplierUpdateRequest(any(Supplier.class), any(SupplierUpdateRequest.class));
+        when(suppliersRepository.save(any(Supplier.class))).thenReturn(Mono.just(supplier));
+        when(supplierMapper.toSupplierUpdateResponse(supplier)).thenReturn(response);
+
+        Mono<SupplierUpdateResponse> output = supplierService.updateSupplier(supplierId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertNotNull(resultado);
+                    assertEquals(supplier.getId(), resultado.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).findById(supplierId);
+        verify(suppliersRepository, times(1)).findById(supplierId);
+        verify(suppliersRepository).save(any(Supplier.class));
+        verify(suppliersRepository, times(1)).save(any(Supplier.class));
+        verify(supplierMapper).toSupplierUpdateResponse(supplier);
+
+    }
+
+    @Test
+    @DisplayName("Should with sucesso delete Supplier")
+    void deleteSupplier(){
+
+        UUID contactId = UUID.randomUUID();
+        String contactName = "Gustavo";
+        String email = "gustavo@gmail.com";
+        String phoneNumber = "16122334455";
+
+        UUID addressId = UUID.randomUUID();
+        String label = "Barraçao 1";
+        String street = "Rua dos programadores";
+        String streetNumber = "2233333";
+        String complement = "Perto do mar";
+        String neighborhood = "Bairro dos programadores";
+        String city = "Franca";
+        String zipCode = "11222666";
+        String country = "Brasil";
+        StateUF uf = StateUF.SP;
+        Boolean isMain = false;
+
+        UUID supplierId = UUID.randomUUID();
+        String name = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        Supplier supplier = new Supplier(name, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        SupplierContact contact = new SupplierContact(
+                supplierId, contactName, email, phoneNumber
+        );
+        ReflectionTestUtils.setField(contact, "id", contactId);
+
+        Address address = new Address(
+                supplierId, label, street, streetNumber, complement, neighborhood,
+                city, zipCode, uf ,country, isMain
+        );
+        ReflectionTestUtils.setField(address, "id", addressId);
+
+        when(suppliersRepository.findById(supplierId)).thenReturn(Mono.just(supplier));
+        when(supplierContactRepository.deleteAllBySupplierId(supplierId)).thenReturn(Mono.empty());
+        when(addressRepository.deleteAllBySupplierId(supplierId)).thenReturn(Mono.empty());
+        when(suppliersRepository.delete(any(Supplier.class))).thenReturn(Mono.empty());
+
+        Mono<Void> output = supplierService.deleteSupplier(supplierId);
+
+        StepVerifier.create(output)
+                .verifyComplete();
+
+        verify(suppliersRepository).findById(supplierId);
+        verify(suppliersRepository, times(1)).findById(supplierId);
+        verify(supplierContactRepository).deleteAllBySupplierId(supplierId);
+        verify(addressRepository).deleteAllBySupplierId(supplierId);
+        verify(suppliersRepository).delete(any(Supplier.class));
+
     }
 }
