@@ -78,8 +78,6 @@ public class Product extends BaseEntity {
         this.barcode = barcode;
     }
 
-    // ======================== ATRIBUTOS ========================
-
     /**
      * Nome do produto (ex.: "Smartphone XYZ").
      */
@@ -169,13 +167,13 @@ public class Product extends BaseEntity {
      * @return margem percentual (ex.: 25.50 para 25,5%), ou {@code BigDecimal.ZERO} se não for possível calcular
      */
     public BigDecimal calculateMargin() {
-        if (costPrice == null || costPrice.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
         if (salePrice == null || salePrice.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        return salePrice.subtract(costPrice)
+
+        BigDecimal safeCost = (costPrice == null) ? BigDecimal.ZERO : costPrice;
+
+        return salePrice.subtract(safeCost)
                 .divide(salePrice, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
