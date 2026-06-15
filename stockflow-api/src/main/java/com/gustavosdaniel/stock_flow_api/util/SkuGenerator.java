@@ -1,14 +1,16 @@
 package com.gustavosdaniel.stock_flow_api.util;
 
 import java.text.Normalizer;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SkuGenerator {
+
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private SkuGenerator(){}
 
     public static String generate(
-
             String categoryName,
             String supplierName,
             String productName
@@ -17,9 +19,10 @@ public class SkuGenerator {
         String supplier = sanitize(supplierName, 4);
         String product = sanitize(productName, 4);
         String random = randomAlphanumeric(4);
+        String counter = String.format("%04d", COUNTER.incrementAndGet() % 10000);
 
-        return String.format("%s-%s-%s-%s",
-                category, supplier, product, random);
+        return String.format("%s-%s-%s-%s-%s",
+                category, supplier, product, random, counter);
     }
 
     private static String sanitize(String value, int length){
@@ -30,19 +33,17 @@ public class SkuGenerator {
                 .replaceAll("[^\\p{ASCII}]", "")
                 .replaceAll("[^A-Za-z0-9]", "")
                 .toUpperCase();
-        return sanitized.substring(0, Math.min(length, value.length()));
+        return sanitized.substring(0, Math.min(length, sanitized.length()));
     }
 
     private static String randomAlphanumeric(int length) {
 
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random();
-        StringBuilder stringBuilder = new StringBuilder();
 
-        for (int i = 0; i < length; i++) {
-            stringBuilder.append(chars.charAt(random.nextInt(chars.length())));
-        }
-
-        return stringBuilder.toString();
+        return ThreadLocalRandom.current()
+                .ints(length, 0, chars.length())
+                .mapToObj(chars::charAt)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
     }
 }
