@@ -184,4 +184,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
     }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProductNotFound(ProductNotFoundException exception){
+
+        log.warn("Produto não encontrado {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ProblemType.PRODUCT_NOT_FOUND,
+                exception.getMessage()
+        );
+    }
 }

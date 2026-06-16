@@ -2,24 +2,29 @@ package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
+import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.ProductMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
 import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.CategoryNotFoundException;
+import com.gustavosdaniel.stock_flow_api.exception.ProductNotFoundException;
 import com.gustavosdaniel.stock_flow_api.exception.SupplierNotFoundException;
 import com.gustavosdaniel.stock_flow_api.repository.CategoryRepository;
 import com.gustavosdaniel.stock_flow_api.repository.ProductRepository;
 import com.gustavosdaniel.stock_flow_api.repository.SuppliersRepository;
+import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import com.gustavosdaniel.stock_flow_api.util.SkuGenerator;
-import org.apache.commons.lang3.function.Suppliers;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -80,6 +85,130 @@ public class ProductService {
                         log.info("Produto: {} criado com SKU: {}", response.name(), response.sku()));
     }
 
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> allProducts(Pageable pageable){
+
+        return PageUtils.toPage(
+                productRepository.findAllBy(pageable),
+                productRepository.count(),
+                productMapper::toProductResponse,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando todos os produtos"))
+                .doOnNext(page ->
+                        log.info("Todos os produtos: {} encontrados com sucesso", page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> findAllProductsByStatus(ProductStatus status, Pageable pageable){
+
+        return PageUtils.toPage(
+                productRepository.findAllByStatus(status, pageable),
+                productRepository.countByStatus(status),
+                productMapper::toProductResponse,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando todos os produtos de acordo com o status inserido"))
+                .doOnNext(page ->
+                        log.info("Produtos encontrados de acordo com o status: {}", status));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> findProductByCategory(UUID categoryId, Pageable pageable){
+
+        return categoryRepository.existsById(categoryId)
+                .flatMap(exists -> {
+
+                    if (!exists) return Mono.error(new CategoryNotFoundException());
+
+                    return PageUtils.toPage(
+                            productRepository.findAllByCategoryId(categoryId, pageable),
+                            productRepository.countByCategoryId(categoryId),
+                            productMapper::toProductResponse,
+                            pageable
+                    );
+                })
+                .doFirst(() -> log.info("Buscando produtos da categoria: {}", categoryId))
+                .doOnNext(page ->
+                        log.info("Quantidade: {} de produtos encontrados da categoria: {}",
+                                page.getTotalElements(), categoryId));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> findProductBySupplier(UUID supplierId, Pageable pageable){
+
+        return suppliersRepository.existsById(supplierId)
+                .flatMap(existSupplier -> {
+
+                    if (!existSupplier) return Mono.error(new SupplierNotFoundException());
+
+                    return PageUtils.toPage(
+                            productRepository.findAllBySupplierId(supplierId, pageable),
+                            productRepository.countBySupplierId(supplierId),
+                            productMapper::toProductResponse,
+                            pageable
+                    );
+                })
+                .doFirst(() -> log.info("Buscando produtos do fornecedor: {}", supplierId))
+                .doOnNext(page ->
+                        log.info("Quantidade: {} de produtos encontrados do fornecedor: {}",
+                                page.getTotalElements(), supplierId));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<ProductResponse> getProductById(UUID id){
+
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .map(productMapper::toProductResponse)
+                .doFirst(() -> log.info("Buscando produto pelo ID: {}", id))
+                .doOnNext(response ->
+                        log.info("Produto: {}, com o ID: {} encontrado com sucesso",
+                                response.name(), response.id()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<ProductResponse> getProductSku(String sku){
+
+        return productRepository.findBySku(sku)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .map(productMapper::toProductResponse)
+                .doFirst(() -> log.info("Buscando produto pelo SKU: {}", sku))
+                .doOnNext(response ->
+                        log.info("Produto: {}, com SKU {} encontrado com sucesso",
+                                response.name(), response.sku()));
+
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> searchName(String name, Pageable pageable){
+
+        return PageUtils.toPage(
+                productRepository.searchByName(name, pageable),
+                productRepository.countByName(name),
+                productMapper::toProductResponse,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando Produto pelo nome: {}", name))
+                .doOnNext(page ->
+                        log.info("Produtos com o nome: {} encontrados com sucesso", name));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<ProductResponse>> searchNameByStatus(String name, ProductStatus status, Pageable pageable){
+
+        return PageUtils.toPage(
+                productRepository.searchNameAndStatus(name, status, pageable),
+                productRepository.countNameAndStatus(name, status),
+                productMapper::toProductResponse,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando produtos pelo nome: {} e status: {}", name, status))
+                .doOnNext(page ->
+                        log.info("Produtos encontrados: {}, com o nome: {} e status: {}",
+                                page.getTotalElements(), name, status));
+    }
+
     private Mono<String> generateUniqueSku(
             String categoryName,
             String supplierName,
@@ -99,8 +228,7 @@ public class ProductService {
             return productRepository.existsBySku(sku)
                     .flatMap(exists -> {
                         if (exists){
-
-                            log.warn("SKU {} já existe, gerando novo...", sku);
+                            log.warn("SKU {} já existe (tentativa {}), gerando novo...", sku, attempt);
                             return generateUniqueSku(
                                     categoryName, supplierName, productName, attempt + 1);
                         }

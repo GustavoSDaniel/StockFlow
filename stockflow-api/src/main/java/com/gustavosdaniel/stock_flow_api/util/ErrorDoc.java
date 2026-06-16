@@ -94,6 +94,13 @@ public class ErrorDoc {
                 "Por favor, tente novamente em instantes. Se o problema persistir, insira os dados do endereço manualmente.",
                 503
         ));
+        docs.put("produto-nao-encontrado", new ErrorDocResponse(
+                "Produto não encontrado",
+                "Não foi possível encontrar o produto.",
+                "O ID do produto não existe.",
+                "Verifique se o ID está correto.",
+                404
+        ));
 
     }
 
