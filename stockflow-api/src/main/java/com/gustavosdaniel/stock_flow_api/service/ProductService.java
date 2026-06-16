@@ -209,6 +209,63 @@ public class ProductService {
                                 page.getTotalElements(), name, status));
     }
 
+    @Transactional
+    public Mono<Void> activeProduct(UUID id){
+
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMap(product -> {
+
+                    if (product.isActive()) return
+                            Mono.error(new BusinessRuleException("O produto ja se encontra ativado"));
+
+                    product.activateProduct();
+
+                    return productRepository.save(product);
+                })
+                .doFirst(() -> log.info("Ativando produto: {}", id))
+                .doOnSuccess(v -> log.info("Produto: '{}' ativado com sucesso", v.getName()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> descontinueProduct(UUID id){
+
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMap(product -> {
+
+                    if (ProductStatus.DISCONTINUED.equals(product.getStatus())) return
+                    Mono.error(new BusinessRuleException("O produto já se encontrado descontinuado"));
+
+                    product.discontinuedProduct();
+
+                    return productRepository.save(product);
+                })
+                .doFirst(() -> log.info("Iniciando o processo para descontinuar o produto"))
+                .doOnSuccess(v -> log.info("Produto: '{}' descontinuado com sucesso", v.getName()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> inactiveProduct(UUID id){
+
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMap(product -> {
+
+                    if (ProductStatus.INACTIVE.equals(product.getStatus()))
+                        return Mono.error(new BusinessRuleException("O produto já se encontra desativado"));
+
+                    product.inactiveProduct();
+
+                    return productRepository.save(product);
+                })
+                .doFirst(() -> log.warn("Iniciando processo para desativar produto"))
+                .doOnSuccess(v -> log.info("Produto: '{}' desativado com sucesso", v.getName()))
+                .then();
+    }
+
     private Mono<String> generateUniqueSku(
             String categoryName,
             String supplierName,

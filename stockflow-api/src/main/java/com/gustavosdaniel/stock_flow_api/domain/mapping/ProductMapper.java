@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import org.springframework.stereotype.Component;
@@ -44,5 +45,22 @@ public class ProductMapper {
                 product.getStatus()
 
         );
+    }
+
+    public void toUpdateProduct(Product product, ProductUpdateRequest request){
+
+        if (request.name() != null && request.name().isBlank()) product.setName(request.name());
+
+        if(request.description() != null && request.description().isBlank())
+            product.setDescription(request.description());
+
+        if (request.costPrice() != null) product.setCostPrice(request.costPrice());
+
+        if (request.salePrice() != null) product.setSalePrice(request.salePrice());
+
+        if (request.unitMeasure() != null) product.setUnitMeasure(request.unitMeasure());
+
+        if (request.barcode() != null && request.barcode().isBlank())
+            product.setBarcode(request.barcode());
     }
 }
