@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.ProductMapper;
@@ -51,18 +52,19 @@ public class ProductService {
         Mono<Supplier> supplierMono = suppliersRepository.findById(request.supplierId())
                 .switchIfEmpty(Mono.error(new SupplierNotFoundException()));
 
-        Mono<Boolean> existsNameMono = productRepository.existsByName(request.name());
+        Mono<Boolean> existsNameMono = productRepository
+                .existsByNameAndStatus(request.name(), ProductStatus.ACTIVE);
 
         return Mono.zip(categoryMono, supplierMono, existsNameMono)
                 .flatMap(tuple -> {
 
                     Category category = tuple.getT1();
                     Supplier supplier = tuple.getT2();
-                    Boolean nameAlreadyExists = tuple.getT3();
+                    Boolean nameActiveExists = tuple.getT3();
 
-                    if (nameAlreadyExists)
+                    if (nameActiveExists)
                         return Mono.error(new BusinessRuleException(
-                                "O nome deste produto já está em uso no sistema."
+                                "Já existe um produto ATIVO com este nome no sistema."
                         ));
 
                     return generateUniqueSku(
@@ -229,14 +231,14 @@ public class ProductService {
     }
 
     @Transactional
-    public Mono<Void> descontinueProduct(UUID id){
+    public Mono<Void> discontinueProduct(UUID id){
 
         return productRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException()))
                 .flatMap(product -> {
 
                     if (ProductStatus.DISCONTINUED.equals(product.getStatus())) return
-                    Mono.error(new BusinessRuleException("O produto já se encontrado descontinuado"));
+                    Mono.error(new BusinessRuleException("O produto já se encontra descontinuado"));
 
                     product.discontinuedProduct();
 
@@ -263,6 +265,55 @@ public class ProductService {
                 })
                 .doFirst(() -> log.warn("Iniciando processo para desativar produto"))
                 .doOnSuccess(v -> log.info("Produto: '{}' desativado com sucesso", v.getName()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<ProductResponse> updateProduct(UUID id, ProductUpdateRequest request){
+
+        Mono<Product> productMono = productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()));
+
+        Mono<Boolean> existsNameAndStatusMono = productRepository
+                .existsByNameAndStatus(request.name(), ProductStatus.ACTIVE);
+
+        return Mono.zip(productMono, existsNameAndStatusMono)
+                .flatMap(tuple -> {
+
+                    Product product = tuple.getT1();
+                    Boolean existsNameAndStatus = tuple.getT2();
+
+                    if (existsNameAndStatus && !product.getName().equalsIgnoreCase(request.name()))
+                        return  Mono.error(new BusinessRuleException(
+                                "Já existe um produto ativo com esse nome"));
+
+                    productMapper.toUpdateProduct(product, request);
+
+                    return productRepository.save(product);
+
+                })
+                .map(productMapper::toProductResponse)
+                .doFirst(() -> log.info("Atualizando o produto: {}", id))
+                .doOnNext(response ->
+                        log.info("Produto: '{}' atualizado com sucesso", response.name()));
+    }
+
+    @Transactional
+    public Mono<Void> deleteProduct(UUID id){
+
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMap(product -> {
+
+                    if (product.isActive()) return Mono.error(new BusinessRuleException(
+                            "Desative ou descontinue o produto antes de deletar."
+                    ));
+
+                    return productRepository.delete(product);
+
+                })
+                .doFirst(() -> log.warn("Iniciando processo para deletar o produto: {}", id))
+                .doOnSuccess(v -> log.info("Produto deletado com sucesso"))
                 .then();
     }
 

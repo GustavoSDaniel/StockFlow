@@ -10,11 +10,11 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-public interface ProductRepository extends R2dbcRepository<Product, UUID> { ;
+public interface ProductRepository extends R2dbcRepository<Product, UUID> {
 
     Mono<Boolean> existsBySku(String sku);
 
-    Mono<Boolean> existsByName(String name);
+    Mono<Boolean> existsByNameAndStatus(String name, ProductStatus status);
 
     Mono<Product> findBySku(String sku);
 

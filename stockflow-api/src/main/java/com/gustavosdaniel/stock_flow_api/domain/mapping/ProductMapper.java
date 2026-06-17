@@ -49,9 +49,9 @@ public class ProductMapper {
 
     public void toUpdateProduct(Product product, ProductUpdateRequest request){
 
-        if (request.name() != null && request.name().isBlank()) product.setName(request.name());
+        if (request.name() != null && !request.name().isBlank()) product.setName(request.name());
 
-        if(request.description() != null && request.description().isBlank())
+        if(request.description() != null && !request.description().isBlank())
             product.setDescription(request.description());
 
         if (request.costPrice() != null) product.setCostPrice(request.costPrice());
@@ -60,7 +60,7 @@ public class ProductMapper {
 
         if (request.unitMeasure() != null) product.setUnitMeasure(request.unitMeasure());
 
-        if (request.barcode() != null && request.barcode().isBlank())
+        if (request.barcode() != null && !request.barcode().isBlank())
             product.setBarcode(request.barcode());
     }
 }
