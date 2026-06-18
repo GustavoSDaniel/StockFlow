@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
 import com.gustavosdaniel.stock_flow_api.domain.enums.UnitMeasure;
@@ -754,5 +755,121 @@ class ProductServiceTest {
         verify(productRepository).findById(productId);
         verify(productRepository, times(1)).findById(productId);
         verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("Should update product with sucesso")
+    void updateProduct(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+        String updateName = "Celular atualizado";
+        String descriptionUpdate = "Atualizando produto";
+        BigDecimal costPriceUpdate = BigDecimal.valueOf(2000.00);
+        BigDecimal salePriceUpdate = BigDecimal.valueOf(6000.00);
+
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                updateName, descriptionUpdate, costPriceUpdate, salePriceUpdate, null, null);
+
+        Product product = new Product(updateName, descriptionUpdate, sku, categoryId, supplierId,
+                costPriceUpdate, salePriceUpdate, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, updateName, descriptionUpdate, sku, categoryId, supplierId,
+                costPriceUpdate, salePriceUpdate, unitMeasure, null, status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.existsByNameAndStatus(updateName, status)).thenReturn(Mono.just(false));
+        doNothing().when(productMapper).toUpdateProduct(any(Product.class), any(ProductUpdateRequest.class));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<ProductResponse> output = productService.updateProduct(productId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertEquals(productId, resultado.id(), "O ID deve ser o mesmo");
+                    assertEquals(product.getName(), resultado.name(), "O nome deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository).existsByNameAndStatus(updateName, status);
+        verify(productRepository, times(1)).existsByNameAndStatus(updateName, status);
+        verify(productMapper).toUpdateProduct(any(Product.class), any(ProductUpdateRequest.class));
+        verify(productRepository).save(any(Product.class));
+        verify(productRepository, times(1)).save(any(Product.class));
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should delete product with sucesso")
+    void deleteProduct(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.INACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+        ReflectionTestUtils.setField(product, "status", status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.delete(any(Product.class))).thenReturn(Mono.empty());
+
+        Mono<Void> output = productService.deleteProduct(productId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository).delete(any(Product.class));
     }
 }
