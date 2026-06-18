@@ -154,7 +154,7 @@ public class ProductService {
                 })
                 .doFirst(() -> log.info("Buscando produtos do fornecedor: {}", supplierId))
                 .doOnNext(page ->
-                        log.info("Quantidade: {} de produtos encontrados do fornecedor: {}",
+                        log.info("Quantidade de produtos encontrados: {}  do fornecedor: {}",
                                 page.getTotalElements(), supplierId));
     }
 
@@ -166,8 +166,8 @@ public class ProductService {
                 .map(productMapper::toProductResponse)
                 .doFirst(() -> log.info("Buscando produto pelo ID: {}", id))
                 .doOnNext(response ->
-                        log.info("Produto: {}, com o ID: {} encontrado com sucesso",
-                                response.name(), response.id()));
+                        log.info("Produto: {}, com o SKU: {} encontrado com sucesso",
+                                response.name(), response.sku()));
     }
 
     @Transactional(readOnly = true)

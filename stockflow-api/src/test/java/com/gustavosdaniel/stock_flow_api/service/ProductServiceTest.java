@@ -325,4 +325,434 @@ class ProductServiceTest {
         verify(productMapper).toProductResponse(product2);
 
     }
+
+    @Test
+    @DisplayName("Should products by supplier with sucesso")
+    void findProductBySupplier(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null, status);
+
+        when(suppliersRepository.existsById(supplierId)).thenReturn(Mono.just(true));
+        when(productRepository.findAllBySupplierId(supplierId, pageable)).thenReturn(Flux.just(product));
+        when(productRepository.countBySupplierId(supplierId)).thenReturn(Mono.just(1L));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<Page<ProductResponse>> output = productService.findProductBySupplier(supplierId, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getTotalElements(), "Deve conter apenas 1 elemento");
+                })
+                .verifyComplete();
+
+        verify(suppliersRepository).existsById(supplierId);
+        verify(suppliersRepository, times(1)).existsById(supplierId);
+        verify(productRepository).findAllBySupplierId(supplierId, pageable);
+        verify(productRepository, times(1))
+                .findAllBySupplierId(supplierId, pageable);
+        verify(productRepository).countBySupplierId(supplierId);
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should product by id with sucesso")
+    void findProductById(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null, status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<ProductResponse> output = productService.getProductById(productId);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertEquals(productId, response.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should product by sku with sucesso")
+    void findByProductSku(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null, status);
+
+        when(productRepository.findBySku(sku)).thenReturn(Mono.just(product));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<ProductResponse> output = productService.getProductSku(sku);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+                    assertEquals(productId, resultado.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(productRepository).findBySku(sku);
+        verify(productRepository, times(1)).findBySku(sku);
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso find by product name")
+    void searchProductName(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null, status);
+
+        when(productRepository.searchByName(productName, pageable)).thenReturn(Flux.just(product));
+        when(productRepository.countByName(productName)).thenReturn(Mono.just(1L));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<Page<ProductResponse>> output = productService.searchName(productName, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getTotalElements(), "Tem que ter apenas 1 elemento");
+                })
+                .verifyComplete();
+
+        verify(productRepository).searchByName(productName, pageable);
+        verify(productRepository, times(1)).searchByName(productName, pageable);
+        verify(productRepository).countByName(productName);
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should by product e status with sucesso")
+    void searchByProductWithNameANdStatus(){
+
+        Pageable pageable = Pageable.unpaged();
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        ProductResponse response = new ProductResponse(
+                productId, productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null, status);
+
+        when(productRepository.searchNameAndStatus(productName, ProductStatus.ACTIVE, pageable))
+                .thenReturn(Flux.just(product));
+        when(productRepository.countNameAndStatus(productName, status)).thenReturn(Mono.just(1L));
+        when(productMapper.toProductResponse(product)).thenReturn(response);
+
+        Mono<Page<ProductResponse>> output = productService
+                .searchNameByStatus(productName, ProductStatus.ACTIVE, pageable);
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getTotalElements(), "A pagina deve conter 1 elemento");
+                })
+                .verifyComplete();
+
+        verify(productRepository).searchNameAndStatus(productName, status, pageable);
+        verify(productRepository, times(1))
+                .searchNameAndStatus(productName, status, pageable);
+        verify(productRepository).countNameAndStatus(productName, status);
+        verify(productMapper).toProductResponse(product);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso active product")
+    void activeProduct(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.INACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+        ReflectionTestUtils.setField(product, "status", status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product));
+
+        Mono<Void> output = productService.activeProduct(productId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("Should discontinue product with sucesso")
+    void discontinueProduct(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+        ReflectionTestUtils.setField(product, "status", status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product));
+
+        Mono<Void> output = productService.discontinueProduct(productId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("Should desactive product with sucesso")
+    void desactiveProduct(){
+
+        UUID categoryId = UUID.randomUUID();
+        String categoryName = "Eletronicos";
+        String description = "Produtos eletronicos";
+
+        UUID supplierId = UUID.randomUUID();
+        String supplierName = "Fornecedor";
+        String cnpj = "11122233344455";
+        String tradeName = "Nome Fantasia";
+        BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+        ProductStatus status = ProductStatus.ACTIVE;
+
+
+        Category category = new Category(categoryName, description, null, false);
+        ReflectionTestUtils.setField(category, "id", categoryId);
+
+        Supplier supplier = new Supplier(supplierName, cnpj, tradeName,
+                null, minOrderValue, null);
+        ReflectionTestUtils.setField(supplier, "id", supplierId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+        ReflectionTestUtils.setField(product, "status", status);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product));
+
+        Mono<Void> output = productService.inactiveProduct(productId);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository).save(any(Product.class));
+    }
 }
