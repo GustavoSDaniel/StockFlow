@@ -98,7 +98,7 @@ public class ProductService {
         )
                 .doFirst(() -> log.info("Buscando todos os produtos"))
                 .doOnNext(page ->
-                        log.info("Todos os produtos: {} encontrados com sucesso", page.getTotalElements()));
+                        log.info("Quantidade de produtos encontrados com sucesso : {}", page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +112,8 @@ public class ProductService {
         )
                 .doFirst(() -> log.info("Buscando todos os produtos de acordo com o status inserido"))
                 .doOnNext(page ->
-                        log.info("Produtos encontrados de acordo com o status: {}", status));
+                        log.info("Quantidade de produtos encontrados: {} com o status: {}",
+                                page.getTotalElements(), status));
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +133,7 @@ public class ProductService {
                 })
                 .doFirst(() -> log.info("Buscando produtos da categoria: {}", categoryId))
                 .doOnNext(page ->
-                        log.info("Quantidade: {} de produtos encontrados da categoria: {}",
+                        log.info("A quantidade de produtos encontrados foram de: {} da categoria: {}",
                                 page.getTotalElements(), categoryId));
     }
 

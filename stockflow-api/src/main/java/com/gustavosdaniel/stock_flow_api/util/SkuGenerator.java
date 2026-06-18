@@ -19,7 +19,9 @@ public class SkuGenerator {
         String supplier = sanitize(supplierName, 4);
         String product = sanitize(productName, 4);
         String random = randomAlphanumeric(4);
-        String counter = String.format("%04d", COUNTER.incrementAndGet() % 10000);
+
+        int currentCount = COUNTER.getAndUpdate(n -> (n + 1) % 10000);
+        String counter = String.format("%04d", currentCount);
 
         return String.format("%s-%s-%s-%s-%s",
                 category, supplier, product, random, counter);
