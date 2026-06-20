@@ -1,10 +1,12 @@
 package com.gustavosdaniel.stock_flow_api.domain.po;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
+import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.InsufficientStockException;
 import com.gustavosdaniel.stock_flow_api.exception.InvalidQuantityException;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -208,6 +210,23 @@ public class Stock extends BaseEntity {
     public void adjustStock(int newQuantity) {
         if (newQuantity < 0) throw new InvalidQuantityException();
         this.currentQuantity = newQuantity;
+    }
+
+    public void validateQuantityLimits(){
+        if (maximumQuantity == null || minimumQuantity == null) return;
+        if (maximumQuantity <= minimumQuantity)
+            throw new BusinessRuleException("A quantidade máxima deve ser maior que a quantidade mínima");
+    }
+
+    public void validateReorderPoint(){
+        if (reorderPoint == null || minimumQuantity == null) return;
+        if (reorderPoint > minimumQuantity)
+            throw new BusinessRuleException("O ponto de reposição deve ser menor ou igual à quantidade mínima");
+    }
+
+    public void validate(){
+        validateQuantityLimits();
+        validateReorderPoint();
     }
 
     /**
