@@ -4,19 +4,15 @@ import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
 
 import java.util.UUID;
 
-public record StockResponse(
+public record StockSummaryResponse(
 
         UUID id,
-        UUID productId,
+        UUID pproductId,
         String productName,
-        String productSku,
+        String sku,
         Integer currentQuantity,
-        Integer minimumQuantity,
-        Integer maximumQuantity,
-        Integer reorderPoint,
-        Integer reorderQuantity,
         StockStatus status,
-        String location,
-        String warehouseId
+        String localization
+
 ) {
 }
