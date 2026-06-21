@@ -80,6 +80,9 @@ public class StockService {
                 .map(tuple -> {
                     Stock stock = tuple.getT1();
                     Product product = tuple.getT2();
+
+                    validateStockBelongsToProduct(stock, product);
+
                     return stockMapper.toStockResponse(stock, product);
                 })
                 .doFirst(() -> log.info("Buscando stock pelo ID: {}", productId))
@@ -100,6 +103,8 @@ public class StockService {
                     Product product = tuple.getT1();
                     Stock stock = tuple.getT2();
 
+                    validateStockBelongsToProduct(stock, product);
+
                     return stockMapper.toStockResponse(stock, product);
                 })
                 .doFirst(() -> log.info("Buscando estoque pelo ID do produto: {}", productId))
@@ -107,5 +112,11 @@ public class StockService {
                         productId));
     }
 
+    private void validateStockBelongsToProduct(Stock stock, Product product){
 
+        if (!stock.getProductId().equals(product.getId()))
+            throw new  BusinessRuleException(
+                    "O estoque informado não pertence ao produto fornecido na requisição."
+            );
+    }
 }
