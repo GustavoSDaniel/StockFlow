@@ -70,6 +70,11 @@ public enum ProblemType {
 
             "urn:stockflow:produto-nao-encontrado",
             "Produto não encontrado"
+    ),
+    STOCK_NOT_FOUND(
+
+            "urn:stockflow:stock-nao-encontrado",
+                    "Stock não encontrado"
     );
 
     private final URI uri;

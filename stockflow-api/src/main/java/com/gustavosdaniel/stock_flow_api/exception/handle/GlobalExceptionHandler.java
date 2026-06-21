@@ -196,4 +196,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
     }
+
+    @ExceptionHandler(StockNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleStockNotFound(StockNotFoundException exception){
+
+        log.warn("Estoque não encontrado {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ProblemType.STOCK_NOT_FOUND,
+                exception.getMessage()
+        );
+    }
 }

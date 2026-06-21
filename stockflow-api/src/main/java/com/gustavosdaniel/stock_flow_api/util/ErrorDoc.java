@@ -101,6 +101,13 @@ public class ErrorDoc {
                 "Verifique se o ID está correto.",
                 404
         ));
+        docs.put("stock-nao-encontrado", new ErrorDocResponse(
+                "Stock não encontrado",
+                "Não foi possível encontrar o stock.",
+                "O ID do stock não existe.",
+                "Verifique se o ID está correto.",
+                404
+        ));
 
     }
 
