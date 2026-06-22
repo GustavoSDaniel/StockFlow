@@ -15,4 +15,6 @@ public interface StockRepository extends R2dbcRepository<Stock, UUID> {
 
     Mono<Stock> findStockByProductId(UUID productId);
 
+    Flux<Stock> findAllBy(Pageable pageable);
+
 }

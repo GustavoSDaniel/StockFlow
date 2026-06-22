@@ -1,7 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.StockMapper;
@@ -19,9 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -112,6 +112,89 @@ public class StockService {
                         productId));
     }
 
+    @Transactional(readOnly = true)
+    public Mono<Page<StockSummaryResponse>> findAllStocks(Pageable pageable){
+
+        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository.findAllBy(pageable)
+                .flatMap(stock -> productRepository.findById(stock.getProductId())
+                            .map(product -> stockMapper.toStockSummaryResponse(stock, product))
+                );
+
+        return PageUtils.toPage(
+            stockSummaryResponseFlux,
+                stockRepository.count(),
+                response -> response,
+                pageable
+        );
+    }
+
+    @Transactional
+    public Mono<Void> registerEntry(UUID id , StockMovementRequest request){
+
+        return stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> {
+
+                    stock.addStock(request.quantity());
+                    return stockRepository.save(stock);
+                })
+                .doFirst(() ->
+                        log.info("Iniciando o processo de adicionar quantidade no estoque"))
+                .doOnSuccess(stock -> log.info("Stock: {} recebeu {}, ficando atualmente com: {}",
+                        stock.getId(), request.quantity(), stock.getCurrentQuantity()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> registerExit(UUID id, StockMovementRequest request){
+
+        return stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> {
+
+                    stock.removeStock(request.quantity());
+                    return stockRepository.save(stock);
+                })
+                .doFirst(() -> log.info("Removendo saldo do estoque: {}", id))
+                .doOnSuccess(stock -> log.info("Saldo atual do stock é de: {}",
+                        stock.getCurrentQuantity()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Void> adjustStock(UUID id, StockMovementRequest request){
+
+        return stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> {
+
+                    stock.adjustStock(request.quantity());
+                    return stockRepository.save(stock);
+                })
+                .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
+                .doOnSuccess(stock -> log.info("Estoque ajustado para: {}",
+                        stock.getCurrentQuantity()))
+                .then();
+    }
+
+    @Transactional
+    public Mono<Page<StockSummaryResponse>> findLowStockProducts(UUID id,Pageable pageable){
+
+        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock ->
+                    productRepository.findById(stock.getProductId())
+                            .map(product -> stockMapper.toStockSummaryResponse(stock, product))
+
+                );
+
+        return PageUtils.toPage(
+                stockSummaryResponseFlux,
+
+        )
+
+    }
+
     private void validateStockBelongsToProduct(Stock stock, Product product){
 
         if (!stock.getProductId().equals(product.getId()))
@@ -119,4 +202,6 @@ public class StockService {
                     "O estoque informado não pertence ao produto fornecido na requisição."
             );
     }
+
+
 }
