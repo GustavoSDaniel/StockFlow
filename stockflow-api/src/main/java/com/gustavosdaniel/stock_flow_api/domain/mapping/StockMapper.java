@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
@@ -63,5 +64,16 @@ public class StockMapper {
                 stock.getLocation(),
                 stock.getWarehouseId()
         );
+    }
+
+    public void applyUpdate(Stock stock, StockUpdate request){
+
+        if (request.minimumQuantity() != null) stock.setMinimumQuantity(request.minimumQuantity());
+        if (request.maximumQuantity() != null) stock.setMaximumQuantity(request.maximumQuantity());
+        if (request.reorderPoint() != null) stock.setReorderPoint(request.reorderPoint());
+        if (request.reorderQuantity() != null) stock.setReorderQuantity(request.reorderQuantity());
+        if (request.location() != null && !request.location().isBlank()) stock.setLocation(request.location());
+        if (request.warehouseId() != null && !request.warehouseId().isBlank())
+            stock.setWarehouseId(request.warehouseId());
     }
 }

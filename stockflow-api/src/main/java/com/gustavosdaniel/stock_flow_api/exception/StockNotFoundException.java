@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.exception;
 public class StockNotFoundException extends RuntimeException{
 
     public StockNotFoundException() {
+        super("Estoque não encontrado");
     }
 
     public StockNotFoundException(String message) {

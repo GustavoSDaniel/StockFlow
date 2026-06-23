@@ -7,12 +7,12 @@ import java.util.UUID;
 public record StockSummaryResponse(
 
         UUID id,
-        UUID pproductId,
+        UUID productId,
         String productName,
         String sku,
         Integer currentQuantity,
         StockStatus status,
-        String localization
+        String location
 
 ) {
 }

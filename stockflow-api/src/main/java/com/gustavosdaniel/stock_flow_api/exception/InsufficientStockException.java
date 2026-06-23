@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.exception;
 public class InsufficientStockException extends RuntimeException{
 
     public InsufficientStockException() {
+        super("Estoque insuficiente para realizar a operação");
     }
 
     public InsufficientStockException(String message) {

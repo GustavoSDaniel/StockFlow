@@ -2,6 +2,7 @@ package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.StockMapper;
@@ -70,21 +71,12 @@ public class StockService {
     @Transactional(readOnly = true)
     public Mono<StockResponse> getStockById(UUID id, UUID productId){
 
-        Mono<Stock> stockMono = stockRepository.findById(id)
-                .switchIfEmpty(Mono.error(new StockNotFoundException()));
-
-        Mono<Product> productMono = productRepository.findById(productId)
-                .switchIfEmpty(Mono.error(new ProductNotFoundException()));
-
-        return Mono.zip(stockMono, productMono)
-                .map(tuple -> {
-                    Stock stock = tuple.getT1();
-                    Product product = tuple.getT2();
-
-                    validateStockBelongsToProduct(stock, product);
-
-                    return stockMapper.toStockResponse(stock, product);
-                })
+        return stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock ->
+                    productRepository.findById(stock.getProductId())
+                            .map(product -> stockMapper.toStockResponse(stock, product))
+                )
                 .doFirst(() -> log.info("Buscando stock pelo ID: {}", productId))
                 .doOnNext(response -> log.info("Stoque encontrado pelo ID: {}", id));
     }
@@ -177,22 +169,75 @@ public class StockService {
                 .then();
     }
 
-    @Transactional
-    public Mono<Page<StockSummaryResponse>> findLowStockProducts(UUID id,Pageable pageable){
+    @Transactional(readOnly = true)
+    public Mono<Page<StockSummaryResponse>> findOutOfStock(Pageable pageable){
 
-        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository.findById(id)
-                .switchIfEmpty(Mono.error(new StockNotFoundException()))
-                .flatMap(stock ->
-                    productRepository.findById(stock.getProductId())
+        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
+                .findOutOfStock(pageable.getPageSize(), pageable.getOffset())
+                .flatMap(stock -> productRepository.findById(stock.getProductId())
+                        .map(product -> stockMapper.toStockSummaryResponse(stock, product))
+                );
+        return PageUtils.toPage(
+                stockSummaryResponseFlux,
+                stockRepository.countOutOfStock(),
+                response -> response,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando todos os estoques que se encontram zerados"))
+                .doOnNext(page ->
+                        log.info("Foram encontrados {} estoques zerados", page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<StockSummaryResponse>> findLowStockProducts(Pageable pageable){
+
+        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
+                .findLowStock(pageable.getPageSize(), pageable.getOffset())
+                .flatMap(stock -> productRepository.findById(stock.getProductId())
                             .map(product -> stockMapper.toStockSummaryResponse(stock, product))
 
                 );
+        return PageUtils.toPage(
+                stockSummaryResponseFlux,
+                stockRepository.countLowStock(),
+                response -> response,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando todos os estoques baixo com seu respectivo produto"))
+                .doOnNext(page ->
+                        log.info("Encontrados {} produtos com estoque baixo", page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Mono<Page<StockSummaryResponse>> findOverStock(Pageable pageable){
+
+        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
+                .findOverStock(pageable.getPageSize(), pageable.getOffset())
+                .flatMap(stock -> productRepository.findById(stock.getProductId())
+                        .map(product -> stockMapper.toStockSummaryResponse(stock, product)));
 
         return PageUtils.toPage(
                 stockSummaryResponseFlux,
+                stockRepository.countOverStock(),
+                response -> response,
+                pageable
+        );
+    }
 
-        )
+    @Transactional
+    public Mono<StockResponse> updateStock(UUID id, StockUpdate request){
 
+        return stockRepository.findById(id)
+                .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> {
+                    stockMapper.applyUpdate(stock, request);
+                    stock.validate();
+                    return stockRepository.save(stock);
+                })
+                .flatMap(stock -> productRepository.findById(stock.getProductId())
+                        .map(product -> stockMapper.toStockResponse(stock, product)))
+                .doFirst(() -> log.info("Iniciando processo para atualizar as informações do estoque"))
+                .doOnNext(response -> log.info("Estoque atualizado com sucesso: {}", id));
     }
 
     private void validateStockBelongsToProduct(Stock stock, Product product){
@@ -202,6 +247,4 @@ public class StockService {
                     "O estoque informado não pertence ao produto fornecido na requisição."
             );
     }
-
-
 }

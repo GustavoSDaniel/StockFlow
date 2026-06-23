@@ -6,7 +6,6 @@ import com.gustavosdaniel.stock_flow_api.exception.InsufficientStockException;
 import com.gustavosdaniel.stock_flow_api.exception.InvalidQuantityException;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -155,15 +154,6 @@ public class Stock extends BaseEntity {
      */
     public boolean isLowStock() {
         return currentQuantity <= minimumQuantity;
-    }
-
-    /**
-     * Verifica se o estoque está crítico (zerado).
-     *
-     * @return {@code true} se {@code currentQuantity == 0}; {@code false} caso contrário
-     */
-    public boolean isCriticalStock() {
-        return currentQuantity == 0;
     }
 
     /**
