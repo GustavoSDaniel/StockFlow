@@ -17,13 +17,18 @@ import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class StockService {
@@ -69,7 +74,7 @@ public class StockService {
     }
 
     @Transactional(readOnly = true)
-    public Mono<StockResponse> getStockById(UUID id, UUID productId){
+    public Mono<StockResponse> getStockById(UUID id){
 
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
@@ -77,8 +82,8 @@ public class StockService {
                     productRepository.findById(stock.getProductId())
                             .map(product -> stockMapper.toStockResponse(stock, product))
                 )
-                .doFirst(() -> log.info("Buscando stock pelo ID: {}", productId))
-                .doOnNext(response -> log.info("Stoque encontrado pelo ID: {}", id));
+                .doFirst(() -> log.info("Buscando stock pelo ID: {}", id))
+                .doOnNext(response -> log.info("Estoque encontrado pelo ID: {}", id));
     }
 
     @Transactional(readOnly = true)
@@ -107,17 +112,14 @@ public class StockService {
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findAllStocks(Pageable pageable){
 
-        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository.findAllBy(pageable)
-                .flatMap(stock -> productRepository.findById(stock.getProductId())
-                            .map(product -> stockMapper.toStockSummaryResponse(stock, product))
-                );
-
-        return PageUtils.toPage(
-            stockSummaryResponseFlux,
+        return toStockSummaryPage(
+                stockRepository.findAllBy(pageable),
                 stockRepository.count(),
-                response -> response,
                 pageable
-        );
+        )
+                .doFirst(() -> log.info("Buscando todos os estoques"))
+                .doOnNext(page ->
+                        log.info("Total de estoques: {}", page.getTotalElements()));
     }
 
     @Transactional
@@ -172,15 +174,9 @@ public class StockService {
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findOutOfStock(Pageable pageable){
 
-        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
-                .findOutOfStock(pageable.getPageSize(), pageable.getOffset())
-                .flatMap(stock -> productRepository.findById(stock.getProductId())
-                        .map(product -> stockMapper.toStockSummaryResponse(stock, product))
-                );
-        return PageUtils.toPage(
-                stockSummaryResponseFlux,
+        return toStockSummaryPage(
+                stockRepository.findOutOfStock(pageable.getPageSize(), pageable.getOffset()),
                 stockRepository.countOutOfStock(),
-                response -> response,
                 pageable
         )
                 .doFirst(() -> log.info("Buscando todos os estoques que se encontram zerados"))
@@ -191,16 +187,9 @@ public class StockService {
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findLowStockProducts(Pageable pageable){
 
-        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
-                .findLowStock(pageable.getPageSize(), pageable.getOffset())
-                .flatMap(stock -> productRepository.findById(stock.getProductId())
-                            .map(product -> stockMapper.toStockSummaryResponse(stock, product))
-
-                );
-        return PageUtils.toPage(
-                stockSummaryResponseFlux,
+        return toStockSummaryPage(
+                stockRepository.findLowStock(pageable.getPageSize(), pageable.getOffset()),
                 stockRepository.countLowStock(),
-                response -> response,
                 pageable
         )
                 .doFirst(() -> log.info("Buscando todos os estoques baixo com seu respectivo produto"))
@@ -211,17 +200,15 @@ public class StockService {
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findOverStock(Pageable pageable){
 
-        Flux<StockSummaryResponse> stockSummaryResponseFlux = stockRepository
-                .findOverStock(pageable.getPageSize(), pageable.getOffset())
-                .flatMap(stock -> productRepository.findById(stock.getProductId())
-                        .map(product -> stockMapper.toStockSummaryResponse(stock, product)));
-
-        return PageUtils.toPage(
-                stockSummaryResponseFlux,
+        return toStockSummaryPage(
+                stockRepository.findOverStock(pageable.getPageSize(), pageable.getOffset()),
                 stockRepository.countOverStock(),
-                response -> response,
                 pageable
-        );
+        )
+                .doFirst(() -> log.info("Buscando todos os estoque que estão acima do Limite"))
+                .doOnNext(page ->
+                        log.info("Todos os estoques {} encontrado acima da quantidade maxima",
+                                page.getTotalElements()));
     }
 
     @Transactional
@@ -238,6 +225,46 @@ public class StockService {
                         .map(product -> stockMapper.toStockResponse(stock, product)))
                 .doFirst(() -> log.info("Iniciando processo para atualizar as informações do estoque"))
                 .doOnNext(response -> log.info("Estoque atualizado com sucesso: {}", id));
+    }
+
+    private Mono<Map<UUID, Product>> resolveProductMap(List<UUID> productIds) {
+        if (productIds.isEmpty()) return Mono.just(Map.of());
+
+        List<UUID> distinctIds = productIds.stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        return productRepository.findAllById(distinctIds)
+                .collectMap(Product::getId, Function.identity());
+    }
+
+    private Mono<Page<StockSummaryResponse>> toStockSummaryPage(
+            Flux<Stock> stockFlux,
+            Mono<Long> countMono,
+            Pageable pageable
+    ){
+        Mono<List<Stock>> stocksListMono = stockFlux.collectList().cache();
+
+        Mono<Map<UUID, Product>> productMapMono = stocksListMono
+                .map(stocks -> stocks.stream()
+                        .map(Stock::getProductId)
+                        .collect(Collectors.toList()))
+                .flatMap(this::resolveProductMap);
+
+        return Mono.zip(stocksListMono, productMapMono, countMono)
+                .map(tuple -> {
+                            List<Stock> stocks = tuple.getT1();
+                            Map<UUID, Product> productMap = tuple.getT2();
+                            Long total = tuple.getT3();
+
+                            List<StockSummaryResponse> responses = stocks.stream()
+                                    .map(stock -> stockMapper.toStockSummaryResponse(stock,
+                                            productMap.get(stock.getProductId())
+                                    ))
+                                    .collect(Collectors.toList());
+
+                            return new PageImpl<>(responses, pageable, total);
+                        });
     }
 
     private void validateStockBelongsToProduct(Stock stock, Product product){
