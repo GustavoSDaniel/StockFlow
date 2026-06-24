@@ -208,4 +208,16 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
     }
+
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<ProblemDetail> handleNullPointer(NullPointerException exception){
+
+        log.error("NullPointerException capturada: {}", exception.getMessage(), exception);
+
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ProblemType.NULL_POINTER,
+                "Ocorreu um erro interno inesperado. Nossa equipe técnica já foi notificada."
+        );
+    }
 }

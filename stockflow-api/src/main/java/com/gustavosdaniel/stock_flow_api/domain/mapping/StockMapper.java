@@ -1,9 +1,11 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.po.InventoryMovement;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import com.gustavosdaniel.stock_flow_api.domain.po.Stock;
 import org.springframework.stereotype.Component;
@@ -75,5 +77,31 @@ public class StockMapper {
         if (request.location() != null && !request.location().isBlank()) stock.setLocation(request.location());
         if (request.warehouseId() != null && !request.warehouseId().isBlank())
             stock.setWarehouseId(request.warehouseId());
+    }
+
+
+    public InventoryMovement toInventoryMovement(
+            InventoryMovementRequest request,
+            Stock stock,
+            int quantityBefore,
+            int quantityAfter) {
+
+        if (request == null || stock == null) return null;
+
+        return new InventoryMovement(
+
+                stock.getProductId(),
+                stock.getId(),
+                request.movementType(),
+                request.quantity(),
+                quantityBefore,
+                quantityAfter,
+                request.movementReason(),
+                request.referenceNumber(),
+                request.supplierId(),
+                request.customerId(),
+                request.note(),
+                request.unitCost()
+        );
     }
 }

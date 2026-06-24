@@ -75,6 +75,11 @@ public enum ProblemType {
 
             "urn:stockflow:stock-nao-encontrado",
                     "Stock não encontrado"
+    ),
+
+    NULL_POINTER(
+            "urn:stockflow:erro-interno",
+            "Erro interno inesperado"
     );
 
     private final URI uri;
