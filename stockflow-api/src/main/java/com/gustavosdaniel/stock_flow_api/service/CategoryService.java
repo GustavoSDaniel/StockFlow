@@ -80,7 +80,7 @@ public class CategoryService {
                     return categoryRepository.save(child);
                 })
                 .doFirst(() -> log.info("Adicionando subCategoria: {} na categoria {}",
-                        childId, parentId))
+                        parentId, childId))
                 .doOnNext(savedChild -> log.info("Categoria {} vinculada com sucesso como subcategoria."
                         , savedChild.getName()))
                 .map(categoryMapper::toCategoryResponse);
@@ -286,7 +286,7 @@ public class CategoryService {
                     return categoryRepository.save(child);
                 })
                 .doFirst(() -> log.info("Removendo subcategoria {}, da categoria {}",
-                        parentId, childId))
+                        childId, parentId))
                 .doOnSuccess(categoryRemoved -> log.info("Categoria, removida com sucesso"))
                 .then();
 
@@ -319,7 +319,7 @@ public class CategoryService {
                 .flatMap(category -> {
 
                     if (category.isRootCategory()) {
-                        log.warn("Deletando categoria raiz: {} — subcategorias " +
+                        log.warn("Deletando categoria raiz: {} subcategorias " +
                                         "serão desvinculadas (ON DELETE SET NULL)",
                                 category.getName());
                     }

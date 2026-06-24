@@ -83,7 +83,8 @@ public class SupplierService {
                                     viaCepClient.findByAddressByZipCode(addressRequest.zipCode())
                                             .map(viaCepResponse ->
                                                     supplierMapper.toAddress(
-                                                            supplierId, addressRequest, viaCepResponse))
+                                                            supplierId, addressRequest, viaCepResponse)),
+                                    3  // limita concorrência ao ViaCEP
                             )
                             .collectList()
                             .flatMap(addressesToSave ->

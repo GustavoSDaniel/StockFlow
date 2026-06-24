@@ -11,9 +11,9 @@ import java.util.UUID;
 
 public interface StockRepository extends R2dbcRepository<Stock, UUID> {
 
-    Mono<Boolean> existsByProductId(UUID productId);
+    Mono<Boolean> existsByProductIdAndWarehouseId(UUID productId, String warehouseId);
 
-    Mono<Stock> findStockByProductId(UUID productId);
+    Flux<Stock> findAllStockByProductId(UUID productId);
 
     Flux<Stock> findAllBy(Pageable pageable);
 

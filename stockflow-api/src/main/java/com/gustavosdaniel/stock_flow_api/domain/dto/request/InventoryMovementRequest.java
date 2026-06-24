@@ -3,7 +3,6 @@ package com.gustavosdaniel.stock_flow_api.domain.dto.request;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementType;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
@@ -15,7 +14,7 @@ public record InventoryMovementRequest(
         @NotNull(message = "O tipo de movimento é obrigatório")
         MovementType movementType,
 
-        @PositiveOrZero(message = "A quantidade deve ser negativa")
+        @PositiveOrZero(message = "A quantidade não pode ser negativa")
         @NotNull(message = "A quantidade é obrigatória")
         Integer quantity,
 

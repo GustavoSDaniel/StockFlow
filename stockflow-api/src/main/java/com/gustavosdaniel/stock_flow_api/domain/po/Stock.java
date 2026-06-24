@@ -203,13 +203,11 @@ public class Stock extends BaseEntity {
     }
 
     public void validateQuantityLimits(){
-        if (maximumQuantity == null || minimumQuantity == null) return;
         if (maximumQuantity <= minimumQuantity)
             throw new BusinessRuleException("A quantidade máxima deve ser maior que a quantidade mínima");
     }
 
     public void validateReorderPoint(){
-        if (reorderPoint == null || minimumQuantity == null) return;
         if (reorderPoint > minimumQuantity)
             throw new BusinessRuleException("O ponto de reposição deve ser menor ou igual à quantidade mínima");
     }

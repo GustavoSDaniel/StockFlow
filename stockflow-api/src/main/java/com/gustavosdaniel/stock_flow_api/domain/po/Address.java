@@ -67,7 +67,7 @@ public class Address extends BaseEntity {
         this.city = city;
         this.zipCode = zipCode;
         this.stateUF = stateUF;
-        this.country = country;
+        this.country = country != null ? country : "Brasil";
         this.isMain = isMain;
     }
 

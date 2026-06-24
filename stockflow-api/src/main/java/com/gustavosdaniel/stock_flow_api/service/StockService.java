@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.service;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
@@ -14,9 +15,11 @@ import com.gustavosdaniel.stock_flow_api.domain.po.Stock;
 import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import com.gustavosdaniel.stock_flow_api.exception.ProductNotFoundException;
 import com.gustavosdaniel.stock_flow_api.exception.StockNotFoundException;
+import com.gustavosdaniel.stock_flow_api.messaging.event.StockEventPublisher;
 import com.gustavosdaniel.stock_flow_api.repository.InventoryMovementRepository;
 import com.gustavosdaniel.stock_flow_api.repository.ProductRepository;
 import com.gustavosdaniel.stock_flow_api.repository.StockRepository;
+import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -40,13 +43,18 @@ public class StockService {
     private final StockMapper stockMapper;
     private final ProductRepository productRepository;
     private final InventoryMovementRepository inventoryMovementRepository;
+    private final StockEventPublisher stockEventPublisher;
     private final Logger log = LoggerFactory.getLogger(StockService.class);
 
-    public StockService(StockRepository stockRepository, StockMapper stockMapper, ProductRepository productRepository, InventoryMovementRepository inventoryMovementRepository) {
+    public StockService(StockRepository stockRepository, StockMapper stockMapper,
+                        ProductRepository productRepository,
+                        InventoryMovementRepository inventoryMovementRepository,
+                        StockEventPublisher stockEventPublisher) {
         this.stockRepository = stockRepository;
         this.stockMapper = stockMapper;
         this.productRepository = productRepository;
         this.inventoryMovementRepository = inventoryMovementRepository;
+        this.stockEventPublisher = stockEventPublisher;
     }
 
     @Transactional
@@ -55,7 +63,8 @@ public class StockService {
         Mono<Product> productMono = productRepository.findById(productId)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException()));
 
-        Mono<Boolean> stockExistsMono = stockRepository.existsByProductId(productId);
+        Mono<Boolean> stockExistsMono = stockRepository
+                .existsByProductIdAndWarehouseId(productId, request.warehouseId());
 
         return Mono.zip(productMono, stockExistsMono)
                 .flatMap(tuple -> {
@@ -64,7 +73,8 @@ public class StockService {
                     boolean stockExists = tuple.getT2();
 
                     if (stockExists) return Mono.error(
-                            new BusinessRuleException("Já existe um estoque vinculado para esse produto"));
+                            new BusinessRuleException(
+                                "Já existe um estoque vinculado para esse produto neste armazém"));
 
                     Stock newStock = stockMapper.toStock(product.getId(), request);
 
@@ -74,8 +84,10 @@ public class StockService {
                             .map(stock -> stockMapper.toStockResponse(stock, product));
 
                 })
-                .doFirst(() -> log.info("Vinculando stock para o produto: {}", productId))
-                .doOnNext(response -> log.info("Stock criado para o produto> {}", productId));
+                .doFirst(() -> log.info("Vinculando stock para o produto: {} no armazém: {}",
+                        productId, request.warehouseId()))
+                .doOnNext(response -> log.info("Stock criado para o produto: {} no armazém: {}",
+                        productId, request.warehouseId()));
     }
 
     @Transactional(readOnly = true)
@@ -92,26 +104,18 @@ public class StockService {
     }
 
     @Transactional(readOnly = true)
-    public Mono<StockResponse> getStockByProductId(UUID productId){
+    public Flux<StockResponse> getStockByProductId(UUID productId){
 
-        Mono<Product> productMono = productRepository.findById(productId)
-                .switchIfEmpty(Mono.error(new ProductNotFoundException()));
-
-        Mono<Stock> stockMono =stockRepository.findStockByProductId(productId)
-                .switchIfEmpty(Mono.error(new StockNotFoundException()));
-
-        return Mono.zip(productMono, stockMono)
-                .map(tuple -> {
-                    Product product = tuple.getT1();
-                    Stock stock = tuple.getT2();
-
-                    validateStockBelongsToProduct(stock, product);
-
-                    return stockMapper.toStockResponse(stock, product);
-                })
-                .doFirst(() -> log.info("Buscando estoque pelo ID do produto: {}", productId))
-                .doOnNext(response -> log.info("Estoque encontrado pelo ID do produto: {}",
-                        productId));
+        return productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMapMany(product ->
+                    stockRepository.findAllStockByProductId(productId)
+                        .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                        .map(stock -> stockMapper.toStockResponse(stock, product))
+                )
+                .doFirst(() -> log.info("Buscando estoques pelo ID do produto: {}", productId))
+                .doOnNext(response -> log.info("Estoque encontrado: armazém={}, produto={}",
+                        response.warehouseId(), productId));
     }
 
     @Transactional(readOnly = true)
@@ -127,13 +131,30 @@ public class StockService {
                         log.info("Total de estoques: {}", page.getTotalElements()));
     }
 
+    @Transactional(readOnly = true)
+    public Mono<Page<InventoryMovementResponse>> getMovementHistory(UUID stockId, Pageable pageable){
+
+        return PageUtils.toPage(
+                inventoryMovementRepository.findAllByStockId(stockId, pageable),
+                inventoryMovementRepository.countByStockId(stockId),
+                stockMapper::toInventoryMovementResponse,
+                pageable
+        )
+                .doFirst(() -> log.info("Buscando histórico de movimentações para o estoque: {}",
+                        stockId))
+                .doOnNext(page -> log.info("Histórico encontrado. Total de registros: {}",
+                        page.getTotalElements()));
+
+    }
+
     @Transactional
-    public Mono<Void> registerEntry(UUID id , InventoryMovementRequest request){
+    public Mono<Void> registerEntry(UUID id, InventoryMovementRequest request){
 
         validateEntry(request.movementType(), request.movementReason());
 
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> validateProductActive(stock).thenReturn(stock))
                 .flatMap(stock -> {
 
                     int quantityBefore = stock.getCurrentQuantity();
@@ -146,13 +167,8 @@ public class StockService {
                                 );
                                 movement.registerStockLowEvent(savedStock);
                                 return inventoryMovementRepository.save(movement)
-                                        .doOnSuccess(m -> {
-                                            if (!movement.getDomainEvents().isEmpty())
-                                                log.info("Eventos de dominio registrados para o stock: {}",
-                                                        id);
-
-                                            movement.clearDomainEvent();
-                                        });
+                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
+                                        .doOnSuccess(m -> movement.clearDomainEvent());
                             });
                 })
                 .doFirst(() ->
@@ -169,6 +185,7 @@ public class StockService {
 
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> validateProductActive(stock).thenReturn(stock))
                 .flatMap(stock -> {
                     int quantityBefore = stock.getCurrentQuantity();
                     stock.removeStock(request.quantity());
@@ -181,12 +198,8 @@ public class StockService {
                                 movement.registerStockLowEvent(savedStock);
 
                                 return inventoryMovementRepository.save(movement)
-                                        .doOnSuccess(m -> {
-                                            if (!movement.getDomainEvents().isEmpty())
-                                                log.info("Eventos de dominio registrados para o stock: {}",
-                                                        id);
-                                            movement.clearDomainEvent();
-                                        });
+                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
+                                        .doOnSuccess(m -> movement.clearDomainEvent());
                             });
                 })
                 .doFirst(() -> log.info("Removendo saldo do estoque: {}", id))
@@ -201,6 +214,7 @@ public class StockService {
 
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
+                .flatMap(stock -> validateProductActive(stock).thenReturn(stock))
                 .flatMap(stock -> {
 
                     int quantityBefore = stock.getCurrentQuantity();
@@ -213,12 +227,8 @@ public class StockService {
                                 );
                                 moviment.registerStockLowEvent(savedStock);
                                 return inventoryMovementRepository.save(moviment)
-                                        .doOnSuccess(m -> {
-                                            if (!moviment.getDomainEvents().isEmpty())
-                                                log.info("Eventos de dominio registrados para o stock: {}",
-                                                        id);
-                                            moviment.clearDomainEvent();
-                                        });
+                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
+                                        .doOnSuccess(m -> moviment.clearDomainEvent());
                             });
                 })
                 .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
@@ -283,6 +293,18 @@ public class StockService {
                 .doOnNext(response -> log.info("Estoque atualizado com sucesso: {}", id));
     }
 
+    private Mono<Product> validateProductActive(Stock stock) {
+        return productRepository.findById(stock.getProductId())
+                .switchIfEmpty(Mono.error(new ProductNotFoundException()))
+                .flatMap(product -> {
+                    if (!product.isActive()) {
+                        return Mono.error(new BusinessRuleException(
+                            "Não é possível movimentar estoque de um produto inativo ou descontinuado"));
+                    }
+                    return Mono.just(product);
+                });
+    }
+
     private Mono<Map<UUID, Product>> resolveProductMap(List<UUID> productIds) {
         if (productIds.isEmpty()) return Mono.just(Map.of());
 
@@ -321,14 +343,6 @@ public class StockService {
 
                             return new PageImpl<>(responses, pageable, total);
                         });
-    }
-
-    private void validateStockBelongsToProduct(Stock stock, Product product){
-
-        if (!stock.getProductId().equals(product.getId()))
-            throw new  BusinessRuleException(
-                    "O estoque informado não pertence ao produto fornecido na requisição."
-            );
     }
 
     private void validateEntry(MovementType type, MovementReason reason){

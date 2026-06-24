@@ -1,7 +1,7 @@
 -- =========================================================================
 -- V6__create_products_and_stocks.sql
 -- Tabelas de produtos e estoques
--- Cada produto tem exatamente 1 estoque (1:1)
+-- Cada produto tem 1 estoque por armazém (1:N, UNIQUE em product_id + warehouse_id)
 -- =========================================================================
 
 -- ==========================================
@@ -33,19 +33,21 @@ CREATE TABLE products (
 CREATE TABLE stocks (
                         id               UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
                         version          BIGINT,
-                        product_id       UUID        NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE,
+                        product_id       UUID        NOT NULL REFERENCES products(id) ON DELETE CASCADE,
                         current_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (current_quantity >= 0),
                         minimum_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (minimum_quantity >= 0),
-                        maximum_quantity INTEGER     NOT NULL DEFAULT 999999999,
+                        maximum_quantity INTEGER     NOT NULL DEFAULT 999999999 CHECK (maximum_quantity >= 0),
                         reorder_point    INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_point >= 0),
                         reorder_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_quantity >= 0),
                         location         VARCHAR(255),
-                        warehouse_id     VARCHAR(255),
+                        warehouse_id     VARCHAR(255) NOT NULL,
                         created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         created_by       UUID,
                         updated_by       UUID,
-                        CONSTRAINT chk_max_gte_min CHECK (maximum_quantity >= minimum_quantity)
+                        CONSTRAINT uq_stocks_product_warehouse UNIQUE (product_id, warehouse_id),
+                        CONSTRAINT chk_max_gte_min CHECK (maximum_quantity >= minimum_quantity),
+                        CONSTRAINT chk_reorder_lte_min CHECK (reorder_point <= minimum_quantity)
 );
 
 -- ==========================================
@@ -59,7 +61,7 @@ CREATE INDEX idx_products_status      ON products(status);
 CREATE INDEX idx_products_sku         ON products(sku);
 
 -- stocks
-CREATE INDEX idx_stocks_product_id ON stocks(product_id);
+CREATE INDEX idx_stocks_product_warehouse ON stocks(product_id, warehouse_id);
 
 -- Índice para busca de estoque baixo (query mais comum do sistema)
 CREATE INDEX idx_stocks_low_stock

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -66,6 +67,8 @@ public class ProductService {
                         return Mono.error(new BusinessRuleException(
                                 "Já existe um produto ATIVO com este nome no sistema."
                         ));
+
+                    validateSaleAndCost(request.salePrice(), request.costPrice());
 
                     return generateUniqueSku(
                             category.getName(),
@@ -290,6 +293,8 @@ public class ProductService {
 
                     productMapper.toUpdateProduct(product, request);
 
+                    validateSaleAndCost(product.getSalePrice(), product.getCostPrice());
+
                     return productRepository.save(product);
 
                 })
@@ -345,4 +350,12 @@ public class ProductService {
                     });
         });
     }
+
+    public void validateSaleAndCost(BigDecimal salePrice, BigDecimal costPrice){
+
+        if (salePrice.compareTo(costPrice) < 0)
+            throw new BusinessRuleException("O preço de venda deve ser maior ou igual ao preço de custo.");
+    }
+
+
 }

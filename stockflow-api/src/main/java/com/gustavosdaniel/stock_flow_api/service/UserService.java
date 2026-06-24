@@ -119,14 +119,27 @@ public class UserService {
             validateRole(targetUser.getRole(), currentRole);
             validateRole(newRole, currentRole);
 
-            return keycloakService
-                    .updateUserRoleInKeycloak(targetUser.getKeycloakId(), newRole)
-                    .then(Mono.defer(() -> {
-                        targetUser.setRole(newRole);
-                        return userRepository.save(targetUser);
-                    }))
-                    .doFirst(() -> log.info("Iniciando o processo para promover o funcionário: {}", targetUser.getUserName()))
-                    .doOnSuccess(savedUser -> log.info("Funcionário: {}, promovido com sucesso para o cargo de {}", targetUser.getUserName(), newRole));
+            UserRole originalRole = targetUser.getRole();
+
+            targetUser.setRole(newRole);
+
+            return userRepository.save(targetUser)
+                    .flatMap(savedUser ->
+                        keycloakService.updateUserRoleInKeycloak(
+                                targetUser.getKeycloakId(), newRole)
+                            .onErrorResume(e -> {
+                                log.error("Falha ao atualizar Keycloak. Revertendo role no DB...", e);
+                                savedUser.setRole(originalRole);
+                                return userRepository.save(savedUser)
+                                    .then(Mono.error(new RuntimeException(
+                                        "Falha ao sincronizar com Keycloak. " +
+                                        "Alteração de cargo revertida.", e)));
+                            })
+                    )
+                    .doFirst(() -> log.info("Iniciando o processo para promover o funcionário: {}",
+                            targetUser.getUserName()))
+                    .doOnSuccess(v -> log.info("Funcionário: {}, promovido com sucesso para o cargo de {}",
+                            targetUser.getUserName(), newRole));
         }).then();
     }
 
@@ -147,7 +160,8 @@ public class UserService {
                     validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
                     validateRole(targetUser.getRole(), currentRole);
 
-                    if (targetUser.isActive()) return Mono.empty();
+                    if (targetUser.isActive()) return Mono.error(
+                            new BusinessRuleException("O usuário já se encontra ativo"));
                     targetUser.setActive(true);
                     return userRepository.save(targetUser)
                             .doFirst(() -> log.info("Ativando usuário {}", targetUserId))
@@ -175,7 +189,8 @@ public class UserService {
 
             validateKeycloakId(targetUser.getKeycloakId(), currentKeycloakId);
             validateRole(targetUser.getRole(), currentRole);
-            if (!targetUser.isActive()) return Mono.empty();
+            if (!targetUser.isActive()) return Mono.error(
+                    new BusinessRuleException("O usuário já se encontra desativado"));
 
             targetUser.setActive(false);
 

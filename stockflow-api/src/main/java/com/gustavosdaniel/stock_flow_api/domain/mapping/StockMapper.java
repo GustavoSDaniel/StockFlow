@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.domain.mapping;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.InventoryMovement;
@@ -102,6 +103,27 @@ public class StockMapper {
                 request.customerId(),
                 request.note(),
                 request.unitCost()
+        );
+    }
+
+    public InventoryMovementResponse toInventoryMovementResponse(InventoryMovement inventoryMovement){
+
+        if (inventoryMovement == null) return null;
+
+        return new InventoryMovementResponse(
+
+                inventoryMovement.getId(),
+                inventoryMovement.getCreatedAt(),
+                inventoryMovement.getMovementType(),
+                inventoryMovement.getReason(),
+                inventoryMovement.getQuantity(),
+                inventoryMovement.getQuantityBefore(),
+                inventoryMovement.getQuantityAfter(),
+                inventoryMovement.getReferenceNumber(),
+                inventoryMovement.getNote(),
+                inventoryMovement.getSupplierId(),
+                inventoryMovement.getCustomerId(),
+                inventoryMovement.getUnitCost()
         );
     }
 }
