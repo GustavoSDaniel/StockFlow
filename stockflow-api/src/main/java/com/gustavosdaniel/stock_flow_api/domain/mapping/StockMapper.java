@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.domain.mapping;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
@@ -126,4 +127,5 @@ public class StockMapper {
                 inventoryMovement.getUnitCost()
         );
     }
+
 }

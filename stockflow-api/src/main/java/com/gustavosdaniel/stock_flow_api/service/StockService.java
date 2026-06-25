@@ -3,6 +3,7 @@ package com.gustavosdaniel.stock_flow_api.service;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
@@ -237,6 +238,35 @@ public class StockService {
                 .then();
     }
 
+    @Transactional
+    public Mono<Void> transferStock(Stock stock, TransferRequest request){
+
+        Mono<Stock> sourceWarehouseMono = stockRepository
+                .findByProductIdAndWarehouseId(stock.getProductId(), stock.getWarehouseId())
+                .switchIfEmpty(Mono.error(new StockNotFoundException()));
+
+        Mono<Stock> targetWarehouseMono = stockRepository
+                .findByProductIdAndWarehouseId(stock.getProductId(), stock.getWarehouseId())
+                .switchIfEmpty(Mono.error(new StockNotFoundException()));
+
+        return Mono.zip(sourceWarehouseMono, targetWarehouseMono)
+                .flatMap(tuple -> {
+
+                    Stock sourceWarehouse = tuple.getT1();
+                    int quantity = request.quantity();
+                    sourceWarehouse.removeStock(quantity);
+
+                    Stock targetWarehouse = tuple.getT1();
+                    targetWarehouse.addStock(quantity);
+
+                    TransferRequest request1 = new TransferRequest(
+
+                    )
+                })
+
+
+    }
+
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findOutOfStock(Pageable pageable){
 
@@ -355,8 +385,8 @@ public class StockService {
 
     private void validateExit(MovementType type, MovementReason reason){
 
-        if (type != MovementType.EXIT && type != MovementType.TRANSFER)
-            throw new BusinessRuleException("Tipo inválido para saída. Use EXIT ou TRANSFER.");
+        if (type != MovementType.EXIT)
+            throw new BusinessRuleException("Tipo inválido para saída. Use EXIT.");
         type.validateReason(reason);
     }
 
