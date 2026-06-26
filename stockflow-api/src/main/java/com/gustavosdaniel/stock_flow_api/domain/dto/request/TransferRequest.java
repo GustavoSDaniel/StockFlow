@@ -11,12 +11,6 @@ import jakarta.validation.constraints.Positive;
 
 public record TransferRequest(
 
-        @NotNull(message = "O tipo de movimento é obrigatório")
-        MovementType movementType,
-
-        @NotNull(message = "O motivo do movimento é obrigatório")
-        MovementReason movementReason,
-
         @NotNull(message = "A quantidade é obrigatória")
         @Positive(message = "A quantidade deve ser maior que zero")
         Integer quantity,

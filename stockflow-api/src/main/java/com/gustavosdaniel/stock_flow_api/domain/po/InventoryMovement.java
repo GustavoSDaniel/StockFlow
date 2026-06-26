@@ -53,12 +53,6 @@ import java.util.UUID;
 public class InventoryMovement extends BaseImmutableEntity {
 
     /**
-     * Construtor padrão obrigatório para o JPA.
-     */
-    public InventoryMovement() {
-    }
-
-    /**
      * Construtor completo para criação de uma movimentação de estoque.
      *
      * @param productId        identificador do produto movimentado
@@ -90,6 +84,13 @@ public class InventoryMovement extends BaseImmutableEntity {
         this.customerId = customerId;
         this.note = note;
         this.unitCost = unitCost;
+    }
+
+    public static InventoryMovement createTransfer(UUID productId, UUID stockId, MovementType movementType,
+    Integer quantity, Integer quantityBefore, Integer quantityAfter, String referenceNumber, String note){
+
+        return new InventoryMovement(productId, stockId, movementType, quantity, quantityBefore, quantityAfter,
+                MovementReason.TRANSFER, referenceNumber, null, null, note, null);
     }
 
 

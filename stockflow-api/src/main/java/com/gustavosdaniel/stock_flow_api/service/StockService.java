@@ -1,9 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.*;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
@@ -31,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -223,13 +221,13 @@ public class StockService {
                     int quantityAfter = stock.getCurrentQuantity();
                     return stockRepository.save(stock)
                             .flatMap(savedStock -> {
-                                InventoryMovement moviment = stockMapper.toInventoryMovement(
+                                InventoryMovement moment = stockMapper.toInventoryMovement(
                                         request, savedStock, quantityBefore, quantityAfter
                                 );
-                                moviment.registerStockLowEvent(savedStock);
-                                return inventoryMovementRepository.save(moviment)
+                                moment.registerStockLowEvent(savedStock);
+                                return inventoryMovementRepository.save(moment)
                                         .doOnSuccess(m -> stockEventPublisher.publish(m))
-                                        .doOnSuccess(m -> moviment.clearDomainEvent());
+                                        .doOnSuccess(m -> moment.clearDomainEvent());
                             });
                 })
                 .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
@@ -239,32 +237,69 @@ public class StockService {
     }
 
     @Transactional
-    public Mono<Void> transferStock(Stock stock, TransferRequest request){
+    public Mono<Void> transferStock(UUID productId, TransferRequest request){
 
-        Mono<Stock> sourceWarehouseMono = stockRepository
-                .findByProductIdAndWarehouseId(stock.getProductId(), stock.getWarehouseId())
+        Mono<Stock> sourceMono = stockRepository
+                .findByProductIdAndWarehouseId(productId, request.sourceWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
-        Mono<Stock> targetWarehouseMono = stockRepository
-                .findByProductIdAndWarehouseId(stock.getProductId(), stock.getWarehouseId())
+                Mono<Stock> targetMono = stockRepository
+                .findByProductIdAndWarehouseId(productId, request.targetWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
-        return Mono.zip(sourceWarehouseMono, targetWarehouseMono)
+        return Mono.zip(sourceMono, targetMono)
                 .flatMap(tuple -> {
 
-                    Stock sourceWarehouse = tuple.getT1();
-                    int quantity = request.quantity();
-                    sourceWarehouse.removeStock(quantity);
+                    Stock sourceStock = tuple.getT1();
+                    Stock targetStock = tuple.getT2();
 
-                    Stock targetWarehouse = tuple.getT1();
-                    targetWarehouse.addStock(quantity);
+                    int sourceQtyBefore = sourceStock.getCurrentQuantity();
+                    int targetQtyBefore = targetStock.getCurrentQuantity();
 
-                    TransferRequest request1 = new TransferRequest(
+                    sourceStock.removeStock(request.quantity());
+                    targetStock.addStock(request.quantity());
 
-                    )
-                })
+                    int sourceQtyAfter = sourceStock.getCurrentQuantity();
+                    int targetQtyAfter = targetStock.getCurrentQuantity();
 
+                    InventoryMovement sourceMovement = InventoryMovement.createTransfer(
 
+                            productId,
+                            sourceStock.getId(),
+                            MovementType.EXIT,
+                            request.quantity(),
+                            sourceQtyBefore,
+                            sourceQtyAfter,
+                            request.referenceNumber(),
+                            request.note()
+                    );
+                    sourceMovement.registerStockLowEvent(sourceStock);
+
+                    InventoryMovement targetMovement = InventoryMovement.createTransfer(
+
+                            productId,
+                            targetStock.getId(),
+                            MovementType.ENTRY,
+                            request.quantity(),
+                            targetQtyBefore,
+                            targetQtyAfter,
+                            request.referenceNumber(),
+                            request.note()
+                    );
+
+                    return stockRepository.saveAll(List.of(sourceStock, targetStock))
+                            .thenMany(inventoryMovementRepository
+                                    .saveAll(List.of(sourceMovement, targetMovement)))
+                            .doOnNext(savedMovement -> {
+                                stockEventPublisher.publish(savedMovement);
+                                sourceMovement.clearDomainEvent();
+                            })
+                            .then();
+                }).doFirst(() -> log.info("Transferindo {} unidades do produto {} de {} para {}",
+                        request.quantity(), productId,
+                        request.sourceWarehouseId(), request.targetWarehouseId()))
+                .doOnSuccess(v -> log.info( "Transferência de {} unidades realizada com sucesso",
+                        request.quantity()));
     }
 
     @Transactional(readOnly = true)
@@ -377,16 +412,16 @@ public class StockService {
 
     private void validateEntry(MovementType type, MovementReason reason){
 
-        if (type != MovementType.ENTRY && type != MovementType.RETURN)
-            throw new BusinessRuleException("Tipo inválido para entrada. Use ENTRY ou RETURN.");
+        if (type != MovementType.ENTRY && type != MovementType.RETURN && type != MovementType.TRANSFER)
+            throw new BusinessRuleException("Tipo inválido para entrada. Use ENTRY, RETURN ou TRANSFER.");
 
         type.validateReason(reason);
     }
 
     private void validateExit(MovementType type, MovementReason reason){
 
-        if (type != MovementType.EXIT)
-            throw new BusinessRuleException("Tipo inválido para saída. Use EXIT.");
+        if (type != MovementType.EXIT && type != MovementType.TRANSFER)
+            throw new BusinessRuleException("Tipo inválido para saída. Use EXIT ou TRANSFER.");
         type.validateReason(reason);
     }
 
