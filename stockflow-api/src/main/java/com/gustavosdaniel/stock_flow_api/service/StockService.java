@@ -243,7 +243,7 @@ public class StockService {
                 .findByProductIdAndWarehouseId(productId, request.sourceWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
-                Mono<Stock> targetMono = stockRepository
+        Mono<Stock> targetMono = stockRepository
                 .findByProductIdAndWarehouseId(productId, request.targetWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
