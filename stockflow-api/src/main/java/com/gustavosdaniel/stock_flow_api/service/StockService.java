@@ -113,7 +113,7 @@ public class StockService {
                         .map(stock -> stockMapper.toStockResponse(stock, product))
                 )
                 .doFirst(() -> log.info("Buscando estoques pelo ID do produto: {}", productId))
-                .doOnNext(response -> log.info("Estoque encontrado: armazém={}, produto={}",
+                .doOnNext(response -> log.info("Estoques encontrados: armazém = {}, produto = {}",
                         response.warehouseId(), productId));
     }
 
@@ -143,7 +143,6 @@ public class StockService {
                         stockId))
                 .doOnNext(page -> log.info("Histórico encontrado. Total de registros: {}",
                         page.getTotalElements()));
-
     }
 
     @Transactional
