@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
@@ -346,5 +347,275 @@ class StockServiceTest {
         verify(stockMapper).toInventoryMovementResponse(movement);
     }
 
+    @Test
+    @DisplayName("Should entry with sucesso")
+    void entrySaldo(){
 
+        UUID categoryId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+
+        UUID movimentId = UUID.randomUUID();
+        MovementType movementType = MovementType.RETURN;
+        MovementReason movementReason = MovementReason.RETURN_CUSTOMER;
+        Integer quantityBefore = 30;
+        Integer quantity = 15;
+        Integer quantityAfter = 45;
+        String referenceNumber = "Devolução por conta de lote";
+        UUID supplierId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        String note = "Devolveu";
+        BigDecimal unitCost = BigDecimal.valueOf(1800.00);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        InventoryMovementRequest request = new InventoryMovementRequest(movementType,quantity,movementReason ,
+                referenceNumber, supplierId, customerId, note, unitCost);
+
+        InventoryMovement movement = new InventoryMovement(productId, stockId, movementType, quantity,
+                quantityBefore, quantityAfter, movementReason, referenceNumber,
+                supplierId, customerId, note, unitCost);
+        ReflectionTestUtils.setField(movement, "id", movimentId);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(stockRepository.findById(stockId)).thenReturn(Mono.just(stock));
+        when(stockRepository.save(any(Stock.class))).thenReturn(Mono.just(stock));
+        when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
+                .thenReturn(movement);
+        when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+
+        Mono<Void> output = stockService.registerEntry(stockId, request);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(stockRepository).findById(stockId);
+        verify(stockRepository, times(1)).findById(stockId);
+        verify(stockRepository).save(any(Stock.class));
+        verify(stockRepository, times(1)).save(any(Stock.class));
+        verify(stockMapper).toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt());
+        verify(inventoryMovementRepository).save(any(InventoryMovement.class));
+        verify(inventoryMovementRepository, times(1)).save(any(InventoryMovement.class));
+    }
+
+    @Test
+    @DisplayName("Should exist with sucesso quantity")
+    void existSaldo(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+
+        UUID movimentId = UUID.randomUUID();
+        MovementType movementType = MovementType.EXIT;
+        MovementReason movementReason = MovementReason.SALE;
+        Integer quantityBefore = 30;
+        Integer quantity = 15;
+        Integer quantityAfter = 15;
+        String referenceNumber = "Devolução por conta de lote";
+        UUID supplierId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        String note = "Devolveu";
+        BigDecimal unitCost = BigDecimal.valueOf(1800.00);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+        ReflectionTestUtils.setField(stock, "currentQuantity", quantityBefore);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        InventoryMovementRequest request = new InventoryMovementRequest(movementType,quantity,movementReason ,
+                referenceNumber, supplierId, customerId, note, unitCost);
+
+        InventoryMovement movement = new InventoryMovement(productId, stockId, movementType, quantity,
+                quantityBefore, quantityAfter, movementReason, referenceNumber,
+                supplierId, customerId, note, unitCost);
+        ReflectionTestUtils.setField(movement, "id", movimentId);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(stockRepository.findById(stockId)).thenReturn(Mono.just(stock));
+        when(stockRepository.save(any(Stock.class))).thenReturn(Mono.just(stock));
+        when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
+                .thenReturn(movement);
+        when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+
+        Mono<Void> output = stockService.registerExit(stockId, request);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(stockRepository).findById(stockId);
+        verify(stockRepository, times(1)).findById(stockId);
+        verify(stockRepository).save(any(Stock.class));
+        verify(stockRepository, times(1)).save(any(Stock.class));
+        verify(stockMapper).toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt());
+        verify(inventoryMovementRepository).save(any(InventoryMovement.class));
+        verify(inventoryMovementRepository, times(1)).save(any(InventoryMovement.class));
+    }
+
+    @Test
+    @DisplayName("Should ajuste estoque with sucesso")
+    void adjustStock(){
+
+        UUID categoryId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+
+        UUID movimentId = UUID.randomUUID();
+        MovementType movementType = MovementType.ADJUSTMENT;
+        MovementReason movementReason = MovementReason.INVENTORY_COUNT;
+        Integer quantityBefore = 15;
+        Integer quantity = 15;
+        Integer quantityAfter = 0;
+        String referenceNumber = "Devolução por conta de lote";
+        UUID supplierId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        String note = "Devolveu";
+        BigDecimal unitCost = BigDecimal.valueOf(1800.00);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+        ReflectionTestUtils.setField(stock, "currentQuantity", quantityAfter);
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        InventoryMovementRequest request = new InventoryMovementRequest(movementType,quantity,movementReason ,
+                referenceNumber, supplierId, customerId, note, unitCost);
+
+        InventoryMovement movement = new InventoryMovement(productId, stockId, movementType, quantity,
+                quantityBefore, quantityAfter, movementReason, referenceNumber,
+                supplierId, customerId, note, unitCost);
+        ReflectionTestUtils.setField(movement, "id", movimentId);
+
+        when(productRepository.findById(productId)).thenReturn(Mono.just(product));
+        when(stockRepository.findById(stockId)).thenReturn(Mono.just(stock));
+        when(stockRepository.save(any(Stock.class))).thenReturn(Mono.just(stock));
+        when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
+                .thenReturn(movement);
+        when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+
+        Mono<Void> output = stockService.adjustStock(stockId, request);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, times(1)).findById(productId);
+        verify(stockRepository).findById(stockId);
+        verify(stockRepository, times(1)).findById(stockId);
+        verify(stockRepository).save(any(Stock.class));
+        verify(stockRepository, times(1)).save(any(Stock.class));
+        verify(stockMapper).toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt());
+        verify(inventoryMovementRepository).save(any(InventoryMovement.class));
+        verify(inventoryMovementRepository, times(1)).save(any(InventoryMovement.class));
+    }
+
+    @Test
+    @DisplayName("Shoul with sucesso transfer")
+    void transfer(){
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        Integer quantity = 10;
+
+        Integer quantityBefore = 15;
+        Integer quantityAfter = 5;
+
+        Integer quantityAfter2 = 15;
+        Integer quantityBefore2 = 5;
+
+        String referenceNumber = "OC numero da transferencia";
+        String note = "Transferencia realizada pela propia empresa";
+
+        UUID stockId = UUID.randomUUID();
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+        Integer currentQuantity = 20;
+        MovementType movementType = MovementType.TRANSFER;
+
+        UUID stockId2 = UUID.randomUUID();
+        String warehouseId2 = "GALPAO-B";
+        Integer currentQuantity2 = 20;
+
+
+        Stock sourceStock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(sourceStock, "id", stockId);
+        ReflectionTestUtils.setField(sourceStock, "currentQuantity", currentQuantity);
+
+        Stock targetStock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId2);
+        ReflectionTestUtils.setField(targetStock, "id", stockId);
+        ReflectionTestUtils.setField(targetStock, "currentQuantity", currentQuantity2);
+
+        InventoryMovement sourceMovement = InventoryMovement.createTransfer(
+                productId, stockId, movementType, quantity, quantityBefore, quantityAfter, referenceNumber, note
+        );
+
+        InventoryMovement targetMovement = InventoryMovement.createTransfer(
+                productId, stockId2, movementType, quantity,
+                quantityBefore2, quantityAfter2, referenceNumber, note
+        );
+    }
 }

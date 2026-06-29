@@ -200,8 +200,10 @@ public class StockService {
                                         .doOnSuccess(m -> movement.clearDomainEvent());
                             });
                 })
-                .doFirst(() -> log.info("Removendo saldo do estoque: {}", id))
-                .doOnSuccess(v -> log.info("Stock: {} remove {}", id, request.quantity()))
+                .doFirst(() -> log.info("Removendo saldo do estoque: {}, em uma oepração de: {}", id,
+                        request.movementReason()))
+                .doOnSuccess(v -> log.info("Stock: {} removeu quantidade de {}",
+                        id, request.quantity()))
                 .then();
     }
 
@@ -230,7 +232,7 @@ public class StockService {
                             });
                 })
                 .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
-                .doOnSuccess(v -> log.info("Estoque ajustado para: {} unidades",
+                .doOnSuccess(v -> log.info("Acertando o estoque que estava errado na quantidade de: {} unidades",
                         request.quantity()))
                 .then();
     }
@@ -238,15 +240,15 @@ public class StockService {
     @Transactional
     public Mono<Void> transferStock(UUID productId, TransferRequest request){
 
-        Mono<Stock> sourceMono = stockRepository
+        Mono<Stock> stockSourceMono = stockRepository
                 .findByProductIdAndWarehouseId(productId, request.sourceWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
-        Mono<Stock> targetMono = stockRepository
+        Mono<Stock> stockTargetMono = stockRepository
                 .findByProductIdAndWarehouseId(productId, request.targetWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));
 
-        return Mono.zip(sourceMono, targetMono)
+        return Mono.zip(stockSourceMono, stockTargetMono)
                 .flatMap(tuple -> {
 
                     Stock sourceStock = tuple.getT1();
