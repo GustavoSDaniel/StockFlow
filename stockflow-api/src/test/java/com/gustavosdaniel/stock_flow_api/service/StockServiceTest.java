@@ -2,6 +2,7 @@ package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
@@ -22,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
@@ -567,11 +569,6 @@ class StockServiceTest {
     void transfer(){
 
         UUID productId = UUID.randomUUID();
-        String productName = "Celular";
-        String sku = "ELET-NOME-CELU-3F3D-0001";
-        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
-        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
-        UnitMeasure unitMeasure = UnitMeasure.UN;
 
         Integer quantity = 10;
 
@@ -598,6 +595,9 @@ class StockServiceTest {
         String warehouseId2 = "GALPAO-B";
         Integer currentQuantity2 = 20;
 
+        TransferRequest request = new TransferRequest(quantity, warehouseId, warehouseId2,
+                referenceNumber, note);
+
 
         Stock sourceStock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
                 reorderQuantity, location, warehouseId);
@@ -606,7 +606,7 @@ class StockServiceTest {
 
         Stock targetStock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
                 reorderQuantity, location, warehouseId2);
-        ReflectionTestUtils.setField(targetStock, "id", stockId);
+        ReflectionTestUtils.setField(targetStock, "id", stockId2);
         ReflectionTestUtils.setField(targetStock, "currentQuantity", currentQuantity2);
 
         InventoryMovement sourceMovement = InventoryMovement.createTransfer(
@@ -617,5 +617,215 @@ class StockServiceTest {
                 productId, stockId2, movementType, quantity,
                 quantityBefore2, quantityAfter2, referenceNumber, note
         );
+
+        when(stockRepository.findByProductIdAndWarehouseId(productId, request.sourceWarehouseId()))
+                .thenReturn(Mono.just(sourceStock));
+
+        when(stockRepository.findByProductIdAndWarehouseId(productId, request.targetWarehouseId()))
+                .thenReturn(Mono.just(targetStock));
+
+        when(stockRepository.saveAll(anyIterable()))
+                .thenReturn(Flux.just(sourceStock, targetStock));
+
+        when(inventoryMovementRepository.saveAll(anyIterable()))
+                .thenReturn(Flux.just(sourceMovement, targetMovement));
+
+        Mono<Void> output = stockService.transferStock(productId, request);
+
+        StepVerifier.create(output).verifyComplete();
+
+        verify(stockRepository).findByProductIdAndWarehouseId(productId, request.sourceWarehouseId());
+        verify(stockRepository, times(1))
+                .findByProductIdAndWarehouseId(productId, request.sourceWarehouseId());
+        verify(stockRepository).findByProductIdAndWarehouseId(productId, request.targetWarehouseId());
+        verify(stockRepository, times(1))
+                .findByProductIdAndWarehouseId(productId, request.targetWarehouseId());
+        verify(stockRepository).saveAll(anyIterable());
+        verify(inventoryMovementRepository).saveAll(anyIterable());
+    }
+
+    @Test
+    @DisplayName("Should with sucesso find out of stock")
+    void getStockOutOf(){
+
+        UUID categoryId = UUID.randomUUID();
+        UUID supplierId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer currentQuantity = 0;
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+        StockStatus stockStatus = StockStatus.OUT_OF_STOCK;
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        int limit = pageable.getPageSize();
+        Long offset = pageable.getOffset();
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+        ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
+
+        StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
+                currentQuantity, stockStatus, location);
+
+        when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
+        when(stockRepository.findOutOfStock(limit, offset))
+                .thenReturn(Flux.just(stock));
+        when(stockRepository.countOutOfStock()).thenReturn(Mono.just(1L));
+        when(stockMapper.toStockSummaryResponse(stock, product)).thenReturn(response);
+
+        Mono<Page<StockSummaryResponse>> output = stockService.findOutOfStock(pageable);
+
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getNumberOfElements(), "O numero de elementos na pagina é de 1");
+                })
+                .verifyComplete();
+
+
+        verify(stockRepository).findOutOfStock(limit, offset);
+        verify(stockRepository).countOutOfStock();
+        verify(stockMapper).toStockSummaryResponse(stock, product);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso find low stock")
+    void getLowStockProducts(){
+
+        UUID categoryId = UUID.randomUUID();
+        UUID supplierId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer currentQuantity = 15;
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+        StockStatus stockStatus = StockStatus.OUT_OF_STOCK;
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        int limit = pageable.getPageSize();
+        Long offset = pageable.getOffset();
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+        ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
+
+        StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
+                currentQuantity, stockStatus, location);
+
+        when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
+        when(stockRepository.findLowStock(limit, offset))
+                .thenReturn(Flux.just(stock));
+        when(stockRepository.countLowStock()).thenReturn(Mono.just(1L));
+        when(stockMapper.toStockSummaryResponse(stock, product)).thenReturn(response);
+
+        Mono<Page<StockSummaryResponse>> output = stockService.findLowStockProducts(pageable);
+
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getNumberOfElements(), "O numero de elementos na pagina é de 1");
+                })
+                .verifyComplete();
+
+
+        verify(stockRepository).findLowStock(limit, offset);
+        verify(stockRepository).countLowStock();
+        verify(stockMapper).toStockSummaryResponse(stock, product);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso find Over stock")
+    void getOverStock(){
+
+        UUID categoryId = UUID.randomUUID();
+        UUID supplierId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer currentQuantity = 200;
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+        StockStatus stockStatus = StockStatus.OUT_OF_STOCK;
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        int limit = pageable.getPageSize();
+        Long offset = pageable.getOffset();
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+        ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
+
+        StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
+                currentQuantity, stockStatus, location);
+
+        when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
+        when(stockRepository.findOverStock(limit, offset))
+                .thenReturn(Flux.just(stock));
+        when(stockRepository.countOverStock()).thenReturn(Mono.just(1L));
+        when(stockMapper.toStockSummaryResponse(stock, product)).thenReturn(response);
+
+        Mono<Page<StockSummaryResponse>> output = stockService.findOverStock(pageable);
+
+
+        StepVerifier.create(output)
+                .assertNext(page -> {
+                    assertEquals(1, page.getNumberOfElements(), "O numero de elementos na pagina é de 1");
+                })
+                .verifyComplete();
+
+        verify(stockRepository).findOverStock(limit, offset);
+        verify(stockRepository).countOverStock();
+        verify(stockMapper).toStockSummaryResponse(stock, product);
     }
 }
