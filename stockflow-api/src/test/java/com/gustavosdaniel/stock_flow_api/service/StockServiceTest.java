@@ -2,6 +2,7 @@ package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
@@ -827,5 +828,75 @@ class StockServiceTest {
         verify(stockRepository).findOverStock(limit, offset);
         verify(stockRepository).countOverStock();
         verify(stockMapper).toStockSummaryResponse(stock, product);
+    }
+
+    @Test
+    @DisplayName("Should with sucesso update stock")
+    void updateStock(){
+
+        UUID categoryId = UUID.randomUUID();
+        UUID supplierId = UUID.randomUUID();
+
+        UUID productId = UUID.randomUUID();
+        String productName = "Celular";
+        String sku = "ELET-NOME-CELU-3F3D-0001";
+        BigDecimal costPrice = BigDecimal.valueOf(1000.00);
+        BigDecimal salePrice = BigDecimal.valueOf(3000.00);
+        UnitMeasure unitMeasure = UnitMeasure.UN;
+
+        UUID stockId = UUID.randomUUID();
+        Integer currentQuantity = 100;
+        Integer minimumQuantity = 20;
+        Integer maximumQuantity = 150;
+        Integer reorderPoint = 15;
+        Integer reorderQuantity = 50;
+        String location = "SP-CAPITAL";
+        String warehouseId = "GALPAO-A";
+        StockStatus stockStatus = StockStatus.NORMAL;
+
+        Integer minimumQuantityUpdate = 15;
+        Integer maximumQuantityUpdate = 200;
+        Integer reorderPointUpdate = 10;
+        Integer reorderQuantityUpdate = 60;
+        String locationUpdate = "MG-CAPITAL";
+        String warehouseIdUpdate = "GALPAO-A3";
+
+        Product product = new Product(productName, null, sku, categoryId, supplierId,
+                costPrice, salePrice, unitMeasure, null);
+        ReflectionTestUtils.setField(product, "id", productId);
+
+        Stock stock = new Stock(productId, minimumQuantity, maximumQuantity, reorderPoint,
+                reorderQuantity, location, warehouseId);
+        ReflectionTestUtils.setField(stock, "id", stockId);
+
+        StockUpdate request = new StockUpdate(minimumQuantityUpdate, maximumQuantityUpdate,
+                reorderPointUpdate, reorderQuantityUpdate,locationUpdate, warehouseIdUpdate);
+
+        StockResponse response = new StockResponse(stockId, productId, productName, sku,
+                currentQuantity, minimumQuantityUpdate, maximumQuantityUpdate,reorderPointUpdate,
+                reorderQuantityUpdate, stockStatus,locationUpdate, warehouseIdUpdate);
+
+        when(stockRepository.findById(stockId)).thenReturn(Mono.just(stock));
+        doNothing().when(stockMapper).applyUpdate(any(Stock.class), any(StockUpdate.class));
+        when(stockRepository.save(any(Stock.class))).thenReturn(Mono.just(stock));
+        when(productRepository.findById(stock.getProductId())).thenReturn(Mono.just(product));
+        when(stockMapper.toStockResponse(stock, product)).thenReturn(response);
+
+        Mono<StockResponse> output = stockService.updateStock(stockId, request);
+
+        StepVerifier.create(output)
+                .assertNext(resultado -> {
+
+                    assertEquals(stockId, response.id(), "O ID deve ser o mesmo");
+                })
+                .verifyComplete();
+
+        verify(stockRepository).findById(stockId);
+        verify(stockRepository, times(1)).findById(stockId);
+        verify(stockMapper).applyUpdate(any(Stock.class), any(StockUpdate.class));
+        verify(stockRepository).save(any(Stock.class));
+        verify(stockRepository, times(1)).save(any(Stock.class));
+        verify(productRepository).findById(stock.getProductId());
+        verify(stockMapper).toStockResponse(stock, product);
     }
 }
