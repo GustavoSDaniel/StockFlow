@@ -82,6 +82,13 @@ public class SecurityConfig {
                         .hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/products/**").hasRole("ADMIN")
 
+                        //STOCK
+                        .pathMatchers(HttpMethod.GET, "/api/v1/stocks/**").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/stocks/*/entry").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/stocks/*/exit").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/stocks/**").hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/stocks/**").hasAnyRole("MANAGER", "ADMIN")
+
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
