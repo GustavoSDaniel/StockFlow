@@ -2,8 +2,8 @@ package com.gustavosdaniel.stock_flow_api.domain.enums;
 
 public enum NotificationType {
 
-    STOCK_LOW,
     OUT_OF_STOCK,
+    STOCK_LOW,
     REORDER_POINT,
     OVERSTOCK
 }

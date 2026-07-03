@@ -15,9 +15,11 @@ CREATE TABLE notifications (
                                message               TEXT                  NOT NULL,
                                current_quantity      INTEGER,
                                minimum_quantity      INTEGER,
+                               maximum_quantity      INTEGER,
+                               reorder_point         INTEGER,
                                is_read               BOOLEAN               NOT NULL DEFAULT FALSE,
                                is_resolved           BOOLEAN               NOT NULL DEFAULT FALSE,
-                               assigned_to           UUID                  REFERENCES users(id) ON DELETE SET NULL, -- Mantido FK pois aqui se refere ao ID local atribuído
+                               assigned_to           UUID                  REFERENCES users(id) ON DELETE SET NULL,
                                read_at               TIMESTAMPTZ,
                                resolved_at           TIMESTAMPTZ,
                                created_at            TIMESTAMPTZ           NOT NULL DEFAULT NOW(),

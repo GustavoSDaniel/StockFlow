@@ -61,7 +61,9 @@ public class Notification extends BaseEntity {
     public Notification(UUID productId, String productName, String productSku,
                         NotificationType notificationType, NotificationPriority notificationPriority,
                         String title, String message, Integer currentQuantity,
-                        Integer minimumQuantity, UUID assignedTo) {
+                        Integer minimumQuantity, Integer maximumQuantity, Integer reorderPoint,
+                        UUID assignedTo) {
+
         this.productId = productId;
         this.productName = productName;
         this.productSku = productSku;
@@ -71,6 +73,8 @@ public class Notification extends BaseEntity {
         this.message = message;
         this.currentQuantity = currentQuantity;
         this.minimumQuantity = minimumQuantity;
+        this.maximumQuantity = maximumQuantity;
+        this.reorderPoint = reorderPoint;
         this.assignedTo = assignedTo;
     }
 
@@ -133,6 +137,12 @@ public class Notification extends BaseEntity {
      */
     @Column("minimum_quantity")
     private Integer minimumQuantity;
+
+    @Column("maximum_quantity")
+    private Integer maximumQuantity;
+
+    @Column("reorder_point")
+    private Integer reorderPoint;
 
     /**
      * Indica se a notificação já foi lida pelo usuário. Padrão: {@code false}.
@@ -278,6 +288,22 @@ public class Notification extends BaseEntity {
         this.minimumQuantity = minimumQuantity;
     }
 
+    public Integer getMaximumQuantity() {
+        return maximumQuantity;
+    }
+
+    public void setMaximumQuantity(Integer maximumQuantity) {
+        this.maximumQuantity = maximumQuantity;
+    }
+
+    public Integer getReorderPoint() {
+        return reorderPoint;
+    }
+
+    public void setReorderPoint(Integer reorderPoint) {
+        this.reorderPoint = reorderPoint;
+    }
+
     /**
      * Verifica se a notificação foi lida.
      *
@@ -287,10 +313,6 @@ public class Notification extends BaseEntity {
         return read;
     }
 
-    public void setRead(boolean read) {
-        this.read = read;
-    }
-
     /**
      * Verifica se a notificação foi resolvida.
      *
@@ -298,10 +320,6 @@ public class Notification extends BaseEntity {
      */
     public boolean isResolved() {
         return resolved;
-    }
-
-    public void setResolved(boolean resolved) {
-        this.resolved = resolved;
     }
 
     public UUID getAssignedTo() {

@@ -2,8 +2,8 @@ package com.gustavosdaniel.stock_flow_api.domain.po;
 
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementType;
-import com.gustavosdaniel.stock_flow_api.messaging.event.DomainEvent;
-import com.gustavosdaniel.stock_flow_api.messaging.event.StockLowEvent;
+import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationType;
+import com.gustavosdaniel.stock_flow_api.messaging.event.*;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -34,11 +34,7 @@ import java.util.UUID;
  * </ul>
  * </p>
  *
- * <p><strong>Eventos de domínio:</strong> A classe pode registrar eventos como
- * {@code StockLowEvent} quando uma movimentação deixa o estoque abaixo do nível mínimo
- * (via método {@link #registerStockLowEvent(Stock)}). Esses eventos são mantidos
- * transitoriamente e podem ser disparados por um interceptor ou serviço.
- * </p>
+
  *
  * <p>A tabela correspondente no banco de dados chama-se <strong>inventory_movement</strong>.
  * Os mapeamentos de colunas são explícitos via {@code @Column}.</p>
@@ -180,27 +176,31 @@ public class InventoryMovement extends BaseImmutableEntity {
     @Transient
     private List<DomainEvent> domainEvents = new ArrayList<>();
 
-
-    /**
-     * Verifica e registra um evento {@code StockLowEvent} se o estoque estiver baixo
-     * (conforme {@link Stock#isLowStock()}) após a movimentação.
-     * <p>
-     * Utilizado tipicamente após a persistência da movimentação, para notificar
-     * outros subsistemas sobre a necessidade de reposição.
-     * </p>
-     *
-     * @param stock o registro de estoque atualizado
-     */
-    public void registerStockLowEvent(Stock stock) {
+    public void evaluateAndRegisterAlerts(Stock stock){
         if (stock == null) return;
-        if (stock.isLowStock()) {
-            domainEvents.add(new StockLowEvent(
+
+        NotificationType notificationType = switch (stock.getStockStatus()){
+
+            case OUT_OF_STOCK -> NotificationType.OUT_OF_STOCK;
+            case LOW -> NotificationType.STOCK_LOW;
+            case REORDER_POINT -> NotificationType.REORDER_POINT;
+            case OVER_STOCKED -> NotificationType.OVERSTOCK;
+
+            case NORMAL -> null;
+        };
+
+        if (notificationType != null) {
+            this.domainEvents.add(new InventoryAlertEvent(
                     this.productId,
+                    notificationType,
                     stock.getCurrentQuantity(),
-                    stock.getMinimumQuantity()
+                    stock.getMinimumQuantity(),
+                    stock.getMaximumQuantity(),
+                    stock.getReorderPoint()
             ));
         }
     }
+
 
     /**
      * Limpa todos os eventos de domínio registrados.

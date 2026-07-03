@@ -163,10 +163,12 @@ public class StockService {
                                 InventoryMovement movement = stockMapper.toInventoryMovement(
                                         request, savedStock, quantityBefore, quantityAfter
                                 );
-                                movement.registerStockLowEvent(savedStock);
+                                movement.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(movement)
-                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
-                                        .doOnSuccess(m -> movement.clearDomainEvent());
+                                        .flatMap(m ->
+                                                stockEventPublisher.publish(m).thenReturn(m) )
+                                        .doOnSuccess(m ->
+                                                m.clearDomainEvent());
                             });
                 })
                 .doFirst(() ->
@@ -193,11 +195,12 @@ public class StockService {
                                 InventoryMovement movement = stockMapper.toInventoryMovement(
                                         request, savedStock, quantityBefore, quantityAfter
                                 );
-                                movement.registerStockLowEvent(savedStock);
+                                movement.evaluateAndRegisterAlerts(savedStock);
 
                                 return inventoryMovementRepository.save(movement)
-                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
-                                        .doOnSuccess(m -> movement.clearDomainEvent());
+                                        .flatMap(m ->
+                                                stockEventPublisher.publish(m).thenReturn(m))
+                                        .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
                 .doFirst(() -> log.info("Removendo saldo do estoque: {}, em uma oepração de: {}", id,
@@ -225,10 +228,11 @@ public class StockService {
                                 InventoryMovement moment = stockMapper.toInventoryMovement(
                                         request, savedStock, quantityBefore, quantityAfter
                                 );
-                                moment.registerStockLowEvent(savedStock);
+                                moment.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(moment)
-                                        .doOnSuccess(m -> stockEventPublisher.publish(m))
-                                        .doOnSuccess(m -> moment.clearDomainEvent());
+                                        .flatMap(m ->
+                                                stockEventPublisher.publish(m).thenReturn(m))
+                                        .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
                 .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
@@ -274,7 +278,7 @@ public class StockService {
                             request.referenceNumber(),
                             request.note()
                     );
-                    sourceMovement.registerStockLowEvent(sourceStock);
+                    sourceMovement.evaluateAndRegisterAlerts(sourceStock);
 
                     InventoryMovement targetMovement = InventoryMovement.createTransfer(
 
@@ -291,9 +295,12 @@ public class StockService {
                     return stockRepository.saveAll(List.of(sourceStock, targetStock))
                             .thenMany(inventoryMovementRepository
                                     .saveAll(List.of(sourceMovement, targetMovement)))
+                            .flatMap(savedMovement ->
+                                stockEventPublisher.publish(savedMovement)
+                                        .thenReturn(savedMovement)
+                            )
                             .doOnNext(savedMovement -> {
-                                stockEventPublisher.publish(savedMovement);
-                                sourceMovement.clearDomainEvent();
+                                savedMovement.clearDomainEvent();
                             })
                             .then();
                 }).doFirst(() -> log.info("Transferindo {} unidades do produto {} de {} para {}",

@@ -27,6 +27,25 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_URL:http://localhost:5052}/realms/${KEYCLOAK_REALM:stock-flow-realm}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+    consumer:
+      group-id: stockflow-api-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.gustavosdaniel.stock_flow_api.messaging.event.*"
+inventory:
+  kafka:
+    topics:
+      stock-alerts: stockflow.inventory.alerts.v1
+
 cache:
   ttl:
     default: 1800
@@ -50,6 +69,7 @@ keycloak:
   realm: ${KEYCLOAK_REALM:stock-flow-realm}
   client-id: ${KEYCLOAK_CLIENT_ID:stock-flow-api}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
 
 springdoc:
   swagger-ui:

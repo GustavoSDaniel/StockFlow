@@ -145,6 +145,10 @@ public class Stock extends BaseEntity {
      */
     private String warehouseId;
 
+    public boolean isOutOfStock(){
+
+        return currentQuantity == 0;
+    }
 
     /**
      * Verifica se o estoque está baixo, ou seja, se a quantidade atual é menor ou igual
@@ -154,6 +158,11 @@ public class Stock extends BaseEntity {
      */
     public boolean isLowStock() {
         return currentQuantity <= minimumQuantity;
+    }
+
+    public boolean isReorderPointStock(){
+
+        return currentQuantity.equals(reorderPoint);
     }
 
     /**
@@ -229,8 +238,9 @@ public class Stock extends BaseEntity {
      *         </ul>
      */
     public StockStatus getStockStatus() {
-        if (currentQuantity == 0) return StockStatus.OUT_OF_STOCK;
+        if (isOutOfStock()) return StockStatus.OUT_OF_STOCK;
         if (isLowStock()) return StockStatus.LOW;
+        if (isReorderPointStock()) return StockStatus.REORDER_POINT;
         if (isOverStock()) return StockStatus.OVER_STOCKED;
         return StockStatus.NORMAL;
     }
