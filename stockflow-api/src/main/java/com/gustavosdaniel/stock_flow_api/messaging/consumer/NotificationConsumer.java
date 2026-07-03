@@ -1,7 +1,9 @@
 package com.gustavosdaniel.stock_flow_api.messaging.consumer;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.NotificationResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationPriority;
 import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationType;
+import com.gustavosdaniel.stock_flow_api.domain.mapping.NotificationMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Notification;
 import com.gustavosdaniel.stock_flow_api.messaging.event.*;
 import com.gustavosdaniel.stock_flow_api.repository.NotificationRepository;
@@ -12,6 +14,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverRecord;
 
@@ -22,12 +25,16 @@ public class NotificationConsumer {
     private final KafkaReceiver<String, Object> receiver;
     private final NotificationRepository notificationRepository;
     private final ProductRepository productRepository;
+    private final Sinks.Many<NotificationResponse> notificationSink;
+    private final NotificationMapper notificationMapper;
 
 
-    public NotificationConsumer(KafkaReceiver<String, Object> receiver, NotificationRepository notificationRepository, ProductRepository productRepository) {
+    public NotificationConsumer(KafkaReceiver<String, Object> receiver, NotificationRepository notificationRepository, ProductRepository productRepository, Sinks.Many<NotificationResponse> notificationSink, NotificationMapper notificationMapper) {
         this.receiver = receiver;
         this.notificationRepository = notificationRepository;
         this.productRepository = productRepository;
+        this.notificationSink = notificationSink;
+        this.notificationMapper = notificationMapper;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -53,7 +60,13 @@ public class NotificationConsumer {
 
                         return notificationRepository.save(notification);
                     })
-                    .doOnSuccess(saved -> log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId()))
+                    .doOnSuccess(saved -> {
+                        log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId());
+
+                        NotificationResponse response = notificationMapper.toNotificationResponse(saved);
+
+                        notificationSink.tryEmitNext(response);
+                    })
                     .doOnError(e -> log.error("Erro ao salvar notificação: {}", e.getMessage()))
                     .then(Mono.fromRunnable(() -> record.receiverOffset().acknowledge()));
         }
