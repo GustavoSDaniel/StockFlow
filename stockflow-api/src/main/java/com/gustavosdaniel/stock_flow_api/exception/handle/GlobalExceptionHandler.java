@@ -209,6 +209,18 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleNotificationNoitFound(NotificationNotFoundException exception){
+
+        log.warn("Notificação não encontrada {}", exception.getMessage());
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ProblemType.NOTIFICATION_NOT_FOUND,
+                exception.getMessage()
+        );
+    }
+
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ProblemDetail> handleNullPointer(NullPointerException exception){
 

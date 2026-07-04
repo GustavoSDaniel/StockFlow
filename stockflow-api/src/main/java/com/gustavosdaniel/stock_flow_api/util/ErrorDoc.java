@@ -108,7 +108,13 @@ public class ErrorDoc {
                 "Verifique se o ID está correto.",
                 404
         ));
-
+        docs.put("notification-nao-encontrado", new ErrorDocResponse(
+                "Notificação não encontrado",
+                "Não foi possível encontrar essa notificação.",
+                "O ID da notificação não existe.",
+                "Verifique se o ID está correto.",
+                404
+        ));
     }
 
     public  Map<String, ErrorDocResponse> findAll(){
