@@ -78,7 +78,7 @@ public enum ProblemType {
     ),
     NOTIFICATION_NOT_FOUND(
 
-            "urn:stockflows:notificacao-nao-encontrado",
+            "urn:stockflow:notificacao-nao-encontrada",
             "Notificação não encontrada"
     ),
     NULL_POINTER(

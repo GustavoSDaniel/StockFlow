@@ -1,6 +1,5 @@
 package com.gustavosdaniel.stock_flow_api.domain.mapping;
 
-import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepClient;
 import com.gustavosdaniel.stock_flow_api.client.viacep.ViaCepResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.AddressRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.SupplierContactRequest;
@@ -11,11 +10,7 @@ import com.gustavosdaniel.stock_flow_api.domain.enums.StateUF;
 import com.gustavosdaniel.stock_flow_api.domain.po.Address;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
 import com.gustavosdaniel.stock_flow_api.domain.po.SupplierContact;
-import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;

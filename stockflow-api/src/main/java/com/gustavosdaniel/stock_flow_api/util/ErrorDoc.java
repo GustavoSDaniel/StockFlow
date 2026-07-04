@@ -73,8 +73,8 @@ public class ErrorDoc {
                 "Tente novamente. Se persistir, contate o suporte.",
                 500
         ));
-        docs.put("categoria-nao-encontrado", new ErrorDocResponse(
-                "Categoria não encontrado",
+        docs.put("categoria-nao-encontrada", new ErrorDocResponse(
+                "Categoria não encontrada",
                 "Não foi possível encontrar a categoria.",
                 "O ID fornecido não existe.",
                 "Verifique se o ID está correto.",
@@ -108,8 +108,8 @@ public class ErrorDoc {
                 "Verifique se o ID está correto.",
                 404
         ));
-        docs.put("notification-nao-encontrado", new ErrorDocResponse(
-                "Notificação não encontrado",
+        docs.put("notificacao-nao-encontrada", new ErrorDocResponse(
+                "Notificação não encontrada",
                 "Não foi possível encontrar essa notificação.",
                 "O ID da notificação não existe.",
                 "Verifique se o ID está correto.",

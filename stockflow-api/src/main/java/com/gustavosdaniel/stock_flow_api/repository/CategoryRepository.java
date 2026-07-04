@@ -1,7 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
-import com.gustavosdaniel.stock_flow_api.domain.po.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;

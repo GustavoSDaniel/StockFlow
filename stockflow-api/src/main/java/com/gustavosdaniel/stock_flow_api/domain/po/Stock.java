@@ -60,7 +60,7 @@ public class Stock extends BaseEntity {
     public static final int DEFAULT_REORDER_QUANTITY = 0;
 
     /**
-     * Construtor padrão obrigatório para o JPA.
+     * Construtor padrão obrigatório para o Spring Data R2DBC.
      */
     public Stock() {
     }
@@ -228,10 +228,15 @@ public class Stock extends BaseEntity {
 
     /**
      * Retorna o status atual do estoque baseado na quantidade atual e nos limites configurados.
+     * <p>
+     * A ordem de verificação é intencional: como {@code reorderPoint ≤ minimumQuantity} por regra
+     * de negócio, o ponto de reposição é verificado antes do estoque baixo para evitar que
+     * {@code LOW} (condição mais abrangente) capture o caso específico de reposição.
      *
      * @return {@link StockStatus}:
      *         <ul>
      *           <li>{@code OUT_OF_STOCK} se {@code currentQuantity == 0}</li>
+     *           <li>{@code REORDER_POINT} se {@code currentQuantity == reorderPoint}</li>
      *           <li>{@code LOW} se estoque baixo (menor ou igual ao mínimo)</li>
      *           <li>{@code OVER_STOCKED} se exceder o máximo</li>
      *           <li>{@code NORMAL} caso contrário</li>
@@ -239,8 +244,8 @@ public class Stock extends BaseEntity {
      */
     public StockStatus getStockStatus() {
         if (isOutOfStock()) return StockStatus.OUT_OF_STOCK;
-        if (isLowStock()) return StockStatus.LOW;
         if (isReorderPointStock()) return StockStatus.REORDER_POINT;
+        if (isLowStock()) return StockStatus.LOW;
         if (isOverStock()) return StockStatus.OVER_STOCKED;
         return StockStatus.NORMAL;
     }

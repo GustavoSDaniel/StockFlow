@@ -39,7 +39,7 @@ import java.util.UUID;
 public class Notification extends BaseEntity {
 
     /**
-     * Construtor padrão obrigatório para o JPA.
+     * Construtor padrão obrigatório para o Spring Data R2DBC.
      */
     public Notification() {
     }
@@ -56,13 +56,11 @@ public class Notification extends BaseEntity {
      * @param message            mensagem detalhada
      * @param currentQuantity    quantidade atual do produto (contexto)
      * @param minimumQuantity    quantidade mínima configurada (contexto)
-     * @param assignedTo         UUID do usuário responsável (pode ser nulo)
      */
     public Notification(UUID productId, String productName, String productSku,
                         NotificationType notificationType, NotificationPriority notificationPriority,
                         String title, String message, Integer currentQuantity,
-                        Integer minimumQuantity, Integer maximumQuantity, Integer reorderPoint,
-                        UUID assignedTo) {
+                        Integer minimumQuantity, Integer maximumQuantity, Integer reorderPoint) {
 
         this.productId = productId;
         this.productName = productName;
@@ -75,7 +73,6 @@ public class Notification extends BaseEntity {
         this.minimumQuantity = minimumQuantity;
         this.maximumQuantity = maximumQuantity;
         this.reorderPoint = reorderPoint;
-        this.assignedTo = assignedTo;
     }
 
 
@@ -159,13 +156,6 @@ public class Notification extends BaseEntity {
     private boolean resolved = false;
 
     /**
-     * UUID do usuário responsável por tratar a notificação.
-     * Mapeado para a coluna {@code assigned_to}.
-     */
-    @Column("assigned_to")
-    private UUID assignedTo;
-
-    /**
      * Data/hora em que a notificação foi lida (preenchido por {@link #markAsRead()}).
      * Mapeado para a coluna {@code read_at}.
      */
@@ -178,18 +168,6 @@ public class Notification extends BaseEntity {
      */
     @Column("resolved_at")
     private LocalDateTime resolvedAt;
-
-
-    /**
-     * Atribui a notificação a um usuário responsável.
-     *
-     * @param userId UUID do usuário (não pode ser nulo)
-     * @throws IllegalArgumentException se {@code userId} for {@code null}
-     */
-    public void assingTo(UUID userId) {
-        if (userId == null) throw new IllegalArgumentException("Usuário não pode ser nulo");
-        this.assignedTo = userId;
-    }
 
     /**
      * Marca a notificação como lida.
@@ -320,14 +298,6 @@ public class Notification extends BaseEntity {
      */
     public boolean isResolved() {
         return resolved;
-    }
-
-    public UUID getAssignedTo() {
-        return assignedTo;
-    }
-
-    public void setAssignedTo(UUID assignedTo) {
-        this.assignedTo = assignedTo;
     }
 
     /**

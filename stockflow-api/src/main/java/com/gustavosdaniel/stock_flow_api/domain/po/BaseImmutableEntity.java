@@ -19,7 +19,7 @@ import java.util.UUID;
  * <ul>
  *   <li>Identificador único {@link UUID} gerado automaticamente</li>
  *   <li>Auditoria de criação (usuário e data/hora)</li>
- *   <li>Implementação padrão de {@link Persistable} para uso com Spring Data JPA</li>
+ *   <li>Implementação padrão de {@link Persistable} para uso com Spring Data R2DBC</li>
  *   <li>Métodos {@code equals()} e {@code hashCode()} baseados apenas no ID</li>
  * </ul>
  *
@@ -74,7 +74,7 @@ abstract class BaseImmutableEntity implements Persistable<UUID> {
 
     /**
      * Indica se a entidade é nova (ainda não foi persistida no banco de dados).
-     * O Spring Data JPA utiliza este método para decidir entre {@code persist()} e {@code merge()}.
+     * O Spring Data R2DBC utiliza este método para decidir entre {@code INSERT} e {@code UPDATE}.
      * <p>
      * Para entidades imutáveis, uma entidade é considerada nova enquanto {@code createdAt} estiver
      * {@code null} – ou seja, antes de a auditoria preencher a data de criação.

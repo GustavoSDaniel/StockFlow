@@ -33,7 +33,7 @@ import java.util.UUID;
 public class SupplierContact extends BaseEntity {
 
     /**
-     * Construtor padrão (obrigatório para o JPA).
+     * Construtor padrão (obrigatório para o Spring Data R2DBC).
      */
     public SupplierContact() {
     }

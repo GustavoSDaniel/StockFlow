@@ -25,7 +25,6 @@ public class NotificationMapper {
                 notification.getMinimumQuantity(),
                 notification.getMaximumQuantity(),
                 notification.getReorderPoint(),
-                notification.getAssignedTo(),
                 notification.isRead(),
                 notification.getReadAt(),
                 notification.isResolved(),

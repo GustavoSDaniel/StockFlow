@@ -54,6 +54,11 @@ public class NotificationConsumer {
         if (payload instanceof InventoryAlertEvent alertEvent){
 
             return productRepository.findById(alertEvent.productId())
+                    .switchIfEmpty(Mono.defer(() -> {
+                        log.warn("Produto {} não encontrado para o alerta. Ignorando notificação.",
+                                alertEvent.productId());
+                        return Mono.empty();
+                    }))
                     .flatMap(product -> {
                         Notification notification = buildNotification(
                                 alertEvent, product.getName(), product.getSku());
@@ -88,8 +93,7 @@ public class NotificationConsumer {
                     alertEvent.currentQuantity(),
                     alertEvent.minimumQuantity(),
                     alertEvent.maximumQuantity(),
-                    alertEvent.reorderPoint(),
-                    null
+                    alertEvent.reorderPoint()
             );
 
             case STOCK_LOW -> new Notification(
@@ -100,8 +104,7 @@ public class NotificationConsumer {
                     alertEvent.currentQuantity(),
                     alertEvent.minimumQuantity(),
                     alertEvent.maximumQuantity(),
-                    alertEvent.reorderPoint(),
-                    null
+                    alertEvent.reorderPoint()
             );
 
             case REORDER_POINT -> new Notification(
@@ -113,8 +116,7 @@ public class NotificationConsumer {
                     alertEvent.currentQuantity(),
                     alertEvent.minimumQuantity(),
                     alertEvent.maximumQuantity(),
-                    alertEvent.reorderPoint(),
-                    null
+                    alertEvent.reorderPoint()
             );
 
 
@@ -126,11 +128,9 @@ public class NotificationConsumer {
                     alertEvent.currentQuantity(),
                     alertEvent.minimumQuantity(),
                     alertEvent.maximumQuantity(),
-                    alertEvent.reorderPoint(),
-                    null
+                    alertEvent.reorderPoint()
             );
 
-            default -> throw new IllegalArgumentException("Tipo de alerta desconhecido: " + alertEvent.getClass().getSimpleName());
         };
     }
 }

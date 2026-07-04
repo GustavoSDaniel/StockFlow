@@ -80,7 +80,7 @@ public class CategoryService {
                     return categoryRepository.save(child);
                 })
                 .doFirst(() -> log.info("Adicionando subCategoria: {} na categoria {}",
-                        parentId, childId))
+                        childId, parentId))
                 .doOnNext(savedChild -> log.info("Categoria {} vinculada com sucesso como subcategoria."
                         , savedChild.getName()))
                 .map(categoryMapper::toCategoryResponse);

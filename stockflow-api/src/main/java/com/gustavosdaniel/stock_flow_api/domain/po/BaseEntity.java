@@ -74,8 +74,8 @@ abstract class BaseEntity implements Persistable<UUID> {
 
     /**
      * Indica se a entidade é nova (ainda não foi persistida no banco de dados).
-     * O Spring Data JPA usa este método para decidir se deve executar {@code persist()}
-     * ou {@code merge()}.
+     * O Spring Data R2DBC usa este método para decidir se deve executar {@code INSERT}
+     * ou {@code UPDATE}.
      *
      * @return {@code true} se a versão é {@code null} (entidade recém-criada),
      *         {@code false} caso contrário (entidade já persistida)

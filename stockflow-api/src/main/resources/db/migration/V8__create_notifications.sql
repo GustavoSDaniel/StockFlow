@@ -19,7 +19,6 @@ CREATE TABLE notifications (
                                reorder_point         INTEGER,
                                is_read               BOOLEAN               NOT NULL DEFAULT FALSE,
                                is_resolved           BOOLEAN               NOT NULL DEFAULT FALSE,
-                               assigned_to           UUID                  REFERENCES users(id) ON DELETE SET NULL,
                                read_at               TIMESTAMPTZ,
                                resolved_at           TIMESTAMPTZ,
                                created_at            TIMESTAMPTZ           NOT NULL DEFAULT NOW(),
@@ -34,8 +33,7 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_product_id   ON notifications(product_id);
 CREATE INDEX idx_notifications_type         ON notifications(notification_type);
 CREATE INDEX idx_notifications_priority     ON notifications(notification_priority);
-CREATE INDEX idx_notifications_assigned_to  ON notifications(assigned_to)
-    WHERE assigned_to IS NOT NULL;
+
 CREATE INDEX idx_notifications_created_at   ON notifications(created_at DESC);
 
 -- Índices parciais para queries mais comuns (não lidas / não resolvidas)

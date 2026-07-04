@@ -203,7 +203,7 @@ public class StockService {
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
-                .doFirst(() -> log.info("Removendo saldo do estoque: {}, em uma oepração de: {}", id,
+                .doFirst(() -> log.info("Removendo saldo do estoque: {}, em uma operação de: {}", id,
                         request.movementReason()))
                 .doOnSuccess(v -> log.info("Stock: {} removeu quantidade de {}",
                         id, request.quantity()))
@@ -236,7 +236,7 @@ public class StockService {
                             });
                 })
                 .doFirst(() -> log.warn("Ajustando a quantidade do estoque"))
-                .doOnSuccess(v -> log.info("Acertando o estoque que estava errado na quantidade de: {} unidades",
+                .doOnSuccess(v -> log.info("Ajustando o estoque que estava errado na quantidade de: {} unidades",
                         request.quantity()))
                 .then();
     }

@@ -11,9 +11,7 @@ import reactor.core.publisher.Mono;
 /**
  * Publicador de eventos de domínio gerados por {@link InventoryMovement}.
  * <p>
- * Atualmente, os eventos são apenas logados. Quando um message broker
- * (RabbitMQ, Kafka, etc.) for integrado, este componente será o ponto
- * único de substituição — basta trocar a implementação interna.
+ * Publica eventos de domínio via Kafka utilizando {@link StockEventProducer}.
  * </p>
  */
 @Component
@@ -40,7 +38,7 @@ public class StockEventPublisher {
                         return stockEventProducer.sendInventoryAlert(alertEvent);
                     } else {
 
-                        log.info("DomainEvent ignorado (sem integração Kafka) — type={}, eventId={}",
+                        log.info("DomainEvent ignorado (sem integração Kafka) type={}, eventId={}",
                                 event.getClass().getSimpleName(), event.eventId());
                         return Mono.empty();
                     }

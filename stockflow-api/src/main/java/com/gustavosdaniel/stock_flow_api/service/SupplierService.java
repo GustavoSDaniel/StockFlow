@@ -253,7 +253,7 @@ public class SupplierService {
     public Mono<Void> removeContact(UUID contactId){
 
         return supplierContactRepository.findById(contactId)
-                .switchIfEmpty(Mono.error(new BusinessRuleException("O contato inserido náo existe")))
+                .switchIfEmpty(Mono.error(new BusinessRuleException("O contato inserido não existe")))
                 .flatMap(supplierContactRepository::delete)
                 .doFirst(() -> log.warn("Iniciando processo para deletar contato: {}", contactId))
                 .doOnSuccess(v -> log.info("Contato deletado com sucesso"));

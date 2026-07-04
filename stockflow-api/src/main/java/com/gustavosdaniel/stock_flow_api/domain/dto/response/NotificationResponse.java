@@ -20,7 +20,6 @@ public record NotificationResponse(
         Integer minimumQuantity,
         Integer maximumQuantity,
         Integer reorderPoint,
-        UUID assignedTo,
         boolean read,
         LocalDateTime readAt,
         boolean resolved,

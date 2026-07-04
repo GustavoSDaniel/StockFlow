@@ -35,7 +35,7 @@ import java.util.UUID;
 public class Address extends BaseEntity {
 
     /**
-     * Construtor padrão obrigatório para o JPA.
+     * Construtor padrão obrigatório para o Spring Data R2DBC.
      */
     public Address() {
     }
