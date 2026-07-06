@@ -171,7 +171,7 @@ public class NotificationService {
                     return notificationRepository.save(notification);
                 })
                 .doFirst(() -> log.info("Lendo notificação..."))
-                .doOnSuccess(notification -> log.info("Notificação {} lida com sucesso",
+                .doOnSuccess(notification -> log.info("Notificação: {} lida com sucesso",
                         notification.getTitle()))
                 .then();
     }
@@ -191,7 +191,7 @@ public class NotificationService {
                     return notificationRepository.save(notification);
                 })
                 .doFirst(() -> log.info("Marcando notificação {} como Resolvida", id))
-                .doOnSuccess(notificacao -> log.info("Notificação {}, resolvida com sucesso",
+                .doOnSuccess(notificacao -> log.info("Notificação: {}, resolvida com sucesso",
                         notificacao.getTitle()))
                 .then();
     }
