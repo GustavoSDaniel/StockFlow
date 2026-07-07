@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardOverviewResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Stock;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -37,4 +38,15 @@ public interface StockRepository extends R2dbcRepository<Stock, UUID> {
 
     @Query("SELECT COUNT(id) FROM stocks WHERE current_quantity > maximum_quantity")
     Mono<Long> countOverStock();
+
+    @Query("""
+        SELECT 
+            COALESCE(SUM(s.current_quantity * p.cost_price), 0) as total_stock_value,
+            COALESCE(SUM(s.current_quantity * p.sale_price), 0) as potential_sales_value,
+            COALESCE(AVG((p.sale_price - p.cost_price) / NULLIF(p.sale_price, 0)) * 100) as average_margin_percentage
+        FROM Products p
+        JOIN Stocks s ON p.id = s.product_id
+        WHERE p.status = 'ACTIVE'
+        """)
+    Mono<DashboardOverviewResponse.FinancialStats> getDashboardFinancialStats();
 }

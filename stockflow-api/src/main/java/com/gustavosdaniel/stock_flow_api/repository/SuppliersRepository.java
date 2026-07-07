@@ -28,4 +28,5 @@ public interface SuppliersRepository extends R2dbcRepository<Supplier, UUID> {
 
     @Query("SELECT COUNT(*) FROM suppliers WHERE trade_name ILIKE CONCAT('%', :tradeName, '%')")
     Mono<Long> countByTradeName(String tradeName);
+
 }

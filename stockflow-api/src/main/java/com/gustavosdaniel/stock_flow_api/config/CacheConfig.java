@@ -14,6 +14,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.web.reactive.config.EnableWebFlux;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,12 @@ public class CacheConfig {
     public Duration defaultCacheTtl(){
 
         return Duration.ofSeconds(defaultTtl);
+    }
+
+    @Bean
+    public Clock clock(){
+
+        return Clock.systemDefaultZone();
     }
 }
 

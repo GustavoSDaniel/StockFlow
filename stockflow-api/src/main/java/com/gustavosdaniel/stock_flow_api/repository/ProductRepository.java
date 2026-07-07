@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardOverviewResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import org.springframework.data.domain.Pageable;
@@ -43,4 +44,16 @@ public interface ProductRepository extends R2dbcRepository<Product, UUID> {
 
     @Query("SELECT COUNT(*) FROM products WHERE name ILIKE CONCAT('%', :name, '%') AND status = :status ")
     Mono<Long> countNameAndStatus(String name, ProductStatus status);
+
+    @Query("""
+        SELECT 
+            COUNT(id) as total,
+            COUNT(id) FILTER (WHERE status = 'ACTIVE') as active,
+            COUNT(id) FILTER (WHERE status = 'INACTIVE') as inactive,
+            COUNT(id) FILTER (WHERE status = 'DISCONTINUED') as discontinued
+        FROM products
+    """)
+    Mono<DashboardOverviewResponse.ProductStats> getDashboardProductStats();
+
+
 }

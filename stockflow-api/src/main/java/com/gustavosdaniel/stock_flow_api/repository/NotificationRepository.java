@@ -10,6 +10,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.UUID;
 
 public interface NotificationRepository extends R2dbcRepository<Notification, UUID> {
@@ -41,6 +42,8 @@ public interface NotificationRepository extends R2dbcRepository<Notification, UU
     Flux<Notification> findAllByResolvedFalse(Pageable pageable);
 
     Mono<Long> countByResolvedFalse();
+
+    Mono<Long> countByNotificationPriorityInAndResolvedFalse(Collection<NotificationPriority> priority);
 
     @Query("""
         SELECT * FROM notifications
