@@ -5,7 +5,7 @@ import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationPriority;
 import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationType;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.NotificationMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.Notification;
-import com.gustavosdaniel.stock_flow_api.messaging.event.*;
+import com.gustavosdaniel.stock_flow_api.messaging.event.InventoryAlertEvent;
 import com.gustavosdaniel.stock_flow_api.repository.NotificationRepository;
 import com.gustavosdaniel.stock_flow_api.repository.ProductRepository;
 import org.slf4j.Logger;
@@ -17,19 +17,22 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverRecord;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
 
 @Component
 public class NotificationConsumer {
 
     private final Logger log = LoggerFactory.getLogger(NotificationConsumer.class);
-    private final KafkaReceiver<String, Object> receiver;
+    private final KafkaReceiver<String, InventoryAlertEvent> receiver;
     private final NotificationRepository notificationRepository;
     private final ProductRepository productRepository;
     private final Sinks.Many<NotificationResponse> notificationSink;
     private final NotificationMapper notificationMapper;
 
 
-    public NotificationConsumer(KafkaReceiver<String, Object> receiver, NotificationRepository notificationRepository, ProductRepository productRepository, Sinks.Many<NotificationResponse> notificationSink, NotificationMapper notificationMapper) {
+    public NotificationConsumer(KafkaReceiver<String, InventoryAlertEvent> receiver, NotificationRepository notificationRepository, ProductRepository productRepository, Sinks.Many<NotificationResponse> notificationSink, NotificationMapper notificationMapper) {
         this.receiver = receiver;
         this.notificationRepository = notificationRepository;
         this.productRepository = productRepository;
@@ -44,40 +47,42 @@ public class NotificationConsumer {
 
         receiver.receive()
                 .flatMap(this::processRecord)
+                .doOnError(e -> log.error("Erro crítico no consumidor Kafka. Tentando reiniciar em 5 segundos...", e))
+                .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(5))
+                        .maxBackoff(Duration.ofSeconds(60))
+                        .doBeforeRetry(signal ->
+                                log.warn("Reiniciando consumidor Kafka (tentativa {}). Motivo: {}",
+                                        signal.totalRetries() + 1,
+                                        signal.failure().getMessage()))
+                )
                 .subscribe();
     }
 
-    private Mono<Void> processRecord(ReceiverRecord<String, Object> record){
+    private Mono<Void> processRecord(ReceiverRecord<String, InventoryAlertEvent> record){
 
-        Object payload = record.value();
+        InventoryAlertEvent alertEvent = record.value();
 
-        if (payload instanceof InventoryAlertEvent alertEvent){
+        return productRepository.findById(alertEvent.productId())
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.warn("Produto {} não encontrado para o alerta. Ignorando notificação.",
+                            alertEvent.productId());
+                    return Mono.empty();
+                }))
+                .flatMap(product -> {
+                    Notification notification = buildNotification(
+                            alertEvent, product.getName(), product.getSku());
 
-            return productRepository.findById(alertEvent.productId())
-                    .switchIfEmpty(Mono.defer(() -> {
-                        log.warn("Produto {} não encontrado para o alerta. Ignorando notificação.",
-                                alertEvent.productId());
-                        return Mono.empty();
-                    }))
-                    .flatMap(product -> {
-                        Notification notification = buildNotification(
-                                alertEvent, product.getName(), product.getSku());
+                    return notificationRepository.save(notification);
+                })
+                .doOnSuccess(saved -> {
+                    log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId());
 
-                        return notificationRepository.save(notification);
-                    })
-                    .doOnSuccess(saved -> {
-                        log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId());
+                    NotificationResponse response = notificationMapper.toNotificationResponse(saved);
 
-                        NotificationResponse response = notificationMapper.toNotificationResponse(saved);
-
-                        notificationSink.tryEmitNext(response);
-                    })
-                    .doOnError(e -> log.error("Erro ao salvar notificação: {}", e.getMessage()))
-                    .then(Mono.fromRunnable(() -> record.receiverOffset().acknowledge()));
-        }
-
-        record.receiverOffset().acknowledge();
-        return Mono.empty();
+                    notificationSink.tryEmitNext(response);
+                })
+                .doOnError(e -> log.error("Erro ao salvar notificação: {}", e.getMessage()))
+                .then(Mono.fromRunnable(() -> record.receiverOffset().acknowledge()));
     }
 
     private Notification buildNotification(

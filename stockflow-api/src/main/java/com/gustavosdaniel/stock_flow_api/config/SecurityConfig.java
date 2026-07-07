@@ -89,6 +89,9 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/stocks/**").hasAnyRole("MANAGER", "ADMIN")
                         .pathMatchers(HttpMethod.PUT, "/api/v1/stocks/**").hasAnyRole("MANAGER", "ADMIN")
 
+                        // NOTIFICATIONS
+                        .pathMatchers("/api/v1/notifications/**").hasAnyRole("MANAGER", "ADMIN")
+
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

@@ -1,8 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.config;
 
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ser.std.StringSerializer;
-import org.apache.kafka.clients.producer.ProducerConfig;
+import com.gustavosdaniel.stock_flow_api.messaging.event.InventoryAlertEvent;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,24 +16,27 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
+    @Value("${inventory.kafka.topics.stock-alerts:stockflow.inventory.alerts.v1}")
+    private String stockAlertsTopic;
+
     @Bean
-    public KafkaSender<String, Object> kafkaSender(KafkaProperties kafkaProperties){
+    public KafkaSender<String, InventoryAlertEvent> kafkaSender(KafkaProperties kafkaProperties){
 
         Map<String, Object> producer = kafkaProperties.buildProducerProperties();
 
-        SenderOptions<String, Object> senderOptions = SenderOptions.create(producer);
+        SenderOptions<String, InventoryAlertEvent> senderOptions = SenderOptions.create(producer);
 
         return KafkaSender.create(senderOptions);
     }
 
     @Bean
-    public KafkaReceiver<String, Object> kafkaReceiver(KafkaProperties kafkaProperties){
+    public KafkaReceiver<String, InventoryAlertEvent> kafkaReceiver(KafkaProperties kafkaProperties){
 
         Map<String, Object> consumer = kafkaProperties.buildConsumerProperties();
 
-        ReceiverOptions<String, Object> receiverOptions = ReceiverOptions
-                .<String, Object>create(consumer)
-                .subscription(Collections.singleton("stockflow.inventory.alerts.v1"));
+        ReceiverOptions<String, InventoryAlertEvent> receiverOptions = ReceiverOptions
+                .<String, InventoryAlertEvent>create(consumer)
+                .subscription(Collections.singleton(stockAlertsTopic));
 
         return KafkaReceiver.create(receiverOptions);
     }

@@ -32,7 +32,7 @@ public class StockEventPublisher {
                 .flatMap(event -> {
                     if (event instanceof  InventoryAlertEvent alertEvent) {
 
-                        log.warn("Preparando envio para o Kafka: {}  productId={}",
+                        log.info("Preparando envio para o Kafka: {}  productId={}",
                                 alertEvent.getClass().getSimpleName(), alertEvent.productId());
 
                         return stockEventProducer.sendInventoryAlert(alertEvent);

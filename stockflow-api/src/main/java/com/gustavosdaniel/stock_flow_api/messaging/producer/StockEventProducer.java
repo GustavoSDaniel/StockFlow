@@ -14,24 +14,24 @@ import reactor.kafka.sender.SenderRecord;
 public class StockEventProducer {
 
     private final Logger log = LoggerFactory.getLogger(StockEventProducer.class);
-    private final KafkaSender<String, Object> sender;
+    private final KafkaSender<String, InventoryAlertEvent> sender;
 
     @Value("${inventory.kafka.topics.stock-alerts:stockflow.inventory.alerts.v1}")
     private String topic;
 
-    public StockEventProducer(KafkaSender<String, Object> sender) {
+    public StockEventProducer(KafkaSender<String, InventoryAlertEvent> sender) {
         this.sender = sender;
     }
 
     public Mono<Void> sendInventoryAlert(InventoryAlertEvent event) {
 
-        ProducerRecord<String, Object> producerRecord = new ProducerRecord<>(
+        ProducerRecord<String, InventoryAlertEvent> producerRecord = new ProducerRecord<>(
                 topic,
                 event.productId().toString(),
                 event
         );
 
-        SenderRecord<String, Object, String> senderRecord = SenderRecord.create(
+        SenderRecord<String, InventoryAlertEvent, String> senderRecord = SenderRecord.create(
                 producerRecord,
                 event.eventId().toString()
         );

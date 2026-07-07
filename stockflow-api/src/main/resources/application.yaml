@@ -40,7 +40,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.gustavosdaniel.stock_flow_api.messaging.event.*"
+        spring.json.trusted.packages: "com.gustavosdaniel.stock_flow_api.messaging.event"
 inventory:
   kafka:
     topics:
