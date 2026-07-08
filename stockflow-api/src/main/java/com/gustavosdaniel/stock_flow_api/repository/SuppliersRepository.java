@@ -1,5 +1,6 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardSupplierResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Supplier;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -28,5 +29,19 @@ public interface SuppliersRepository extends R2dbcRepository<Supplier, UUID> {
 
     @Query("SELECT COUNT(*) FROM suppliers WHERE trade_name ILIKE CONCAT('%', :tradeName, '%')")
     Mono<Long> countByTradeName(String tradeName);
+
+    @Query("""
+      SELECT
+          sup.id as id,
+          sup.name as name,
+          COUNT(DISTINCT p.id) as total_products,
+          COALESCE(SUM(st.current_quantity * p.cost_price), 0) as total_stock_value
+      FROM suppliers sup
+      LEFT JOIN products p ON p.supplier_id = sup.id
+      LEFT JOIN stocks st ON st.product_id = p.id
+      GROUP BY sup.id, sup.name
+      ORDER BY total_stock_value DESC
+      """)
+    Flux<DashboardSupplierResponse.SupplierDashboardItem> getDashboardSupplierStats();
 
 }
