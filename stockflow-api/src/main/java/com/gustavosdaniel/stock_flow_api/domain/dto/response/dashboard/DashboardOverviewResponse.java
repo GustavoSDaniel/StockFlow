@@ -22,7 +22,7 @@ public record DashboardOverviewResponse(
     public record FinancialStats(
 
             BigDecimal totalStockValue,
-            BigDecimal potencialSalesValue,
+            BigDecimal potentialSalesValue,
             BigDecimal averageMarginPercentage
     ){}
 }

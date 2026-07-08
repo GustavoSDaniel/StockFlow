@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardOverviewResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardStockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import org.springframework.data.domain.Pageable;

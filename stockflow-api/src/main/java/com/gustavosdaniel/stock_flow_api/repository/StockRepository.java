@@ -1,6 +1,7 @@
 package com.gustavosdaniel.stock_flow_api.repository;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardOverviewResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard.DashboardStockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Stock;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -49,4 +50,58 @@ public interface StockRepository extends R2dbcRepository<Stock, UUID> {
         WHERE p.status = 'ACTIVE'
         """)
     Mono<DashboardOverviewResponse.FinancialStats> getDashboardFinancialStats();
+
+    @Query("""
+        SELECT 
+            COUNT(id) FILTER (WHERE current_quantity = 0) as out_of_stock,
+            COUNT(id) FILTER (WHERE current_quantity <= minimum_quantity AND current_quantity > 0 AND current_quantity != reorder_point) as low_stock,
+            COUNT(id) FILTER (WHERE current_quantity = reorder_point) as reorder_point,
+            COUNT(id) FILTER (WHERE current_quantity > minimum_quantity AND current_quantity <= maximum_quantity) as normal,
+            COUNT(id) FILTER (WHERE current_quantity > maximum_quantity) as over_stocked
+        FROM stocks
+        """)
+    Mono<DashboardStockResponse.StockStatusCounts> getDashboardStockStatusCounts();
+
+    @Query("""
+        SELECT 
+            p.id as product_id,
+            p.name as product_name,
+            p.sku,
+            s.current_quantity,
+            s.minimum_quantity,
+            CASE
+                WHEN s.current_quantity = s.reorder_point THEN 'REORDER_POINT'
+                WHEN s.current_quantity <= s.minimum_quantity THEN 'LOW'
+                WHEN s.current_quantity > s.maximum_quantity THEN 'OVER_STOCKED'
+                ELSE 'NORMAL'
+            END as status
+        FROM stocks s
+        JOIN products p ON p.id = s.product_id
+        WHERE s.current_quantity > 0
+        AND s.minimum_quantity > 0
+        ORDER BY (s.current_quantity::float / s.minimum_quantity) ASC
+        LIMIT 10
+        """)
+    Flux<DashboardStockResponse.ProductStockItem> getTop10LowestStock();
+
+    @Query("""
+        SELECT 
+            p.id as product_id,
+            p.name as product_name,
+            p.sku,
+            s.current_quantity,
+            s.minimum_quantity,
+            CASE 
+                WHEN s.current_quantity = 0 THEN 'OUT_OF_STOCK'
+                WHEN s.current_quantity = s.reorder_point THEN 'REORDER_POINT'
+                WHEN s.current_quantity <= s.minimum_quantity THEN 'LOW'
+                WHEN s.current_quantity > s.maximum_quantity THEN 'OVER_STOCKED'
+                ELSE 'NORMAL'
+            END as status
+        FROM stocks s
+        JOIN products p ON p.id = s.product_id
+        ORDER BY s.current_quantity DESC 
+        LIMIT 10
+        """)
+    Flux<DashboardStockResponse.ProductStockItem> getTop10HighestStock();
 }

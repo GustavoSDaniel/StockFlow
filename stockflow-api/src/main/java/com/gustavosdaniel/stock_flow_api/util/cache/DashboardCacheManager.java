@@ -65,8 +65,8 @@ public class DashboardCacheManager {
         }
 
         Mono<T> fresh = supplier
-                .doOnNext(valeu -> {
-                    cache.put(key, new CacheEntry<>(valeu, Instant.now(clock).plus(ttl)));
+                .doOnNext(value -> {
+                    cache.put(key, new CacheEntry<>(value, Instant.now(clock).plus(ttl)));
                     log.debug("Cache STORE key = {}, expiresAt = {}", key, Instant.now(clock).plus(ttl));
                 })
                 .doOnError(error -> log.warn("Cache ERROR — key={}: {}", key, error.getMessage()))

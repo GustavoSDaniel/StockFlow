@@ -27,7 +27,7 @@ public class StockEventProducer {
 
         ProducerRecord<String, InventoryAlertEvent> producerRecord = new ProducerRecord<>(
                 topic,
-                event.productId().toString(),""
+                event.productId().toString(),
                 event
         );
 

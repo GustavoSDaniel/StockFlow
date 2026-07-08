@@ -30,15 +30,15 @@ public class OverviewDashboardService {
         this.cacheManager = cacheManager;
     }
 
-    Mono<DashboardOverviewResponse> getOverviewDashboard(){
+    public Mono<DashboardOverviewResponse> getOverviewDashboard(){
 
         return cacheManager.getOrCompute(
                 DashboardCacheKeys.OVERVIEW,
                 Mono.zip(
                         productRepository.getDashboardProductStats(),
                         stockRepository.getDashboardFinancialStats(),
-                        categoryRepository.count(),
                         suppliersRepository.count(),
+                        categoryRepository.count(),
                         notificationRepository.countByNotificationPriorityInAndResolvedFalse(
                                 List.of(NotificationPriority.CRITICAL, NotificationPriority.HIGH))
                 ).map(tuple -> new DashboardOverviewResponse(
