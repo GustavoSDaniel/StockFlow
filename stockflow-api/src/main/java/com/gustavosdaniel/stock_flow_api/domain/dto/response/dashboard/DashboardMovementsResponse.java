@@ -1,37 +1,43 @@
 package com.gustavosdaniel.stock_flow_api.domain.dto.response.dashboard;
 
-import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
-import com.gustavosdaniel.stock_flow_api.domain.enums.MovementType;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 public record DashboardMovementsResponse(
 
-        MovimentsQuantitys movimentsQuantiys,
-        MovimentsType movimentsType,
-        List<MovimentsMore> movimentsMores
+        MovementSummary summary,
+        List<MovementTypeCount> movementsByType,
+        List<MovementReasonCount> movementsByReason,
+        List<DailyHistory> dailyHistories,
+        List<MostMovedProduct> topMovedProducts
 ) {
 
-    public record MovimentsQuantitys(
+    public record MovementSummary(
+            Long totalMovementsToday,
+            Long entriesThisMonth,
+            Long exitsThisMonth
+    ) {}
 
-            Long fullMovimentsToday,
-            Long entryMovimentsMes,
-            Long exitMovimentsMes
-    ){}
+    public record MovementTypeCount(
+            String movementType,
+            Long total
+    ) {}
 
-    public record MovimentsType(
+    public record MovementReasonCount(
+            String movementReason,
+            Long total
+    ) {}
 
-            MovementReason movementReason,
-            MovementType movementType,
-            Long hitoryLastryDays
-    ){}
+    public record DailyHistory(
+            LocalDate date,
+            Long totalMovements
+    ) {}
 
-    public record MovimentsMore(
-
+    public record MostMovedProduct(
             UUID productId,
             String productName,
             String sku,
-            Integer quantity
-    ){}
+            Long totalQuantityMoved
+    ) {}
 }
