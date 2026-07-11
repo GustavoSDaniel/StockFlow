@@ -92,6 +92,12 @@ public class SecurityConfig {
                         // NOTIFICATIONS
                         .pathMatchers("/api/v1/notifications/**").hasAnyRole("MANAGER", "ADMIN")
 
+                        // DASHBOARD
+                        .pathMatchers("/api/v1/dashboards/stocks").authenticated()
+                        .pathMatchers("/api/v1/dashboards/movements").authenticated()
+                        .pathMatchers("/api/v1/dashboards/suppliers").hasAnyRole("MANAGER", "ADMIN")
+                        .pathMatchers("/api/v1/dashboards/overview").hasRole("ADMIN")
+
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
