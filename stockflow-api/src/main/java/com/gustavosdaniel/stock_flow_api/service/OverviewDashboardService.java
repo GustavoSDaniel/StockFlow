@@ -5,6 +5,8 @@ import com.gustavosdaniel.stock_flow_api.domain.enums.NotificationPriority;
 import com.gustavosdaniel.stock_flow_api.repository.*;
 import com.gustavosdaniel.stock_flow_api.util.cache.DashboardCacheKeys;
 import com.gustavosdaniel.stock_flow_api.util.cache.DashboardCacheManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -19,6 +21,7 @@ public class OverviewDashboardService {
     private final CategoryRepository categoryRepository;
     private final SuppliersRepository suppliersRepository;
     private final DashboardCacheManager cacheManager;
+    private final Logger log = LoggerFactory.getLogger(OverviewDashboardService.class);
 
 
     public OverviewDashboardService(ProductRepository productRepository, StockRepository stockRepository, NotificationRepository notificationRepository, CategoryRepository categoryRepository, SuppliersRepository suppliersRepository, DashboardCacheManager cacheManager) {
@@ -49,6 +52,9 @@ public class OverviewDashboardService {
                         tuple.getT4().intValue(),
                         tuple.getT5().intValue()
                 ))
+                        .doFirst(() -> log.info("Acessando dashboard de Overview"))
+                        .doOnNext(movements ->
+                                log.info("Dashboard Acessado com sucesso"))
         );
 
     }
