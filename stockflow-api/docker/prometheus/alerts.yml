@@ -1,0 +1,39 @@
+groups:
+  - name: stockflow
+    rules:
+
+      # API fora do ar
+      - alert: ApiDown
+        expr: up{job="stockflow-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "StockFlow API está fora do ar"
+
+      # Muitos erros HTTP
+      - alert: HighErrorRate
+        expr: rate(http_server_requests_seconds_count{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taxa de erros HTTP elevada"
+
+      # Kafka sem enviar eventos
+      - alert: KafkaEventsStopped
+        expr: rate(kafka_events_sent_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nenhum evento Kafka enviado nos últimos 5 minutos"
+
+      # Muitos produtos sem estoque
+      - alert: HighOutOfStockCount
+        expr: stock_out_of_stock_total > 10
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mais de 10 produtos sem estoque"

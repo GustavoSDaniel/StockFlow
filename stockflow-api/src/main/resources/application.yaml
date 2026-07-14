@@ -1,5 +1,5 @@
 server:
-  port: 5050
+  port: 6060
 
 spring:
   application:
@@ -12,7 +12,7 @@ spring:
       max-size: 50
       max-idle-time: 30m
       max-acquire-time: 10s
-    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5051}/${POSTGRES_DB:db-stockflow}
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:6061}/${POSTGRES_DB:db-stockflow}
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
 
@@ -23,12 +23,12 @@ spring:
 
   security:
     oauth2:
-      resource server: #
+      resource-server:
         jwt:
-          issuer-uri: ${KEYCLOAK_URL:http://localhost:5052}/realms/${KEYCLOAK_REALM:stock-flow-realm}
+          issuer-uri: ${KEYCLOAK_URL:http://localhost:6062}/realms/${KEYCLOAK_REALM:stock-flow-realm}
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:6063}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -41,6 +41,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.gustavosdaniel.stock_flow_api.messaging.event"
+
 inventory:
   kafka:
     topics:
@@ -51,7 +52,7 @@ cache:
     default: 1800
 
 resilience4j:
-  circuitbreaker:
+  circuit breaker:
     configs:
       default:
         sliding-window-size: 10
@@ -63,13 +64,36 @@ resilience4j:
         base-config: default
         sliding-window-type: count_based
 
-
 keycloak:
-  auth-server-url: ${KEYCLOAK_URL:http://localhost:5052}
+  auth-server-url: ${KEYCLOAK_URL:http://localhost:6062}
   realm: ${KEYCLOAK_REALM:stock-flow-realm}
   client-id: ${KEYCLOAK_CLIENT_ID:stock-flow-api}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus, loggers
+  endpoint:
+    health:
+      show-details: when-authorized
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: stockflow
+      environment: ${ENVIRONMENT:dev}
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:6068/api/v2/spans} # Corrigido para SB3
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 springdoc:
   swagger-ui:

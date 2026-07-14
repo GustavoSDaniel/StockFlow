@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="stockflow-api"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%cyan(%d{HH:mm:ss.SSS}) %gray([%thread]) %highlight(%-5level) %magenta(%logger{36}) - %yellow([traceId=%X{traceId:-},spanId=%X{spanId:-}]) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>http://localhost:6067/loki/api/v1/push</url>
+        </http>
+        <format>
+            <label>
+                <pattern>application=${appName},host=${HOSTNAME},level=%level</pattern>
+            </label>
+            <message>
+                <json>
+                    <includeTraceId>true</includeTraceId>
+                    <includeSpanId>true</includeSpanId>
+                    <includeMessage>true</includeMessage>
+                    <includeException>true</includeException>
+                </json>
+            </message>
+        </format>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="LOKI" />
+    </root>
+
+    <logger name="org.springframework" level="INFO" />
+    <logger name="org.apache.kafka" level="WARN" />
+    <logger name="io.netty" level="WARN" />
+
+</configuration>

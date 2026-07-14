@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5051:5432"
+      - "6061:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -39,7 +39,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
     ports:
-      - "5052:8080"
+      - "6062:8080"
     depends_on:
       postgres-keycloak:
         condition: service_healthy
@@ -69,31 +69,20 @@ services:
     container_name: kafka-stockflow
     restart: unless-stopped
     ports:
-      - "9092:9092"
+      - "6063:9092"
     environment:
       KAFKA_NODE_ID: 1
-
       KAFKA_PROCESS_ROLES: broker,controller
-
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:6063
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-
-
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-
-
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-
     networks:
       - stockflow-network
 
@@ -102,7 +91,7 @@ services:
     container_name: kafka-ui-stockflow
     restart: unless-stopped
     ports:
-      - "5053:8080"
+      - "6064:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: stockflow
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
@@ -111,9 +100,72 @@ services:
     networks:
       - stockflow-network
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+    ports:
+      - "6065:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - stockflow-network
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "6066:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - stockflow-network
+
+  loki:
+    image: grafana/loki:3.0.0
+    ports:
+      - "6067:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - stockflow-network
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    volumes:
+      - /var/log:/var/log
+      - ./docker/promtail/promtail.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - stockflow-network
+
+  zipkin:
+    image: openzipkin/zipkin:3.4.2
+    ports:
+      - "6068:9411"
+    networks:
+      - stockflow-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    volumes:
+      - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "6069:9093"
+    networks:
+      - stockflow-network
+
 volumes:
   postgres_data:
   postgres_keycloak_data:
+  grafana_data:
 
 networks:
   stockflow-network:
