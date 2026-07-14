@@ -15,11 +15,13 @@ import com.gustavosdaniel.stock_flow_api.exception.ProductNotFoundException;
 import com.gustavosdaniel.stock_flow_api.exception.StockNotFoundException;
 import com.gustavosdaniel.stock_flow_api.messaging.event.StockEventPublisher;
 import com.gustavosdaniel.stock_flow_api.repository.InventoryMovementRepository;
+import com.gustavosdaniel.stock_flow_api.repository.OutboxEventRepository;
 import com.gustavosdaniel.stock_flow_api.repository.ProductRepository;
 import com.gustavosdaniel.stock_flow_api.repository.StockRepository;
 import com.gustavosdaniel.stock_flow_api.util.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,17 +44,23 @@ public class StockService {
     private final ProductRepository productRepository;
     private final InventoryMovementRepository inventoryMovementRepository;
     private final StockEventPublisher stockEventPublisher;
-    private final Logger log = LoggerFactory.getLogger(StockService.class);
+    private final OutboxEventRepository outboxEventRepository;
+    private static final Logger log = LoggerFactory.getLogger(StockService.class);
+
+    @Value("${inventory.kafka.topics.stock-alerts:stockflow.inventory.alerts.v1}")
+    private String stockAlertsTopic;
 
     public StockService(StockRepository stockRepository, StockMapper stockMapper,
                         ProductRepository productRepository,
                         InventoryMovementRepository inventoryMovementRepository,
-                        StockEventPublisher stockEventPublisher) {
+                        StockEventPublisher stockEventPublisher,
+                        OutboxEventRepository outboxEventRepository) {
         this.stockRepository = stockRepository;
         this.stockMapper = stockMapper;
         this.productRepository = productRepository;
         this.inventoryMovementRepository = inventoryMovementRepository;
         this.stockEventPublisher = stockEventPublisher;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Transactional
@@ -103,18 +110,24 @@ public class StockService {
     }
 
     @Transactional(readOnly = true)
-    public Flux<StockResponse> getStockByProductId(UUID productId){
+    public Mono<Page<StockResponse>> getStockByProductId(UUID productId, Pageable pageable){
 
         return productRepository.findById(productId)
                 .switchIfEmpty(Mono.error(new ProductNotFoundException()))
-                .flatMapMany(product ->
-                    stockRepository.findAllStockByProductId(productId)
-                        .switchIfEmpty(Mono.error(new StockNotFoundException()))
-                        .map(stock -> stockMapper.toStockResponse(stock, product))
-                )
+                .flatMap(product -> {
+                    Flux<Stock> stocksFlux = stockRepository.findAllStockByProductId(
+                            productId, pageable.getPageSize(), pageable.getOffset());
+                    Mono<Long> countMono = stockRepository.countByProductId(productId);
+
+                    return stocksFlux
+                            .map(stock -> stockMapper.toStockResponse(stock, product))
+                            .collectList()
+                            .zipWith(countMono)
+                            .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+                })
                 .doFirst(() -> log.info("Buscando estoques pelo ID do produto: {}", productId))
-                .doOnNext(response -> log.info("Estoques encontrados: armazém = {}, produto = {}",
-                        response.warehouseId(), productId));
+                .doOnNext(page -> log.info("Estoques encontrados: total = {}",
+                        page.getTotalElements()));
     }
 
     @Transactional(readOnly = true)
@@ -165,8 +178,9 @@ public class StockService {
                                 );
                                 movement.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(movement)
-                                        .flatMap(m ->
-                                                stockEventPublisher.publish(m).thenReturn(m) )
+                                        .flatMap(m -> stockEventPublisher.writeToOutbox(
+                                                m, outboxEventRepository, stockAlertsTopic)
+                                                .thenReturn(m))
                                         .doOnSuccess(m ->
                                                 m.clearDomainEvent());
                             });
@@ -198,8 +212,9 @@ public class StockService {
                                 movement.evaluateAndRegisterAlerts(savedStock);
 
                                 return inventoryMovementRepository.save(movement)
-                                        .flatMap(m ->
-                                                stockEventPublisher.publish(m).thenReturn(m))
+                                        .flatMap(m -> stockEventPublisher.writeToOutbox(
+                                                m, outboxEventRepository, stockAlertsTopic)
+                                                .thenReturn(m))
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
@@ -213,7 +228,7 @@ public class StockService {
     @Transactional
     public Mono<Void> adjustStock(UUID id, InventoryMovementRequest request){
 
-        validateAjust(request.movementType(), request.movementReason());
+        validateAdjust(request.movementType(), request.movementReason());
 
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
@@ -230,8 +245,9 @@ public class StockService {
                                 );
                                 moment.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(moment)
-                                        .flatMap(m ->
-                                                stockEventPublisher.publish(m).thenReturn(m))
+                                        .flatMap(m -> stockEventPublisher.writeToOutbox(
+                                                m, outboxEventRepository, stockAlertsTopic)
+                                                .thenReturn(m))
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
@@ -296,7 +312,8 @@ public class StockService {
                             .thenMany(inventoryMovementRepository
                                     .saveAll(List.of(sourceMovement, targetMovement)))
                             .flatMap(savedMovement ->
-                                stockEventPublisher.publish(savedMovement)
+                                stockEventPublisher.writeToOutbox(
+                                        savedMovement, outboxEventRepository, stockAlertsTopic)
                                         .thenReturn(savedMovement)
                             )
                             .doOnNext(savedMovement -> {
@@ -433,7 +450,7 @@ public class StockService {
         type.validateReason(reason);
     }
 
-    private void validateAjust(MovementType type, MovementReason reason){
+    private void validateAdjust(MovementType type, MovementReason reason){
 
         if (type != MovementType.ADJUSTMENT)
             throw new BusinessRuleException("Tipo inválido para ajuste. Use ADJUSTMENT.");

@@ -24,15 +24,18 @@ import java.time.Duration;
 @Component
 public class NotificationConsumer {
 
-    private final Logger log = LoggerFactory.getLogger(NotificationConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(NotificationConsumer.class);
     private final KafkaReceiver<String, InventoryAlertEvent> receiver;
     private final NotificationRepository notificationRepository;
     private final ProductRepository productRepository;
     private final Sinks.Many<NotificationResponse> notificationSink;
     private final NotificationMapper notificationMapper;
 
-
-    public NotificationConsumer(KafkaReceiver<String, InventoryAlertEvent> receiver, NotificationRepository notificationRepository, ProductRepository productRepository, Sinks.Many<NotificationResponse> notificationSink, NotificationMapper notificationMapper) {
+    public NotificationConsumer(KafkaReceiver<String, InventoryAlertEvent> receiver,
+                                NotificationRepository notificationRepository,
+                                ProductRepository productRepository,
+                                Sinks.Many<NotificationResponse> notificationSink,
+                                NotificationMapper notificationMapper) {
         this.receiver = receiver;
         this.notificationRepository = notificationRepository;
         this.productRepository = productRepository;
@@ -46,14 +49,29 @@ public class NotificationConsumer {
         log.info("Iniciando o consumidor do Kafka para alertas de estoque...");
 
         receiver.receive()
-                .flatMap(this::processRecord)
+                .flatMap(record -> processRecord(record)
+                        .onErrorResume(e -> {
+                            log.error("Falha ao processar registro do Kafka. " +
+                                            "Offset será confirmado para evitar poison pill. " +
+                                            "topic={}, partition={}, offset={}, erro={}",
+                                    record.topic(), record.partition(), record.offset(),
+                                    e.getMessage());
+                            record.receiverOffset().acknowledge();
+                            return Mono.empty();
+                        }))
                 .doOnError(e -> log.error("Erro crítico no consumidor Kafka. Tentando reiniciar em 5 segundos...", e))
-                .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(5))
+                .retryWhen(Retry.backoff(10, Duration.ofSeconds(5))
                         .maxBackoff(Duration.ofSeconds(60))
                         .doBeforeRetry(signal ->
-                                log.warn("Reiniciando consumidor Kafka (tentativa {}). Motivo: {}",
+                                log.warn("Reiniciando consumidor Kafka (tentativa {} de 10). Motivo: {}",
                                         signal.totalRetries() + 1,
                                         signal.failure().getMessage()))
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
+                            log.error("Consumidor Kafka excedeu o máximo de 10 tentativas. " +
+                                            "Encerrando consumidor. Último erro: {}",
+                                    retrySignal.failure().getMessage());
+                            return retrySignal.failure();
+                        })
                 )
                 .subscribe();
     }
@@ -75,11 +93,18 @@ public class NotificationConsumer {
                     return notificationRepository.save(notification);
                 })
                 .doOnSuccess(saved -> {
-                    log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId());
+                    if (saved != null) {
+                        log.info("Notificação salva com sucesso para o produto: {}", alertEvent.productId());
 
-                    NotificationResponse response = notificationMapper.toNotificationResponse(saved);
+                        NotificationResponse response = notificationMapper.toNotificationResponse(saved);
 
-                    notificationSink.tryEmitNext(response);
+                        Sinks.EmitResult result = notificationSink.tryEmitNext(response);
+                        if (result.isFailure()) {
+                            log.warn("Falha ao emitir notificação SSE para o produto {}. " +
+                                            "Resultado: {}. O buffer pode estar cheio ou o sink foi cancelado.",
+                                    alertEvent.productId(), result);
+                        }
+                    }
                 })
                 .doOnError(e -> log.error("Erro ao salvar notificação: {}", e.getMessage()))
                 .then(Mono.fromRunnable(() -> record.receiverOffset().acknowledge()));
@@ -124,7 +149,6 @@ public class NotificationConsumer {
                     alertEvent.reorderPoint()
             );
 
-
             case OVERSTOCK -> new Notification(
                     alertEvent.productId(), productName, sku,
                     NotificationType.OVERSTOCK, NotificationPriority.MEDIUM,
@@ -135,7 +159,6 @@ public class NotificationConsumer {
                     alertEvent.maximumQuantity(),
                     alertEvent.reorderPoint()
             );
-
         };
     }
 }

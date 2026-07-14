@@ -31,7 +31,7 @@ import java.util.UUID;
 @Service
 public class ProductService {
 
-    private final Logger log = LoggerFactory.getLogger(ProductService.class);
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
@@ -351,7 +351,7 @@ public class ProductService {
         });
     }
 
-    public void validateSaleAndCost(BigDecimal salePrice, BigDecimal costPrice){
+    private void validateSaleAndCost(BigDecimal salePrice, BigDecimal costPrice){
 
         if (salePrice.compareTo(costPrice) < 0)
             throw new BusinessRuleException("O preço de venda deve ser maior ou igual ao preço de custo.");

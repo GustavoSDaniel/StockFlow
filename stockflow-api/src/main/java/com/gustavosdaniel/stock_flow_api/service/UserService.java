@@ -27,7 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final Logger log = LoggerFactory.getLogger(UserService.class);
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final SecurityUtils securityUtils;
     private final KeycloakService keycloakService;
 
@@ -52,7 +52,7 @@ public class UserService {
                 .switchIfEmpty(Mono.defer(() -> createUSer(jwt, roleFromToken)))
                 .doOnNext(user -> log.info("User {} encontrado com sucesso", user.getUserName()))
                 .flatMap(existingUser -> {
-                    if (existingUser.getRole() != roleFromToken) {
+                    if (!existingUser.getRole().equals(roleFromToken)) {
                         existingUser.setRole(roleFromToken);
 
                         return userRepository.save(existingUser)

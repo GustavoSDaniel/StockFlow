@@ -1,0 +1,33 @@
+# =============================================================================
+# Docker Profile - Sobrescreve configurações para execução em containers
+# Ativado via SPRING_PROFILES_ACTIVE=docker (definido no docker-compose.yml)
+# =============================================================================
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://postgres:5432/${POSTGRES_DB:db-stockflow}
+
+  data:
+    redis:
+      host: dragonfly
+      port: 6379
+
+  security:
+    oauth2:
+      resource-server:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL:http://keycloak:8080}/realms/${KEYCLOAK_REALM:stock-flow-realm}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_URL:http://keycloak:8080}
+
+management:
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://zipkin:9411/api/v2/spans}
+  metrics:
+    tags:
+      environment: docker

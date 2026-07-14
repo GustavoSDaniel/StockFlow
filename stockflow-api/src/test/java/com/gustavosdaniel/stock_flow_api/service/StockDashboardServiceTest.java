@@ -34,7 +34,7 @@ class StockDashboardServiceTest {
     private StockDashboardService stockDashboardService;
 
     @Test
-    @DisplayName("Should with sucesso dashboard stock")
+    @DisplayName("Should get stock dashboard successfully")
     void getDashboardStock(){
 
         Long outOfStock = 3L;
@@ -77,19 +77,19 @@ class StockDashboardServiceTest {
         Mono<DashboardStockResponse> output = stockDashboardService.getStockDashboard();
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado.statusCounts());
-                    assertEquals(3L, resultado.statusCounts().outOfStock());
-                    assertEquals(10L, resultado.statusCounts().lowStock());
-                    assertEquals(26L, resultado.statusCounts().reorderPoint());
-                    assertEquals(152L, resultado.statusCounts().normal());
-                    assertEquals(14L, resultado.statusCounts().overStocked());
+                .assertNext(result -> {
+                    assertNotNull(result.statusCounts());
+                    assertEquals(3L, result.statusCounts().outOfStock());
+                    assertEquals(10L, result.statusCounts().lowStock());
+                    assertEquals(26L, result.statusCounts().reorderPoint());
+                    assertEquals(152L, result.statusCounts().normal());
+                    assertEquals(14L, result.statusCounts().overStocked());
 
-                    assertNotNull(resultado.top10LowestStock());
-                    assertEquals(1, resultado.top10LowestStock().size());
+                    assertNotNull(result.top10LowestStock());
+                    assertEquals(1, result.top10LowestStock().size());
 
-                    assertNotNull(resultado.top10HighestStock());
-                    assertEquals(1, resultado.top10HighestStock().size());
+                    assertNotNull(result.top10HighestStock());
+                    assertEquals(1, result.top10HighestStock().size());
 
                 })
                 .verifyComplete();

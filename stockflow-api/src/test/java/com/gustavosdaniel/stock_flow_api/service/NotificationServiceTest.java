@@ -41,7 +41,7 @@ class NotificationServiceTest {
     private NotificationService notificationService;
 
     @Test
-    @DisplayName("FInd filter notification with sucesso")
+    @DisplayName("Find notifications with filter successfully")
     void shouldFilterWithSucesso(){
 
         UUID id = UUID.randomUUID();
@@ -50,11 +50,11 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.now();
 
@@ -66,14 +66,14 @@ class NotificationServiceTest {
         NotificationFilter filter = new NotificationFilter(null, null, null, null, null, null);
 
         Notification notification = new Notification(
-            productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+            productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, false, null );
 
         when(notificationRepository.findAllByFilter(isNull(), isNull(), isNull(),isNull(),
@@ -100,7 +100,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("should with sucesso all notifications")
+    @DisplayName("Should find all notifications successfully")
     void shouldAllNotifications(){
 
         UUID id = UUID.randomUUID();
@@ -109,11 +109,11 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
@@ -121,14 +121,14 @@ class NotificationServiceTest {
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllBy(pageable)).thenReturn(Flux.just(notification));
@@ -138,8 +138,8 @@ class NotificationServiceTest {
         Mono<Page<NotificationResponse>> output = notificationService.findAllNotifications(pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(1, resultado.getTotalElements(), "A quantidade de elementos deve ser o mesmo");
+                .assertNext(result -> {
+                    assertEquals(1, result.getTotalElements(), "A quantidade de elementos deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -150,7 +150,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("should with sucesso find by notification unread")
+    @DisplayName("Should find unread notifications successfully")
     void shouldUnreadNotification(){
 
         UUID id = UUID.randomUUID();
@@ -159,24 +159,24 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
 
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 false, null, false, null );
 
         when(notificationRepository.findAllByReadFalse(pageable)).thenReturn(Flux.just(notification));
@@ -198,8 +198,8 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("should with sucesso find pryoriti notification")
-    void findNotificationwithPryoriti(){
+    @DisplayName("Should find priority notifications successfully")
+    void findNotificationWithPriority(){
 
         UUID id = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
@@ -207,25 +207,25 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllByNotificationPriority(priority, pageable))
@@ -250,7 +250,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should wtih sucesso type notification")
+    @DisplayName("Should find type notifications successfully")
     void findTypeNotification(){
 
         UUID id = UUID.randomUUID();
@@ -259,25 +259,25 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllByNotificationType(type, pageable))
@@ -302,7 +302,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("should with sucesso pruduct notification")
+    @DisplayName("Should find product notifications successfully")
     void findProductIdNotification(){
 
         UUID id = UUID.randomUUID();
@@ -311,25 +311,25 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllByProductId(productId, pageable))
@@ -354,7 +354,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso resolved notification")
+    @DisplayName("Should find resolved notifications successfully")
     void findResolvedNotification(){
 
         UUID id = UUID.randomUUID();
@@ -363,25 +363,25 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllByResolvedTrue(pageable)).thenReturn(Flux.just(notification));
@@ -404,7 +404,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find unresolve notifications")
+    @DisplayName("Should find unresolved notifications successfully")
     void findUnresolvedNotification(){
 
         UUID id = UUID.randomUUID();
@@ -413,25 +413,25 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
         LocalDateTime dateTime = LocalDateTime.of(2026, 10, 3, 16, 53 );
         LocalDateTime resolvedAt = LocalDateTime.of(2026, 10, 6, 16, 53 );
         Pageable pageable = Pageable.unpaged();
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
         NotificationResponse response = new NotificationResponse(
-                id, productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint,
+                id, productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint,
                 true, dateTime, true, resolvedAt );
 
         when(notificationRepository.findAllByResolvedFalse(pageable)).thenReturn(Flux.just(notification));
@@ -454,7 +454,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso read notificaon")
+    @DisplayName("Should mark notification as read successfully")
     void markedReadNotification(){
 
         UUID id = UUID.randomUUID();
@@ -463,16 +463,16 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 
@@ -490,8 +490,8 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso marked Resolved notification")
-    void markedResolvidNotification(){
+    @DisplayName("Should mark notification as resolved successfully")
+    void markedResolvedNotification(){
 
         UUID id = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
@@ -499,16 +499,16 @@ class NotificationServiceTest {
         String sku = "ELET-NOME-CELU-3F3D-0001";
         NotificationType type = NotificationType.STOCK_LOW;
         NotificationPriority priority = NotificationPriority.HIGH;
-        String titulo = "Estoque baixo";
+        String title = "Estoque baixo";
         String message = "Produto com estoque baixo detectado";
         Integer currentQuantity = 7;
-        Integer minumuQuantity = 10;
-        Integer maximuQuantity = 30;
+        Integer minimumQuantity = 10;
+        Integer maximumQuantity = 30;
         Integer reorderPoint = 15;
 
         Notification notification = new Notification(
-                productId, productName, sku, type, priority, titulo, message,
-                currentQuantity, minumuQuantity, maximuQuantity, reorderPoint
+                productId, productName, sku, type, priority, title, message,
+                currentQuantity, minimumQuantity, maximumQuantity, reorderPoint
         );
         ReflectionTestUtils.setField(notification, "id", id);
 

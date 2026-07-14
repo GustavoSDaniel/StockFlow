@@ -1,7 +1,5 @@
 package com.gustavosdaniel.stock_flow_api.domain.dto.request;
 
-import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
-import com.gustavosdaniel.stock_flow_api.domain.enums.MovementType;
 import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

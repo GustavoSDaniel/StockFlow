@@ -1,9 +1,10 @@
-package com.gustavosdaniel.stock_flow_api.exception.handle;
+package com.gustavosdaniel.stock_flow_api.exception.handler;
 
 import com.gustavosdaniel.stock_flow_api.exception.*;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -210,7 +210,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotificationNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleNotificationNoitFound(NotificationNotFoundException exception){
+    public ResponseEntity<ProblemDetail> handleNotificationNotFound(NotificationNotFoundException exception){
 
         log.warn("Notificação não encontrada {}", exception.getMessage());
 
@@ -221,15 +221,15 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ProblemDetail> handleNullPointer(NullPointerException exception){
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ProblemDetail> handleOptimisticLock(OptimisticLockingFailureException exception){
 
-        log.error("NullPointerException capturada: {}", exception.getMessage(), exception);
+        log.warn("Conflito de concorrência detectado: {}", exception.getMessage());
 
         return buildResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                ProblemType.NULL_POINTER,
-                "Ocorreu um erro interno inesperado. Nossa equipe técnica já foi notificada."
+                HttpStatus.CONFLICT,
+                ProblemType.CONCURRENCY_CONFLICT,
+                "Registro modificado por outro usuário. Recarregue os dados e tente novamente."
         );
     }
 }

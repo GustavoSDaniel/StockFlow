@@ -33,7 +33,7 @@ import java.util.UUID;
 @Service
 public class SupplierService {
 
-    private final Logger log = LoggerFactory.getLogger(SupplierService.class);
+    private static final Logger log = LoggerFactory.getLogger(SupplierService.class);
     private final AddressRepository addressRepository;
     private final SupplierContactRepository supplierContactRepository;
     private final SuppliersRepository suppliersRepository;

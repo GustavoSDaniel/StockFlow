@@ -14,9 +14,9 @@ import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import com.gustavosdaniel.stock_flow_api.domain.po.Stock;
 import com.gustavosdaniel.stock_flow_api.messaging.event.StockEventPublisher;
 import com.gustavosdaniel.stock_flow_api.repository.InventoryMovementRepository;
+import com.gustavosdaniel.stock_flow_api.repository.OutboxEventRepository;
 import com.gustavosdaniel.stock_flow_api.repository.ProductRepository;
 import com.gustavosdaniel.stock_flow_api.repository.StockRepository;
-import io.r2dbc.spi.Parameter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,11 +58,14 @@ class StockServiceTest {
     @Mock
     private StockEventPublisher stockEventPublisher;
 
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
     @InjectMocks
     StockService stockService;
 
     @Test
-    @DisplayName("Should with sucesso create stock")
+    @DisplayName("Should create stock successfully")
     void create(){
 
         UUID categoryId = UUID.randomUUID();
@@ -111,7 +114,7 @@ class StockServiceTest {
         Mono<StockResponse> output = stockService.createStock(productId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
                     assertEquals(stockId, response.id(), "O ID deve ser o mesmo");
                 })
@@ -126,7 +129,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso stock by id")
+    @DisplayName("Should get stock by ID successfully")
     void findById(){
 
         UUID categoryId = UUID.randomUUID();
@@ -168,7 +171,7 @@ class StockServiceTest {
         Mono<StockResponse> output = stockService.getStockById(stockId);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
                     assertEquals(stockId, response.id(), "O ID deve ser o mesmo");
                     assertEquals(productId, response.productId(), "ID deve ser o mesmo");
                 })
@@ -182,7 +185,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Shoul with sucesso stock by Product ID")
+    @DisplayName("Should get stock by product ID successfully")
     void findByStockWithProductId(){
 
         UUID categoryId = UUID.randomUUID();
@@ -218,27 +221,30 @@ class StockServiceTest {
                 location, warehouseId);
 
         when(productRepository.findById(productId)).thenReturn(Mono.just(product));
-        when(stockRepository.findAllStockByProductId(productId)).thenReturn(Flux.just(stock));
+        when(stockRepository.findAllStockByProductId(eq(productId), anyInt(), any()))
+                .thenReturn(Flux.just(stock));
+        when(stockRepository.countByProductId(productId)).thenReturn(Mono.just(1L));
         when(stockMapper.toStockResponse(stock, product)).thenReturn(response);
 
-        Flux<StockResponse> output = stockService.getStockByProductId(productId);
+        Pageable pageable = Pageable.unpaged();
+        Mono<Page<StockResponse>> output = stockService.getStockByProductId(productId, pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(productId, stock.getProductId(), "O ID deve ser o mesmo");
-                    assertEquals(stockId, response.id(), "O ID deve ser o mesmo");
+                .assertNext(page -> {
+                    assertEquals(1, page.getTotalElements(), "A página deve conter 1 elemento");
+                    assertEquals(stockId, page.getContent().get(0).id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
         verify(productRepository).findById(productId);
         verify(productRepository, times(1)).findById(productId);
-        verify(stockRepository).findAllStockByProductId(productId);
-        verify(stockRepository, times(1)).findAllStockByProductId(productId);
+        verify(stockRepository).findAllStockByProductId(eq(productId), anyInt(), any());
+        verify(stockRepository).countByProductId(productId);
         verify(stockMapper).toStockResponse(stock, product);
     }
 
     @Test
-    @DisplayName("Should with ssucesso all stocks")
+    @DisplayName("Should get all stocks successfully")
     void findAllStock(){
 
         Pageable pageable = Pageable.unpaged();
@@ -292,7 +298,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso moviment historico")
+    @DisplayName("Should get movement history successfully")
     void getMovementHistory(){
 
         Pageable pageable = Pageable.unpaged();
@@ -351,7 +357,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should entry with sucesso")
+    @DisplayName("Should register entry successfully")
     void entrySaldo(){
 
         UUID categoryId = UUID.randomUUID();
@@ -405,6 +411,8 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
+                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.registerEntry(stockId, request);
 
@@ -422,7 +430,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should exist with sucesso quantity")
+    @DisplayName("Should register exit successfully")
     void existSaldo(){
 
         UUID categoryId = UUID.randomUUID();
@@ -477,6 +485,8 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
+                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.registerExit(stockId, request);
 
@@ -494,7 +504,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should ajuste estoque with sucesso")
+    @DisplayName("Should adjust stock successfully")
     void adjustStock(){
 
         UUID categoryId = UUID.randomUUID();
@@ -549,6 +559,8 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
+        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
+                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.adjustStock(stockId, request);
 
@@ -566,7 +578,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Shoul with sucesso transfer")
+    @DisplayName("Should transfer stock successfully")
     void transfer(){
 
         UUID productId = UUID.randomUUID();
@@ -630,6 +642,8 @@ class StockServiceTest {
 
         when(inventoryMovementRepository.saveAll(anyIterable()))
                 .thenReturn(Flux.just(sourceMovement, targetMovement));
+        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
+                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.transferStock(productId, request);
 
@@ -646,7 +660,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find out of stock")
+    @DisplayName("Should find out of stock successfully")
     void getStockOutOf(){
 
         UUID categoryId = UUID.randomUUID();
@@ -708,7 +722,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find low stock")
+    @DisplayName("Should find low stock successfully")
     void getLowStockProducts(){
 
         UUID categoryId = UUID.randomUUID();
@@ -770,7 +784,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find Over stock")
+    @DisplayName("Should find over stock successfully")
     void getOverStock(){
 
         UUID categoryId = UUID.randomUUID();
@@ -831,7 +845,7 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso update stock")
+    @DisplayName("Should update stock successfully")
     void updateStock(){
 
         UUID categoryId = UUID.randomUUID();
@@ -885,7 +899,7 @@ class StockServiceTest {
         Mono<StockResponse> output = stockService.updateStock(stockId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
                     assertEquals(stockId, response.id(), "O ID deve ser o mesmo");
                 })

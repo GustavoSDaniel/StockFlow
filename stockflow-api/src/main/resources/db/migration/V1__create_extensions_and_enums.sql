@@ -14,7 +14,7 @@ CREATE TYPE user_role AS ENUM (
     'EMPLOYEE',
     'MANAGER',
     'ADMIN'
-)
+);
 
 CREATE TYPE product_status AS ENUM (
     'ACTIVE',
@@ -38,6 +38,7 @@ CREATE TYPE unit_measure AS ENUM (
 CREATE TYPE stock_status AS ENUM (
     'OUT_OF_STOCK',
     'LOW',
+    'REORDER_POINT',
     'NORMAL',
     'OVER_STOCKED'
 );

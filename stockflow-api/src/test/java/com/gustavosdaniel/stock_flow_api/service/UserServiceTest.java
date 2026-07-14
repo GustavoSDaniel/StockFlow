@@ -48,7 +48,7 @@ class UserServiceTest {
     class createUser{
 
         @Test
-        @DisplayName("Should created user with sucesso")
+        @DisplayName("Should create user successfully")
         void shouldCreatedUSer(){
 
             String userName = "Daniel";
@@ -82,7 +82,7 @@ class UserServiceTest {
     class getUser{
 
         @Test
-        @DisplayName("SHould with sucesso get user")
+        @DisplayName("Should get user successfully")
         void getUser(){
 
             String keycloakId = "id do keyclaok do user";
@@ -109,7 +109,7 @@ class UserServiceTest {
     class findAllUSer {
 
         @Test
-        @DisplayName("Should all user with sucesso")
+        @DisplayName("Should get all users successfully")
         void shouldAllUsers(){
 
             Pageable pageable = Pageable.unpaged();
@@ -154,7 +154,7 @@ class UserServiceTest {
     class searchByName{
 
         @Test
-        @DisplayName("Should by name with sucesso")
+        @DisplayName("Should find user by name successfully")
         void shouldUserByName(){
 
             Pageable pageable = PageRequest.of(0,10);
@@ -191,7 +191,7 @@ class UserServiceTest {
     class promoterUser{
 
         @Test
-        @DisplayName("Should promoter user with sucesso")
+        @DisplayName("Should promote user successfully")
         void shouldPromoterUser(){
 
             UUID userId = UUID.randomUUID();
@@ -223,7 +223,7 @@ class UserServiceTest {
     class activeUser{
 
         @Test
-        @DisplayName("Should active user with sucesso")
+        @DisplayName("Should activate user successfully")
         void activeUser(){
 
             UUID userId = UUID.randomUUID();
@@ -255,7 +255,7 @@ class UserServiceTest {
     class disableUser{
 
         @Test
-        @DisplayName("Disablited user with sucesso")
+        @DisplayName("Should disable user successfully")
         void disableUser(){
 
             UUID userId = UUID.randomUUID();
@@ -287,7 +287,7 @@ class UserServiceTest {
     class deleteUser{
 
         @Test
-        @DisplayName("Should delete user with sucesso")
+        @DisplayName("Should delete user successfully")
         void deleteUserWithSucesso(){
 
             UUID targetUser = UUID.randomUUID();

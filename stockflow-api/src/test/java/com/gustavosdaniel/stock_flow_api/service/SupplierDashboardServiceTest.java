@@ -34,7 +34,7 @@ class SupplierDashboardServiceTest {
     private SupplierDashboardService supplierDashboardService;
 
     @Test
-    @DisplayName("should with sucesso supplier dashboard")
+    @DisplayName("Should get supplier dashboard successfully")
     void supplierDashboard(){
 
         UUID supplierId = UUID.randomUUID();
@@ -53,9 +53,9 @@ class SupplierDashboardServiceTest {
         Mono<DashboardSupplierResponse> output = supplierDashboardService.getSupplierDashboard();
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado.suppliers());
-                    assertEquals(1, resultado.suppliers().size());
+                .assertNext(result -> {
+                    assertNotNull(result.suppliers());
+                    assertEquals(1, result.suppliers().size());
                 })
                 .verifyComplete();
 

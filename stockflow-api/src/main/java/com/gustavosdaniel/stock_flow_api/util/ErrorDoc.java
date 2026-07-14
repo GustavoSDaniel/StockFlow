@@ -115,6 +115,13 @@ public class ErrorDoc {
                 "Verifique se o ID está correto.",
                 404
         ));
+        docs.put("conflito-concorrencia", new ErrorDocResponse(
+                "Conflito de concorrência",
+                "O registro foi modificado por outro usuário enquanto você tentava alterá-lo.",
+                "Dois usuários tentaram modificar o mesmo registro simultaneamente.",
+                "Recarregue os dados para obter a versão mais recente e tente novamente.",
+                409
+        ));
     }
 
     public  Map<String, ErrorDocResponse> findAll(){

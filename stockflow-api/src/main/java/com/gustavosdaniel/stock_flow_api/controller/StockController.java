@@ -18,7 +18,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -48,9 +47,11 @@ public class StockController implements StockOpenApi {
     }
 
     @GetMapping("/product/{productId}")
-    public Flux<ResponseEntity<StockResponse>> getStockByProduct(@PathVariable UUID productId){
-
-        return stockService.getStockByProductId(productId).map(ResponseEntity::ok);
+    public Mono<ResponseEntity<Page<StockResponse>>> getStockByProduct(
+            @PathVariable UUID productId,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable)
+    {
+        return stockService.getStockByProductId(productId, pageable).map(ResponseEntity::ok);
     }
 
     @GetMapping

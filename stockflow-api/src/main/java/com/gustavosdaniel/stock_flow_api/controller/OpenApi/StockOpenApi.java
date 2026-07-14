@@ -19,14 +19,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
@@ -71,17 +69,18 @@ public interface StockOpenApi {
             @PathVariable UUID id);
 
     @Operation(summary = "Buscar estoques por produto",
-            description = "Retorna todos os estoques associados a um determinado produto")
+            description = "Retorna uma página com todos os estoques associados a um determinado produto")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Estoques do produto",
+            @ApiResponse(responseCode = "200", description = "Página de estoques do produto",
                     content = @Content(mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = StockResponse.class)))),
+                            schema = @Schema(implementation = Page.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado", content = @Content)
     })
-    Flux<ResponseEntity<StockResponse>> getStockByProduct(
+    Mono<ResponseEntity<Page<StockResponse>>> getStockByProduct(
             @Parameter(description = "ID do produto", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID productId);
+            @PathVariable UUID productId,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable);
 
     @Operation(summary = "Listar todos os estoques",
             description = "Retorna uma página com todos os registros de estoque, com paginação")

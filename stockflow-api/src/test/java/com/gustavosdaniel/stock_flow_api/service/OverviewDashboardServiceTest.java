@@ -48,7 +48,7 @@ class OverviewDashboardServiceTest {
     private OverviewDashboardService overviewDashboardService;
 
     @Test
-    @DisplayName("Should with sucesso dashboard Overview")
+    @DisplayName("Should get dashboard overview successfully")
     void getDashboardOverview(){
 
         Long total = 256L;
@@ -91,12 +91,12 @@ class OverviewDashboardServiceTest {
         Mono<DashboardOverviewResponse> output = overviewDashboardService.getOverviewDashboard();
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado.products());
-                    assertNotNull(resultado.financials());
-                    assertNotNull(resultado.totalSuppliers());
-                    assertNotNull(resultado.totalCategories());
-                    assertNotNull(resultado.totalNotifications());
+                .assertNext(result -> {
+                    assertNotNull(result.products());
+                    assertNotNull(result.financials());
+                    assertNotNull(result.totalSuppliers());
+                    assertNotNull(result.totalCategories());
+                    assertNotNull(result.totalNotifications());
                 })
                 .verifyComplete();
 

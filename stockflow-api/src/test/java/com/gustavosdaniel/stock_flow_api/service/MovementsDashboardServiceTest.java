@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,7 +36,7 @@ class MovementsDashboardServiceTest {
     private MovementsDashboardService movementsDashboardService;
 
     @Test
-    @DisplayName("Should with sucesso dashboard moviments")
+    @DisplayName("Should get dashboard movements successfully")
     void getDashboardMovements(){
 
         Long totalMovementsToday = 50L;
@@ -91,11 +90,11 @@ class MovementsDashboardServiceTest {
         Mono<DashboardMovementsResponse> output = movementsDashboardService.getMovementsDashboard();
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(50L, resultado.summary().totalMovementsToday());
-                    assertEquals(360L, resultado.summary().entriesThisMonth());
-                    assertEquals(productId, resultado.topMovedProducts().get(0).productId(), "Deve ser o mesmo ID do Produto");
-                    assertEquals("SALE", resultado.movementsByType().get(0).movementType());
+                .assertNext(result -> {
+                    assertEquals(50L, result.summary().totalMovementsToday());
+                    assertEquals(360L, result.summary().entriesThisMonth());
+                    assertEquals(productId, result.topMovedProducts().get(0).productId(), "Deve ser o mesmo ID do Produto");
+                    assertEquals("SALE", result.movementsByType().get(0).movementType());
                 })
                 .verifyComplete();
 

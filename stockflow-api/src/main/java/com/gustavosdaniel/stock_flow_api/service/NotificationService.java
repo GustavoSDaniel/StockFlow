@@ -24,7 +24,7 @@ public class NotificationService {
 
     private final NotificationMapper notificationMapper;
     private final NotificationRepository notificationRepository;
-    private final Logger log = LoggerFactory.getLogger(NotificationService.class);
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     public NotificationService(NotificationMapper notificationMapper, NotificationRepository notificationRepository) {
         this.notificationMapper = notificationMapper;

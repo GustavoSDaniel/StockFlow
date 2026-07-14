@@ -19,6 +19,12 @@ public interface StockRepository extends R2dbcRepository<Stock, UUID> {
 
     Flux<Stock> findAllStockByProductId(UUID productId);
 
+    @Query("SELECT * FROM stocks WHERE product_id = :productId LIMIT :limit OFFSET :offset")
+    Flux<Stock> findAllStockByProductId(UUID productId, int limit, Long offset);
+
+    @Query("SELECT COUNT(id) FROM stocks WHERE product_id = :productId")
+    Mono<Long> countByProductId(UUID productId);
+
     Flux<Stock> findAllBy(Pageable pageable);
 
     @Query("SELECT * FROM stocks WHERE current_quantity = 0 LIMIT :limit OFFSET :offset")

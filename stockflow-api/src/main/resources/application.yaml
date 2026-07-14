@@ -78,18 +78,23 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-    prometheus:
+    Prometheus:
       enabled: true
   metrics:
     tags:
       application: stockflow
       environment: ${ENVIRONMENT:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
   tracing:
     sampling:
       probability: 1.0
   zipkin:
     tracing:
-      endpoint: ${ZIPKIN_URL:http://localhost:6068/api/v2/spans} # Corrigido para SB3
+      endpoint: ${ZIPKIN_URL:http://localhost:6068/api/v2/spans}
   prometheus:
     metrics:
       export:
@@ -98,6 +103,3 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-
-
-

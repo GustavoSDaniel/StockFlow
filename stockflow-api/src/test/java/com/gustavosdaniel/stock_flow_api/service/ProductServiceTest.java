@@ -51,7 +51,7 @@ class ProductServiceTest {
     private ProductService productService;
 
     @Test
-    @DisplayName("Should create product with sucesso")
+    @DisplayName("Should create product successfully")
     void createProduct(){
 
         UUID categoryId = UUID.randomUUID();
@@ -102,8 +102,8 @@ class ProductServiceTest {
         Mono<ProductResponse> output = productService.createProduct(request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(productId, resultado.id(), "O ID deve ser o mesmo");
+                .assertNext(result -> {
+                    assertEquals(productId, result.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -191,7 +191,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should all product for status with sucesso")
+    @DisplayName("Should get all products by status successfully")
     void allProductsAndStatus(){
 
         Pageable pageable = Pageable.unpaged();
@@ -249,7 +249,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should product by category with sucesso")
+    @DisplayName("Should get products by category successfully")
     void findByProductByCategory(){
 
         Pageable pageable = Pageable.unpaged();
@@ -328,7 +328,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should products by supplier with sucesso")
+    @DisplayName("Should get products by supplier successfully")
     void findProductBySupplier(){
 
         Pageable pageable = Pageable.unpaged();
@@ -390,7 +390,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should product by id with sucesso")
+    @DisplayName("Should get product by ID successfully")
     void findProductById(){
 
         UUID categoryId = UUID.randomUUID();
@@ -433,7 +433,7 @@ class ProductServiceTest {
         Mono<ProductResponse> output = productService.getProductById(productId);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
                     assertEquals(productId, response.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
@@ -444,7 +444,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should product by sku with sucesso")
+    @DisplayName("Should get product by SKU successfully")
     void findByProductSku(){
 
         UUID categoryId = UUID.randomUUID();
@@ -487,8 +487,8 @@ class ProductServiceTest {
         Mono<ProductResponse> output = productService.getProductSku(sku);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(productId, resultado.id(), "O ID deve ser o mesmo");
+                .assertNext(result -> {
+                    assertEquals(productId, result.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -498,7 +498,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find by product name")
+    @DisplayName("Should find product by name successfully")
     void searchProductName(){
 
         Pageable pageable = Pageable.unpaged();
@@ -556,7 +556,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should by product e status with sucesso")
+    @DisplayName("Should find product by name and status successfully")
     void searchByProductWithNameANdStatus(){
 
         Pageable pageable = Pageable.unpaged();
@@ -617,7 +617,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso active product")
+    @DisplayName("Should activate product successfully")
     void activeProduct(){
 
         UUID categoryId = UUID.randomUUID();
@@ -664,7 +664,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should discontinue product with sucesso")
+    @DisplayName("Should discontinue product successfully")
     void discontinueProduct(){
 
         UUID categoryId = UUID.randomUUID();
@@ -711,7 +711,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should desactive product with sucesso")
+    @DisplayName("Should deactivate product successfully")
     void desactiveProduct(){
 
         UUID categoryId = UUID.randomUUID();
@@ -758,7 +758,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should update product with sucesso")
+    @DisplayName("Should update product successfully")
     void updateProduct(){
 
         UUID categoryId = UUID.randomUUID();
@@ -810,9 +810,9 @@ class ProductServiceTest {
         Mono<ProductResponse> output = productService.updateProduct(productId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertEquals(productId, resultado.id(), "O ID deve ser o mesmo");
-                    assertEquals(product.getName(), resultado.name(), "O nome deve ser o mesmo");
+                .assertNext(result -> {
+                    assertEquals(productId, result.id(), "O ID deve ser o mesmo");
+                    assertEquals(product.getName(), result.name(), "O nome deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -827,7 +827,7 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Should delete product with sucesso")
+    @DisplayName("Should delete product successfully")
     void deleteProduct(){
 
         UUID categoryId = UUID.randomUUID();

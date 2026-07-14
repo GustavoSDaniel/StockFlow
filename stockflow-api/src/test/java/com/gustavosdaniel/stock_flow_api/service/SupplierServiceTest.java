@@ -59,7 +59,7 @@ class SupplierServiceTest {
     private SupplierService supplierService;
 
     @Test
-    @DisplayName("Should with sucesso create supplier")
+    @DisplayName("Should create supplier successfully")
     void createSupplier(){
 
         UUID contactId = UUID.randomUUID();
@@ -156,12 +156,12 @@ class SupplierServiceTest {
         Mono<SupplierResponse> output = supplierService.createSupplier(request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado);
-                    assertEquals(supplierId, resultado.id(), "O ID do fornecedor deve ser o esperado");
-                    assertEquals(name, resultado.name(), "O nome do fornecedor deve bater");
-                    assertEquals(1, resultado.contacts().size(), "Deve conter 1 contato");
-                    assertEquals(1, resultado.addresses().size(), "Deve conter 1 endereço");
+                .assertNext(result -> {
+                    assertNotNull(result);
+                    assertEquals(supplierId, result.id(), "O ID do fornecedor deve ser o esperado");
+                    assertEquals(name, result.name(), "O nome do fornecedor deve bater");
+                    assertEquals(1, result.contacts().size(), "Deve conter 1 contato");
+                    assertEquals(1, result.addresses().size(), "Deve conter 1 endereço");
                 })
                 .verifyComplete();
 
@@ -173,7 +173,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso all supplier")
+    @DisplayName("Should get all suppliers successfully")
     void allSupplier(){
 
         UUID supplierId = UUID.randomUUID();
@@ -214,16 +214,16 @@ class SupplierServiceTest {
         Mono<Page<SupplierSummaryResponse>> output = supplierService.getAllSupplier(pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado ->{
+                .assertNext(result ->{
 
-                    assertNotNull(resultado);
-                    assertEquals(2L, resultado.getTotalElements(),
+                    assertNotNull(result);
+                    assertEquals(2L, result.getTotalElements(),
                             "O banco deve reportar 2 elementos no total");
-                    assertEquals(2, resultado.getContent().size(),
+                    assertEquals(2, result.getContent().size(),
                             "A página deve conter exatamente 2 DTOs");
-                    assertEquals(supplierId, resultado.getContent().get(0).id(),
+                    assertEquals(supplierId, result.getContent().get(0).id(),
                             "O ID do primeiro deve bater");
-                    assertEquals(supplierId2, resultado.getContent().get(1).id(),
+                    assertEquals(supplierId2, result.getContent().get(1).id(),
                             "O ID do segundo deve bater");
                 })
                 .verifyComplete();
@@ -235,7 +235,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso find by supplier cnpj")
+    @DisplayName("Should find supplier by CNPJ successfully")
     void findSupplierCnpj(){
 
         UUID contactId = UUID.randomUUID();
@@ -306,9 +306,9 @@ class SupplierServiceTest {
         Mono<SupplierResponse> output = supplierService.findSupplierByCnpj(cnpj);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
                     assertNotNull(output);
-                    assertEquals(supplier.getId(), resultado.id(), "O ID tem que ser o mesmo");
+                    assertEquals(supplier.getId(), result.id(), "O ID tem que ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -319,7 +319,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with ssucesso by name supplier")
+    @DisplayName("Should find supplier by name successfully")
     void searchSupplierByName(){
 
         UUID supplierId = UUID.randomUUID();
@@ -345,13 +345,13 @@ class SupplierServiceTest {
         Mono<Page<SupplierSummaryResponse>> output = supplierService.searchSupplierByName(name, pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado ->{
-                    assertNotNull(resultado);
-                    assertEquals(1, resultado.getTotalElements(),
+                .assertNext(result ->{
+                    assertNotNull(result);
+                    assertEquals(1, result.getTotalElements(),
                             "O banco deve retornar 1 elemento");
-                    assertEquals(1, resultado.getContent().size(),
+                    assertEquals(1, result.getContent().size(),
                             "Deve retornar 1 DTO");
-                    assertEquals(supplierId, resultado.getContent().get(0).id(),
+                    assertEquals(supplierId, result.getContent().get(0).id(),
                             "O ID do fornecedor deve ser o mesmo que o 'supplierId'");
                 })
                 .verifyComplete();
@@ -363,7 +363,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with ssucesso by name supplier")
+    @DisplayName("Should find supplier by trade name successfully")
     void searchSupplierByTradeName(){
 
         UUID supplierId = UUID.randomUUID();
@@ -390,13 +390,13 @@ class SupplierServiceTest {
                 .searchSupplierByTradeName(tradeName, pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado ->{
-                    assertNotNull(resultado);
-                    assertEquals(1, resultado.getTotalElements(),
+                .assertNext(result ->{
+                    assertNotNull(result);
+                    assertEquals(1, result.getTotalElements(),
                             "O banco deve retornar 1 elemento");
-                    assertEquals(1, resultado.getContent().size(),
+                    assertEquals(1, result.getContent().size(),
                             "Deve retornar 1 DTO");
-                    assertEquals(supplierId, resultado.getContent().get(0).id(),
+                    assertEquals(supplierId, result.getContent().get(0).id(),
                             "O ID do fornecedor deve ser o mesmo que o 'supplierId'");
                 })
                 .verifyComplete();
@@ -408,7 +408,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Shoul with sucesso add address")
+    @DisplayName("Should add address successfully")
     void addAddressManual(){
 
         UUID supplierId = UUID.randomUUID();
@@ -457,9 +457,9 @@ class SupplierServiceTest {
         Mono<AddressResponse> output = supplierService.addAddress(supplierId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado);
-                    assertEquals(address.getId(), resultado.id(), "O ID deve ser o mesmo");
+                .assertNext(result -> {
+                    assertNotNull(result);
+                    assertEquals(address.getId(), result.id(), "O ID deve ser o mesmo");
 
                 })
                 .verifyComplete();
@@ -471,7 +471,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Shoul with sucesso add address")
+    @DisplayName("Should add address via CEP successfully")
     void addAddressViaCep(){
 
         UUID supplierId = UUID.randomUUID();
@@ -525,10 +525,10 @@ class SupplierServiceTest {
         Mono<AddressResponse> output = supplierService.addAddress(supplierId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado);
-                    assertEquals(address.getId(), resultado.id(), "O ID deve ser o mesmo");
-                    assertEquals(street, resultado.street(), "A rua deve ser a rua do ViaCEP");
+                .assertNext(result -> {
+                    assertNotNull(result);
+                    assertEquals(address.getId(), result.id(), "O ID deve ser o mesmo");
+                    assertEquals(street, result.street(), "A rua deve ser a rua do ViaCEP");
 
                 })
                 .verifyComplete();
@@ -541,7 +541,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso delete address")
+    @DisplayName("Should delete address successfully")
     void deleteAddress(){
 
         UUID supplierId = UUID.randomUUID();
@@ -577,7 +577,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso add contact")
+    @DisplayName("Should add contact successfully")
     void addContact(){
 
         UUID supplierId = UUID.randomUUID();
@@ -608,9 +608,9 @@ class SupplierServiceTest {
         Mono<SupplierContactResponse> output = supplierService.addSupplierContact(supplierId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado);
-                    assertEquals(newContact.getId(), resultado.id(), "O ID deve ser o mesmo");
+                .assertNext(result -> {
+                    assertNotNull(result);
+                    assertEquals(newContact.getId(), result.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -622,7 +622,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso remove contact")
+    @DisplayName("Should remove contact successfully")
     void removeContact(){
 
         UUID supplierId = UUID.randomUUID();
@@ -650,7 +650,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso update supplier")
+    @DisplayName("Should update supplier successfully")
     void updateSupplier(){
 
         UUID supplierId = UUID.randomUUID();
@@ -684,9 +684,9 @@ class SupplierServiceTest {
         Mono<SupplierUpdateResponse> output = supplierService.updateSupplier(supplierId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
-                    assertNotNull(resultado);
-                    assertEquals(supplier.getId(), resultado.id(), "O ID deve ser o mesmo");
+                .assertNext(result -> {
+                    assertNotNull(result);
+                    assertEquals(supplier.getId(), result.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -699,7 +699,7 @@ class SupplierServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso delete Supplier")
+    @DisplayName("Should delete supplier successfully")
     void deleteSupplier(){
 
         UUID contactId = UUID.randomUUID();

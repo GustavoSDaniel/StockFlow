@@ -1,4 +1,4 @@
-package com.gustavosdaniel.stock_flow_api.exception.handle;
+package com.gustavosdaniel.stock_flow_api.exception.handler;
 
 import java.net.URI;
 
@@ -81,9 +81,9 @@ public enum ProblemType {
             "urn:stockflow:notificacao-nao-encontrada",
             "Notificação não encontrada"
     ),
-    NULL_POINTER(
-            "urn:stockflow:erro-interno",
-            "Erro interno inesperado"
+    CONCURRENCY_CONFLICT(
+            "urn:stockflow:conflito-concorrencia",
+            "Conflito de concorrência"
     );
 
     private final URI uri;

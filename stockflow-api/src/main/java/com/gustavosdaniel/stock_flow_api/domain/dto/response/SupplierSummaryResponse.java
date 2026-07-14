@@ -5,7 +5,7 @@ import java.util.UUID;
 public record SupplierSummaryResponse (
 
         UUID id,
-        String Cnpj,
+        String cnpj,
         String name,
         String tradeName
 ){

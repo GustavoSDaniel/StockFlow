@@ -60,11 +60,11 @@ class CategoryServiceTest {
         Mono<CategoryResponse> output = categoryService.createCategory(request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
-                    assertEquals(name, resultado.name(), "O nome deve ser o mesmo");
-                    assertEquals(description, resultado.description(), "A descrição deve ser a mesma");
-                    assertEquals(categoryId, resultado.id(), "O ID deve ser o mesmo gerado");
+                    assertEquals(name, result.name(), "O nome deve ser o mesmo");
+                    assertEquals(description, result.description(), "A descrição deve ser a mesma");
+                    assertEquals(categoryId, result.id(), "O ID deve ser o mesmo gerado");
                 })
                 .verifyComplete();
 
@@ -72,7 +72,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should add subcategory with sucesso")
+    @DisplayName("Should add subcategory successfully")
     void addSubCategory(){
 
         UUID parentId = UUID.randomUUID();
@@ -97,10 +97,10 @@ class CategoryServiceTest {
         Mono<CategoryResponse> output = categoryService.addSubCategories(parentId, subCategoryId);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
-                    assertEquals(subCategoryId, resultado.id(), "O ID deve ser o mesmo");
-                    assertEquals(parentId, resultado.parentId(), "A categoria pai deve ser a mesma");
+                    assertEquals(subCategoryId, result.id(), "O ID deve ser o mesmo");
+                    assertEquals(parentId, result.parentId(), "A categoria pai deve ser a mesma");
                 })
                 .verifyComplete();
 
@@ -187,7 +187,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("should with sucesso search name, of category")
+    @DisplayName("Should search categories by name successfully")
     void shouldSearchName(){
 
         Pageable pageable = Pageable.unpaged();
@@ -222,16 +222,16 @@ class CategoryServiceTest {
         Mono<Page<CategoryResponse>> output = categoryService.searchCategories(searchName, pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
-                    assertEquals(2, resultado.getTotalElements(), "Deve conter 2 elementos");
+                    assertEquals(2, result.getTotalElements(), "Deve conter 2 elementos");
                 })
                 .verifyComplete();
 
     }
 
     @Test
-    @DisplayName("should with sucesso search name of category active")
+    @DisplayName("Should search active categories by name successfully")
     void shouldSearchNameActive(){
 
         Pageable pageable = Pageable.unpaged();
@@ -266,16 +266,16 @@ class CategoryServiceTest {
         Mono<Page<CategoryResponse>> output = categoryService.searchActiveCategories(searchName, pageable);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
-                    assertEquals(2, resultado.getTotalElements(), "Deve conter 2 elementos");
+                    assertEquals(2, result.getTotalElements(), "Deve conter 2 elementos");
                 })
                 .verifyComplete();
 
     }
 
     @Test
-    @DisplayName("Should with sucesso all subcategorie")
+    @DisplayName("Should get all subcategories successfully")
     void shouldAllSubcategories(){
 
         Pageable pageable = Pageable.unpaged();
@@ -317,7 +317,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso all subcategorie active")
+    @DisplayName("Should get all active subcategories successfully")
     void shouldAllActiveSubcategories(){
 
         Pageable pageable = Pageable.unpaged();
@@ -358,7 +358,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso all subcategorie disabled")
+    @DisplayName("Should get all disabled subcategories successfully")
     void shouldAllDisabledSubcategories(){
 
         Pageable pageable = Pageable.unpaged();
@@ -439,7 +439,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should with sucesso update category")
+    @DisplayName("Should update category successfully")
     void shouldUpdateCategory(){
 
         UUID categoryId = UUID.randomUUID();
@@ -466,9 +466,9 @@ class CategoryServiceTest {
         Mono<CategoryResponse> output = categoryService.updateCategory(categoryId, request);
 
         StepVerifier.create(output)
-                .assertNext(resultado -> {
+                .assertNext(result -> {
 
-                    assertEquals(categoryId, resultado.id(), "O ID deve ser o mesmo");
+                    assertEquals(categoryId, result.id(), "O ID deve ser o mesmo");
                 })
                 .verifyComplete();
 
@@ -477,7 +477,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should active cateegory with sucesso")
+    @DisplayName("Should activate category successfully")
     void shouldActiveCategory(){
 
         UUID categoryId = UUID.randomUUID();
@@ -504,7 +504,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should remove subcategory with sucesso")
+    @DisplayName("Should remove subcategory successfully")
     void shouldRemoveSubcategory(){
 
         UUID categoryRootId = UUID.randomUUID();
@@ -536,7 +536,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    @DisplayName("Should disable with sucesso category")
+    @DisplayName("Should disable category successfully")
     void shouldDisableCategory(){
 
         UUID categoryId = UUID.randomUUID();
@@ -559,7 +559,7 @@ class CategoryServiceTest {
 
 
     @Test
-    @DisplayName("Should delete category with sucesso")
+    @DisplayName("Should delete category successfully")
     void shouldDeleteCategory(){
 
         UUID categoryId = UUID.randomUUID();
