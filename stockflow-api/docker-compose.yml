@@ -85,7 +85,7 @@ services:
       - stockflow-network
 
   kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:v1.5.3
+    image: ghcr.io/kafbat/kafka-ui:v1.3.0
     container_name: kafka-ui-stockflow
     restart: unless-stopped
     ports:
@@ -102,8 +102,8 @@ services:
     image: prom/prometheus:v2.53.0
     container_name: prometheus
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml
     ports:
       - "6065:9090"
     command:

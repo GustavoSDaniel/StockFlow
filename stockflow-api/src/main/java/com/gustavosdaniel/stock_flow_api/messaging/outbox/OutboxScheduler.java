@@ -50,15 +50,13 @@ public class OutboxScheduler {
 
     @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:5000}")
     @Transactional
-    public void processOutbox() {
+    public Mono<Void> processOutbox() {
 
-        outboxEventRepository.findPendingEvents(BATCH_SIZE)
+        return outboxEventRepository.findPendingEvents(BATCH_SIZE)
                 .flatMap(this::publishEvent, 4) // concorrência controlada: 4 publicações paralelas
-                .subscribe(
-                        null,
-                        e -> log.error("Erro crítico no ciclo de outbox: {}", e.getMessage(), e),
-                        () -> log.debug("Ciclo de outbox concluído.")
-                );
+                .doOnError(e -> log.error("Erro crítico no ciclo de outbox: {}", e.getMessage(), e))
+                .doOnComplete(() -> log.debug("Ciclo de outbox concluído."))
+                .then();
     }
 
     /**

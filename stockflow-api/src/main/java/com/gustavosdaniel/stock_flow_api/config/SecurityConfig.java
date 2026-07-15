@@ -25,8 +25,7 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/swagger-resources/**",
-            "/webjars/**",
-            "/error/**"
+            "/webjars/**"
     };
 
     @Bean
@@ -37,6 +36,9 @@ public class SecurityConfig {
 
                 .authorizeExchange(auth -> auth
                         .pathMatchers(PUBLIC_URLS).permitAll()
+
+                        //ERROR
+                        .pathMatchers(HttpMethod.GET, "/api/v1/errors/**").authenticated()
 
                         //USER
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()

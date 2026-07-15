@@ -172,6 +172,12 @@
 			<artifactId>loki-logback-appender</artifactId>
 			<version>1.5.1</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-reflect</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/erros")
+@RequestMapping("/api/v1/errors")
 public class ErrorController implements ErrorOpenApi {
 
     private final ErrorDoc errorDoc;

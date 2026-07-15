@@ -17,14 +17,7 @@
             <label>
                 <pattern>application=${appName},host=${HOSTNAME},level=%level</pattern>
             </label>
-            <message>
-                <json>
-                    <includeTraceId>true</includeTraceId>
-                    <includeSpanId>true</includeSpanId>
-                    <includeMessage>true</includeMessage>
-                    <includeException>true</includeException>
-                </json>
-            </message>
+            <message class="com.github.loki4j.logback.JsonLayout" />
         </format>
     </appender>
 

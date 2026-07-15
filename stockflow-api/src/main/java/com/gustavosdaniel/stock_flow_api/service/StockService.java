@@ -80,7 +80,7 @@ public class StockService {
 
                     if (stockExists) return Mono.error(
                             new BusinessRuleException(
-                                "Já existe um estoque vinculado para esse produto neste armazém"));
+                                    "Já existe um estoque vinculado para esse produto neste armazém"));
 
                     Stock newStock = stockMapper.toStock(product.getId(), request);
 
@@ -102,8 +102,8 @@ public class StockService {
         return stockRepository.findById(id)
                 .switchIfEmpty(Mono.error(new StockNotFoundException()))
                 .flatMap(stock ->
-                    productRepository.findById(stock.getProductId())
-                            .map(product -> stockMapper.toStockResponse(stock, product))
+                        productRepository.findById(stock.getProductId())
+                                .map(product -> stockMapper.toStockResponse(stock, product))
                 )
                 .doFirst(() -> log.info("Buscando stock pelo ID: {}", id))
                 .doOnNext(response -> log.info("Estoque encontrado pelo ID: {}", id));
@@ -123,7 +123,7 @@ public class StockService {
                             .map(stock -> stockMapper.toStockResponse(stock, product))
                             .collectList()
                             .zipWith(countMono)
-                            .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
+                            .map(tuple -> (Page<StockResponse>) new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
                 })
                 .doFirst(() -> log.info("Buscando estoques pelo ID do produto: {}", productId))
                 .doOnNext(page -> log.info("Estoques encontrados: total = {}",
@@ -147,11 +147,11 @@ public class StockService {
     public Mono<Page<InventoryMovementResponse>> getMovementHistory(UUID stockId, Pageable pageable){
 
         return PageUtils.toPage(
-                inventoryMovementRepository.findAllByStockId(stockId, pageable),
-                inventoryMovementRepository.countByStockId(stockId),
-                stockMapper::toInventoryMovementResponse,
-                pageable
-        )
+                        inventoryMovementRepository.findAllByStockId(stockId, pageable),
+                        inventoryMovementRepository.countByStockId(stockId),
+                        stockMapper::toInventoryMovementResponse,
+                        pageable
+                )
                 .doFirst(() -> log.info("Buscando histórico de movimentações para o estoque: {}",
                         stockId))
                 .doOnNext(page -> log.info("Histórico encontrado. Total de registros: {}",
@@ -179,8 +179,8 @@ public class StockService {
                                 movement.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(movement)
                                         .flatMap(m -> stockEventPublisher.writeToOutbox(
-                                                m, outboxEventRepository, stockAlertsTopic)
-                                                .thenReturn(m))
+                                                        m, outboxEventRepository, stockAlertsTopic)
+                                                .then(Mono.just(m)))
                                         .doOnSuccess(m ->
                                                 m.clearDomainEvent());
                             });
@@ -213,8 +213,9 @@ public class StockService {
 
                                 return inventoryMovementRepository.save(movement)
                                         .flatMap(m -> stockEventPublisher.writeToOutbox(
-                                                m, outboxEventRepository, stockAlertsTopic)
-                                                .thenReturn(m))
+                                                        m, outboxEventRepository, stockAlertsTopic)
+                                                // CORREÇÃO 2: Uso de then(Mono.just(m))
+                                                .then(Mono.just(m)))
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
@@ -246,8 +247,8 @@ public class StockService {
                                 moment.evaluateAndRegisterAlerts(savedStock);
                                 return inventoryMovementRepository.save(moment)
                                         .flatMap(m -> stockEventPublisher.writeToOutbox(
-                                                m, outboxEventRepository, stockAlertsTopic)
-                                                .thenReturn(m))
+                                                        m, outboxEventRepository, stockAlertsTopic)
+                                                .then(Mono.just(m)))
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });
                 })
@@ -312,9 +313,9 @@ public class StockService {
                             .thenMany(inventoryMovementRepository
                                     .saveAll(List.of(sourceMovement, targetMovement)))
                             .flatMap(savedMovement ->
-                                stockEventPublisher.writeToOutbox(
-                                        savedMovement, outboxEventRepository, stockAlertsTopic)
-                                        .thenReturn(savedMovement)
+                                    stockEventPublisher.writeToOutbox(
+                                                    savedMovement, outboxEventRepository, stockAlertsTopic)
+                                            .then(Mono.just(savedMovement))
                             )
                             .doOnNext(savedMovement -> {
                                 savedMovement.clearDomainEvent();
@@ -389,7 +390,7 @@ public class StockService {
                 .flatMap(product -> {
                     if (!product.isActive()) {
                         return Mono.error(new BusinessRuleException(
-                            "Não é possível movimentar estoque de um produto inativo ou descontinuado"));
+                                "Não é possível movimentar estoque de um produto inativo ou descontinuado"));
                     }
                     return Mono.just(product);
                 });
@@ -421,18 +422,18 @@ public class StockService {
 
         return Mono.zip(stocksListMono, productMapMono, countMono)
                 .map(tuple -> {
-                            List<Stock> stocks = tuple.getT1();
-                            Map<UUID, Product> productMap = tuple.getT2();
-                            Long total = tuple.getT3();
+                    List<Stock> stocks = tuple.getT1();
+                    Map<UUID, Product> productMap = tuple.getT2();
+                    Long total = tuple.getT3();
 
-                            List<StockSummaryResponse> responses = stocks.stream()
-                                    .map(stock -> stockMapper.toStockSummaryResponse(stock,
-                                            productMap.get(stock.getProductId())
-                                    ))
-                                    .collect(Collectors.toList());
+                    List<StockSummaryResponse> responses = stocks.stream()
+                            .map(stock -> stockMapper.toStockSummaryResponse(stock,
+                                    productMap.get(stock.getProductId())
+                            ))
+                            .collect(Collectors.toList());
 
-                            return new PageImpl<>(responses, pageable, total);
-                        });
+                    return new PageImpl<>(responses, pageable, total);
+                });
     }
 
     private void validateEntry(MovementType type, MovementReason reason){
