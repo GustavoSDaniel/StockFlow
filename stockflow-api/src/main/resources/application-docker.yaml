@@ -4,8 +4,11 @@
 # =============================================================================
 
 spring:
+  flyway:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:db_stockflow}
+
   r2dbc:
-    url: r2dbc:postgresql://postgres:5432/${POSTGRES_DB:db-stockflow}
+    url: r2dbc:postgresql://postgres:5432/${POSTGRES_DB:db_stockflow}?schema=inventory
 
   data:
     redis:
@@ -20,9 +23,6 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
-
-keycloak:
-  auth-server-url: ${KEYCLOAK_URL:http://keycloak:8080}
 
 management:
   zipkin:

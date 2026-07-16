@@ -8,20 +8,20 @@
 -- PRODUTOS
 -- ==========================================
 CREATE TABLE products (
-                          id           UUID           PRIMARY KEY DEFAULT uuid_generate_v4(),
+                          id           UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
                           version      BIGINT,
-                          name         VARCHAR(255)   NOT NULL,
+                          name         VARCHAR(255)  NOT NULL,
                           description  TEXT,
-                          sku          VARCHAR(100)   NOT NULL UNIQUE,
+                          sku          VARCHAR(100)  NOT NULL UNIQUE,
                           barcode      VARCHAR(255),
-                          category_id  UUID           NOT NULL REFERENCES categories(id),
-                          supplier_id  UUID           NOT NULL REFERENCES suppliers(id),
-                          cost_price   NUMERIC(12,4)  NOT NULL CHECK (cost_price >= 0),
-                          sale_price   NUMERIC(12,4)  NOT NULL CHECK (sale_price >= 0),
-                          unit_measure unit_measure   NOT NULL,
-                          status       product_status NOT NULL DEFAULT 'ACTIVE',
-                          created_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-                          updated_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+                          category_id  UUID          NOT NULL REFERENCES categories(id),
+                          supplier_id  UUID          NOT NULL REFERENCES suppliers(id),
+                          cost_price   NUMERIC(12,4) NOT NULL CHECK (cost_price >= 0),
+                          sale_price   NUMERIC(12,4) NOT NULL CHECK (sale_price >= 0),
+                          unit_measure VARCHAR(50)   NOT NULL,
+                          status       VARCHAR(50)   NOT NULL DEFAULT 'ACTIVE',
+                          created_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                          updated_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
                           created_by   UUID,
                           updated_by   UUID,
                           CONSTRAINT chk_sale_price_gte_cost CHECK (sale_price >= cost_price)
@@ -31,18 +31,18 @@ CREATE TABLE products (
 -- ESTOQUES
 -- ==========================================
 CREATE TABLE stocks (
-                        id               UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+                        id               UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
                         version          BIGINT,
-                        product_id       UUID        NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-                        current_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (current_quantity >= 0),
-                        minimum_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (minimum_quantity >= 0),
-                        maximum_quantity INTEGER     NOT NULL DEFAULT 999999999 CHECK (maximum_quantity >= 0),
-                        reorder_point    INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_point >= 0),
-                        reorder_quantity INTEGER     NOT NULL DEFAULT 0 CHECK (reorder_quantity >= 0),
+                        product_id       UUID         NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+                        current_quantity INTEGER      NOT NULL DEFAULT 0 CHECK (current_quantity >= 0),
+                        minimum_quantity INTEGER      NOT NULL DEFAULT 0 CHECK (minimum_quantity >= 0),
+                        maximum_quantity INTEGER      NOT NULL DEFAULT 999999999 CHECK (maximum_quantity >= 0),
+                        reorder_point    INTEGER      NOT NULL DEFAULT 0 CHECK (reorder_point >= 0),
+                        reorder_quantity INTEGER      NOT NULL DEFAULT 0 CHECK (reorder_quantity >= 0),
                         location         VARCHAR(255),
                         warehouse_id     VARCHAR(255) NOT NULL,
-                        created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                        updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                        updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
                         created_by       UUID,
                         updated_by       UUID,
                         CONSTRAINT uq_stocks_product_warehouse UNIQUE (product_id, warehouse_id),
@@ -63,7 +63,7 @@ CREATE INDEX idx_products_sku         ON products(sku);
 -- stocks
 CREATE INDEX idx_stocks_product_warehouse ON stocks(product_id, warehouse_id);
 
--- Índice para busca de estoque baixo (query mais comum do sistema)
+-- Índice para busca de estoque baixo (corrigido)
 CREATE INDEX idx_stocks_low_stock
     ON stocks(current_quantity, minimum_quantity)
     WHERE current_quantity <= minimum_quantity;

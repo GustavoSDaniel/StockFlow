@@ -1,18 +1,17 @@
-
 -- =========================================================================
 -- V3__create_categories.sql
 -- Tabela de categorias com suporte a hierarquia (auto-relacionamento)
 -- =========================================================================
 
 CREATE TABLE categories (
-                            id          UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+                            id          UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
                             version     BIGINT,
-                            name        VARCHAR(255) NOT NULL UNIQUE,
+                            name        VARCHAR(255)  NOT NULL UNIQUE,
                             description TEXT,
-                            parent_id   UUID         REFERENCES categories(id) ON DELETE SET NULL,
-                            active      BOOLEAN      NOT NULL DEFAULT TRUE,
-                            created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                            updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                            parent_id   UUID          REFERENCES categories(id) ON DELETE SET NULL,
+                            active      BOOLEAN       NOT NULL DEFAULT TRUE,
+                            created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                            updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
                             created_by  UUID,
                             updated_by  UUID
 );

@@ -38,7 +38,7 @@ public class OpenApiConfig {
                 )
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:5050")
+                                .url("http://localhost:6060")
                                 .description("Ambiente local"),
                         new Server()
                                 .url("https://api.stockflow.com")

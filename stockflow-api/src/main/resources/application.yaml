@@ -17,7 +17,7 @@ spring:
     enabled: true
 
   r2dbc:
-    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:6061}/${POSTGRES_DB:db-stockflow}?schema=inventory
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:6061}/${POSTGRES_DB:db_stockflow}?schema=inventory
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
     pool:
@@ -30,7 +30,7 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6070}
 
   security:
     oauth2:
@@ -74,12 +74,6 @@ resilience4j:
       viacep:
         base-config: default
         sliding-window-type: count_based
-
-keycloak:
-  auth-server-url: ${KEYCLOAK_URL:http://localhost:6062}
-  realm: ${KEYCLOAK_REALM:stock-flow-realm}
-  client-id: ${KEYCLOAK_CLIENT_ID:stock-flow-api}
-  client-secret: ${KEYCLOAK_CLIENT_SECRET}
 
 management:
   endpoints:

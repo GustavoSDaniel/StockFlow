@@ -5,14 +5,14 @@
 -- =========================================================================
 
 CREATE TABLE users (
-                       id          UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+                       id          UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
                        version     BIGINT,
-                       keycloak_id VARCHAR(255) NOT NULL UNIQUE,
-                       user_name   VARCHAR(255) NOT NULL UNIQUE,
-                       role        user_role    NOT NULL DEFAULT 'EMPLOYEE',
-                       is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-                       created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-                       updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                       keycloak_id VARCHAR(255)  NOT NULL UNIQUE,
+                       user_name   VARCHAR(255)  NOT NULL UNIQUE,
+                       role        VARCHAR(50)   NOT NULL DEFAULT 'EMPLOYEE',
+                       is_active   BOOLEAN       NOT NULL DEFAULT TRUE,
+                       created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                       updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
                        created_by  UUID,
                        updated_by  UUID
 );

@@ -6,20 +6,20 @@
 -- =========================================================================
 
 CREATE TABLE inventory_movement (
-                                    id               UUID            PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                    product_id       UUID            NOT NULL REFERENCES products(id),
-                                    stock_id         UUID            NOT NULL REFERENCES stocks(id),
-                                    movement_type    movement_type   NOT NULL,
-                                    quantity         INTEGER         NOT NULL CHECK (quantity > 0),
-                                    quantity_before  INTEGER         NOT NULL CHECK (quantity_before >= 0),
-                                    quantity_after   INTEGER         NOT NULL CHECK (quantity_after >= 0),
-                                    reason           movement_reason NOT NULL,
+                                    id               UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                    product_id       UUID          NOT NULL REFERENCES products(id),
+                                    stock_id         UUID          NOT NULL REFERENCES stocks(id),
+                                    movement_type    VARCHAR(50)   NOT NULL,
+                                    quantity         INTEGER       NOT NULL CHECK (quantity > 0),
+                                    quantity_before  INTEGER       NOT NULL CHECK (quantity_before >= 0),
+                                    quantity_after   INTEGER       NOT NULL CHECK (quantity_after >= 0),
+                                    reason           VARCHAR(50)   NOT NULL,
                                     reference_number VARCHAR(255),
-                                    supplier_id      UUID            REFERENCES suppliers(id),
+                                    supplier_id      UUID          REFERENCES suppliers(id),
                                     customer_id      UUID,
                                     note             TEXT,
-                                    unit_cost        NUMERIC(12,4)   CHECK (unit_cost >= 0),
-                                    created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+                                    unit_cost        NUMERIC(12,4) CHECK (unit_cost >= 0),
+                                    created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
                                     created_by       UUID
 );
 
