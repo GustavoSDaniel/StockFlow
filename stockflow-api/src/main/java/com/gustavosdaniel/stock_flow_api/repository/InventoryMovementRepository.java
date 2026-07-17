@@ -21,32 +21,32 @@ public interface InventoryMovementRepository extends R2dbcRepository<InventoryMo
             COUNT(id) FILTER (WHERE DATE(created_at) = CURRENT_DATE) as total_movements_today,
             COUNT(id) FILTER (WHERE movement_type = 'ENTRY' AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)) as entries_this_month,
             COUNT(id) FILTER (WHERE movement_type = 'EXIT' AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)) as exits_this_month
-        FROM Inventory_movements
+        FROM inventory_movement
         """)
     Mono<DashboardMovementsResponse.MovementSummary> getDashboardMovementSummary();
 
     @Query("""
         SELECT 
             CAST(movement_type AS VARCHAR) as movement_type, COUNT(id) as total
-        FROM inventory_movements
+        FROM inventory_movement
         WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
         GROUP BY movement_type
         """)
     Flux<DashboardMovementsResponse.MovementTypeCount> getDashboardMovementTypeCount();
 
     @Query("""
-        SELECT
-            CAST(movement_reason AS VARCHAR) as movement_reason, COUNT(id) as total
-        FROM inventory_movements
+        SELECT 
+            CAST(reason AS VARCHAR) as movement_reason, COUNT(id) as total
+        FROM inventory_movement
         WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY movement_reason
+        GROUP BY reason
         """)
     Flux<DashboardMovementsResponse.MovementReasonCount> getDashboardMovementReasonCount();
 
     @Query("""
         SELECT 
             DATE(created_at) as date, COUNT(id) as total_movements
-        FROM inventory_movements
+        FROM inventory_movement
         WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
         GROUP BY DATE(created_at)
         ORDER BY date ASC
@@ -59,8 +59,8 @@ public interface InventoryMovementRepository extends R2dbcRepository<InventoryMo
             p.name as product_name,
             p.sku,
             SUM(im.quantity) as total_quantity_moved
-        FROM inventory_movements im
-        JOIN products p ON p.id = product_id
+        FROM inventory_movement im
+        JOIN products p ON p.id = im.product_id
         WHERE DATE_TRUNC('month', im.created_at) = DATE_TRUNC('month', CURRENT_DATE)
         GROUP BY p.id, p.name, p.sku
         ORDER BY total_quantity_moved DESC 
