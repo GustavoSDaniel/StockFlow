@@ -1,8 +1,6 @@
 -- =========================================================================
--- V9__create_outbox_events.sql
+-- V9__create_outbox_events.sql (CORRIGIDO)
 -- Tabela de outbox para o padrão Transactional Outbox
--- Garante que eventos de domínio sejam publicados no Kafka de forma
--- confiável, mesmo se o broker estiver indisponível no momento da transação.
 -- =========================================================================
 
 CREATE TABLE outbox_events (
@@ -13,13 +11,13 @@ CREATE TABLE outbox_events (
                                topic         VARCHAR(255)  NOT NULL,
                                partition_key VARCHAR(255)  NOT NULL,
                                created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                               created_by    UUID,                          -- ← auditoria (usuário criador)
                                processed     BOOLEAN       NOT NULL DEFAULT FALSE,
                                processed_at  TIMESTAMPTZ,
                                retry_count   INTEGER       NOT NULL DEFAULT 0,
                                last_error    TEXT
 );
 
--- Índice parcial para polling eficiente: busca apenas eventos pendentes,
--- ordenados por data de criação (FIFO)
+-- Índice parcial para polling eficiente
 CREATE INDEX idx_outbox_pending
     ON outbox_events(created_at) WHERE processed = FALSE;

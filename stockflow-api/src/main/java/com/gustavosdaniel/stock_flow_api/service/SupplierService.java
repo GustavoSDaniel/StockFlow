@@ -79,13 +79,18 @@ public class SupplierService {
                             .collectList();
 
                     Mono<List<Address>> savedAddresses = Flux.fromIterable(supplierRequest.addresses())
-                            .flatMap(addressRequest ->
-                                    viaCepClient.findByAddressByZipCode(addressRequest.zipCode())
-                                            .map(viaCepResponse ->
-                                                    supplierMapper.toAddress(
-                                                            supplierId, addressRequest, viaCepResponse)),
-                                    3  // limita concorrência ao ViaCEP
-                            )
+                            .flatMap(addressRequest -> {
+
+                                if (addressRequest.hasManualAddress()) {
+                                    return Mono.just(supplierMapper.toManualAddress(supplierId, addressRequest));
+                                }
+
+                                return viaCepClient.findByAddressByZipCode(addressRequest.zipCode())
+                                        .doOnError(e -> log.error("Erro na chamada ao ViaCEP", e))
+                                        .map(viaCepResponse ->
+                                                supplierMapper.toAddress(
+                                                        supplierId, addressRequest, viaCepResponse));
+                            }, 3)
                             .collectList()
                             .flatMap(addressesToSave ->
                                     addressRepository.saveAll(addressesToSave).collectList());

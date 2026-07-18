@@ -12,7 +12,6 @@ public record StockSummaryResponse(
         String sku,
         Integer currentQuantity,
         StockStatus status,
+        String warehouseId,
         String location
-
-) {
-}
+) {}

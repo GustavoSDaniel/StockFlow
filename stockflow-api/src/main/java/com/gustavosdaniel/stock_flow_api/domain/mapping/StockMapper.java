@@ -44,6 +44,7 @@ public class StockMapper {
                 product.getSku(),
                 stock.getCurrentQuantity(),
                 stock.getStockStatus(),
+                stock.getWarehouseId(),
                 stock.getLocation()
         );
     }

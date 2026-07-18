@@ -33,7 +33,7 @@ public record ProductRequest(
         @NotNull(message = "A unidade de medida é obrigatório")
         UnitMeasure unitMeasure,
 
-        @Pattern(regexp = "\\d{8}|\\d{12,14}",
+        @Pattern(regexp = "^$|\\d{8}|\\d{12,14}",
                 message = "Código de barras deve ter 8 (EAN-8) ou 12-14 dígitos (EAN-13/UPC)")
         String barcode
 ) {

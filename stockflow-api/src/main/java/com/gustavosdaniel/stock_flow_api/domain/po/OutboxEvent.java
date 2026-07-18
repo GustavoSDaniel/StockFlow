@@ -46,7 +46,6 @@ public class OutboxEvent extends BaseImmutableEntity {
         this.payload = payload;
         this.topic = topic;
         this.partitionKey = partitionKey;
-        this.createdAt = LocalDateTime.now(); // Garante a data de criação
         this.processed = false;
         this.retryCount = 0;
     }
@@ -65,9 +64,6 @@ public class OutboxEvent extends BaseImmutableEntity {
 
     @Column("partition_key")
     private String partitionKey;
-
-    @Column("created_at")
-    private LocalDateTime createdAt;
 
     @Column("processed")
     private boolean processed;
@@ -125,10 +121,6 @@ public class OutboxEvent extends BaseImmutableEntity {
 
     public String getPartitionKey() {
         return partitionKey;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     public boolean isProcessed() {

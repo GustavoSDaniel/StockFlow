@@ -21,6 +21,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -123,11 +124,14 @@ class UserServiceTest {
             String nome = "Gustavo";
             String nome2 = "Daniel";
 
+            boolean isActive = true;
+            LocalDateTime createdAt = LocalDateTime.of(2026, 7, 18, 9, 25);
+
             User user = new User(keycloakId, nome);
             User user2 = new User(keycloakId2, nome2);
 
-            UserResponse userResponse = new UserResponse(userId, nome, UserRole.EMPLOYEE);
-            UserResponse userResponse2 = new UserResponse(userId2, nome2, UserRole.MANAGER);
+            UserResponse userResponse = new UserResponse(userId, nome, UserRole.EMPLOYEE, isActive, createdAt);
+            UserResponse userResponse2 = new UserResponse(userId2, nome2, UserRole.MANAGER, isActive, createdAt);
 
             when(userRepository.findAllBy(pageable)).thenReturn(Flux.just(user, user2));
             when(userRepository.count()).thenReturn(Mono.just(2L));
@@ -165,9 +169,12 @@ class UserServiceTest {
 
             String name = "Gustavo";
 
+            boolean isActive = true;
+            LocalDateTime createdAt = LocalDateTime.of(2026, 7, 18, 9, 25);
+
             User user = new User(keycloakId, name);
 
-            UserResponse userResponse = new UserResponse(userId, name, UserRole.MANAGER);
+            UserResponse userResponse = new UserResponse(userId, name, UserRole.MANAGER, isActive, createdAt);
 
             when(userRepository.searchByName(name, pageable)).thenReturn(Flux.just(user));
             when(userRepository.countByName(name)).thenReturn(Mono.just(1L));

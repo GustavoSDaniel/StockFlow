@@ -71,6 +71,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -89,7 +90,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(categoryRepository.findById(categoryId)).thenReturn(Mono.just(category));
         when(suppliersRepository.findById(supplierId)).thenReturn(Mono.just(supplier));
@@ -146,6 +147,7 @@ class ProductServiceTest {
         BigDecimal salePrice2 = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure2 = UnitMeasure.UN;
         ProductStatus status2 = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -164,11 +166,11 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         ProductResponse response2 = new ProductResponse(
                 productId2, productName2, null, sku2, categoryId, supplierId,
-                costPrice2, salePrice2, unitMeasure2, null, status2);
+                costPrice2, salePrice2, unitMeasure2, null, status2, margin);
 
         when(productRepository.findAllBy(pageable)).thenReturn(Flux.just(product, product2));
         when(productRepository.count()).thenReturn(Mono.just(2L));
@@ -213,6 +215,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -227,7 +230,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(productRepository.findAllByStatus(status, pageable)).thenReturn(Flux.just(product));
         when(productRepository.countByStatus(status)).thenReturn(Mono.just(1L));
@@ -279,6 +282,7 @@ class ProductServiceTest {
         BigDecimal salePrice2 = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure2 = UnitMeasure.UN;
         ProductStatus status2 = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -297,11 +301,11 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         ProductResponse response2 = new ProductResponse(
                 productId2, productName2, null, sku2, categoryId, supplierId,
-                costPrice2, salePrice2, unitMeasure2, null, status2);
+                costPrice2, salePrice2, unitMeasure2, null, status2, margin);
 
         when(categoryRepository.existsById(categoryId)).thenReturn(Mono.just(true));
         when(productRepository.findAllByCategoryId(categoryId, pageable)).thenReturn(Flux.just(product, product2));
@@ -350,6 +354,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
 
         Category category = new Category(categoryName, description, null, false);
@@ -365,7 +370,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(suppliersRepository.existsById(supplierId)).thenReturn(Mono.just(true));
         when(productRepository.findAllBySupplierId(supplierId, pageable)).thenReturn(Flux.just(product));
@@ -410,7 +415,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
-
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -425,7 +430,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(productRepository.findById(productId)).thenReturn(Mono.just(product));
         when(productMapper.toProductResponse(product)).thenReturn(response);
@@ -464,7 +469,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
-
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -479,7 +484,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(productRepository.findBySku(sku)).thenReturn(Mono.just(product));
         when(productMapper.toProductResponse(product)).thenReturn(response);
@@ -520,6 +525,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
 
         Category category = new Category(categoryName, description, null, false);
@@ -535,7 +541,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(productRepository.searchByName(productName, pageable)).thenReturn(Flux.just(product));
         when(productRepository.countByName(productName)).thenReturn(Mono.just(1L));
@@ -578,7 +584,7 @@ class ProductServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
         ProductStatus status = ProductStatus.ACTIVE;
-
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
         Category category = new Category(categoryName, description, null, false);
         ReflectionTestUtils.setField(category, "id", categoryId);
@@ -593,7 +599,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, productName, null, sku, categoryId, supplierId,
-                costPrice, salePrice, unitMeasure, null, status);
+                costPrice, salePrice, unitMeasure, null, status, margin);
 
         when(productRepository.searchNameAndStatus(productName, ProductStatus.ACTIVE, pageable))
                 .thenReturn(Flux.just(product));
@@ -780,6 +786,7 @@ class ProductServiceTest {
         String descriptionUpdate = "Atualizando produto";
         BigDecimal costPriceUpdate = BigDecimal.valueOf(2000.00);
         BigDecimal salePriceUpdate = BigDecimal.valueOf(6000.00);
+        BigDecimal margin = BigDecimal.valueOf(2000);
 
 
 
@@ -799,7 +806,7 @@ class ProductServiceTest {
 
         ProductResponse response = new ProductResponse(
                 productId, updateName, descriptionUpdate, sku, categoryId, supplierId,
-                costPriceUpdate, salePriceUpdate, unitMeasure, null, status);
+                costPriceUpdate, salePriceUpdate, unitMeasure, null, status, margin);
 
         when(productRepository.findById(productId)).thenReturn(Mono.just(product));
         when(productRepository.existsByNameAndStatus(updateName, status)).thenReturn(Mono.just(false));

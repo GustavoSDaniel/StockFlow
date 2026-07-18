@@ -66,7 +66,7 @@ public class StockController implements StockOpenApi {
     public Mono<ResponseEntity<Page<InventoryMovementResponse>>> getMovementHistory(
             @PathVariable UUID stockId,
             @ParameterObject
-            @PageableDefault(size = 20, sort = "productName", direction = Sort.Direction.DESC)
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable)
     {
         return stockService.getMovementHistory(stockId, pageable).map(ResponseEntity::ok);

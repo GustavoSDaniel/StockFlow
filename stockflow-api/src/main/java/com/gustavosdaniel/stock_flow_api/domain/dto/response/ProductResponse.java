@@ -18,6 +18,7 @@ public record ProductResponse(
         BigDecimal salePrice,
         UnitMeasure unitMeasure,
         String barcode,
-        ProductStatus status
+        ProductStatus status,
+        BigDecimal margin
 ) {
 }

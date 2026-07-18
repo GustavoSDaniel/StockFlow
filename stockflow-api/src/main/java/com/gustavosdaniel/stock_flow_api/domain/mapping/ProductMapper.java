@@ -42,7 +42,8 @@ public class ProductMapper {
                 product.getSalePrice(),
                 product.getUnitMeasure(),
                 product.getBarcode(),
-                product.getStatus()
+                product.getStatus(),
+                product.calculateMargin()
 
         );
     }

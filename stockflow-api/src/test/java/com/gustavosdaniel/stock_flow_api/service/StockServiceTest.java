@@ -278,7 +278,7 @@ class StockServiceTest {
         ReflectionTestUtils.setField(stock, "id", stockId);
 
         StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName,
-                sku, currentQuantity, stockStatus, location);
+                sku, currentQuantity, stockStatus,warehouseId, location);
 
         when(productRepository.findAllById(List.of(productId))).thenReturn(Flux.just(product));
         when(stockMapper.toStockSummaryResponse(stock, product)).thenReturn(response);
@@ -698,7 +698,7 @@ class StockServiceTest {
         ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
 
         StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
-                currentQuantity, stockStatus, location);
+                currentQuantity, stockStatus,warehouseId, location);
 
         when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
         when(stockRepository.findOutOfStock(limit, offset))
@@ -760,7 +760,7 @@ class StockServiceTest {
         ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
 
         StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
-                currentQuantity, stockStatus, location);
+                currentQuantity, stockStatus,warehouseId, location);
 
         when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
         when(stockRepository.findLowStock(limit, offset))
@@ -822,7 +822,7 @@ class StockServiceTest {
         ReflectionTestUtils.setField(stock, "currentQuantity", currentQuantity);
 
         StockSummaryResponse response = new StockSummaryResponse(stockId, productId, productName, sku,
-                currentQuantity, stockStatus, location);
+                currentQuantity, stockStatus,warehouseId, location);
 
         when(productRepository.findAllById(anyIterable())).thenReturn(Flux.just(product));
         when(stockRepository.findOverStock(limit, offset))

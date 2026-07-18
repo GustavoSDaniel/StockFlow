@@ -24,7 +24,9 @@ public class UserMapper {
         return new UserResponse(
                 user.getId(),
                 user.getUserName(),
-                user.getRole()
+                user.getRole(),
+                user.isActive(),
+                user.getCreatedAt()
         );
     }
 }
