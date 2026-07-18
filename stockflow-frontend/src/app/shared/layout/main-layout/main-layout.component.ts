@@ -24,7 +24,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   styles: [`
     :host { display: block; height: 100dvh; }
     .layout-container { height: 100%; }
-    .sidebar { width: 260px; background: #1a1a2e; border-right: none; }
+    .sidebar { width: 260px; background: #fff; border-right: 1px solid #e8eaed; }
     .content { display: flex; flex-direction: column; background: #f5f5f5; }
     .main-content { flex: 1; padding: 24px; overflow-y: auto; }
   `]

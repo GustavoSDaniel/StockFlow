@@ -3,10 +3,13 @@ import { AuthGuard } from './core/auth/auth.guard';
 import { RoleGuard } from './core/auth/role.guard';
 import { UserRole } from './core/models/enums';
 import { MainLayoutComponent } from './shared/layout/main-layout/main-layout.component';
+import { LandingComponent } from './features/landing/landing.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/dashboard/stocks', pathMatch: 'full' },
+  // Landing Page pública
+  { path: '', component: LandingComponent, pathMatch: 'full' },
 
+  // App protegido por AuthGuard
   {
     path: '',
     component: MainLayoutComponent,
@@ -71,5 +74,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: '/dashboard/stocks' },
+  { path: '**', redirectTo: '' },
 ];

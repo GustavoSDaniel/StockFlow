@@ -55,6 +55,15 @@ import { NgTemplateOutlet } from '@angular/common';
         <button mat-menu-item [routerLink]="['/products', row.id]"><mat-icon>visibility</mat-icon> Ver</button>
         @if (auth.hasRole(UserRole.MANAGER)) {
           <button mat-menu-item [routerLink]="['/products', row.id, 'edit']"><mat-icon>edit</mat-icon> Editar</button>
+          @if (row.status === 'INACTIVE' || row.status === 'DISCONTINUED') {
+            <button mat-menu-item (click)="onActivate(row)"><mat-icon>toggle_on</mat-icon> Ativar</button>
+          }
+          @if (row.status === 'ACTIVE') {
+            <button mat-menu-item (click)="onInactivate(row)"><mat-icon>toggle_off</mat-icon> Inativar</button>
+          }
+          @if (row.status === 'ACTIVE' || row.status === 'INACTIVE') {
+            <button mat-menu-item (click)="onDiscontinue(row)"><mat-icon>block</mat-icon> Descontinuar</button>
+          }
         }
         @if (auth.hasRole(UserRole.ADMIN)) {
           <button mat-menu-item (click)="onDelete(row)"><mat-icon color="warn">delete</mat-icon> Excluir</button>
@@ -122,6 +131,45 @@ export class ProductListComponent implements OnInit {
       if (confirmed) {
         this.productService.delete(row.id).subscribe(() => {
           this.snackBar.open('Produto excluído!', 'OK', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
+  }
+
+  onActivate(row: ProductResponse): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Ativar Produto', message: `Deseja ativar "${row.name}"?`, confirmLabel: 'Ativar' }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.productService.activate(row.id).subscribe(() => {
+          this.snackBar.open('Produto ativado!', 'OK', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
+  }
+
+  onInactivate(row: ProductResponse): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Inativar Produto', message: `Deseja inativar "${row.name}"? O produto não aparecerá em novas operações.`, confirmLabel: 'Inativar' }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.productService.inactive(row.id).subscribe(() => {
+          this.snackBar.open('Produto inativado!', 'OK', { duration: 3000 });
+          this.loadData();
+        });
+      }
+    });
+  }
+
+  onDiscontinue(row: ProductResponse): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Descontinuar Produto', message: `Deseja descontinuar "${row.name}"? Esta ação indica que o produto não será mais comercializado.`, confirmLabel: 'Descontinuar' }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.productService.discontinue(row.id).subscribe(() => {
+          this.snackBar.open('Produto descontinuado!', 'OK', { duration: 3000 });
           this.loadData();
         });
       }
