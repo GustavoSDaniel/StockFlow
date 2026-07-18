@@ -10,13 +10,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KeycloakConfig {
 
-    @Value("${KEYCLOAK_URL}")
+    @Value("${KEYCLOAK_URL:http://localhost:6062}")
     private String serverUrl;
 
-    @Value("${keycloak.realm}")
+    @Value("${keycloak.realm:stock-flow-realm}")
     private String realm;
 
-    @Value("${keycloak.client.id}")
+    @Value("${keycloak.client.id:stock-flow-api}")
     private String clientId;
 
     @Value("${keycloak.client-secret}")
