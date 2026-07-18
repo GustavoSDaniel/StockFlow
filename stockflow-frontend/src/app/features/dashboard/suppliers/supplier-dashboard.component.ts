@@ -17,7 +17,12 @@ import { CurrencyBrPipe } from '../../../shared/pipes/currency.pipe';
       <div class="supplier-grid">
         @for (s of data()?.suppliers; track s.supplierId) {
           <mat-card>
-            <mat-card-header><mat-card-title>{{ s.tradeName || s.supplierName }}</mat-card-title></mat-card-header>
+            <mat-card-header>
+              <mat-card-title>{{ s.tradeName || s.supplierName }}</mat-card-title>
+              @if (s.tradeName && s.supplierName && s.tradeName !== s.supplierName) {
+                <mat-card-subtitle>{{ s.supplierName }}</mat-card-subtitle>
+              }
+            </mat-card-header>
             <mat-card-content>
               <div class="stat"><span class="num">{{ s.productCount }}</span> produtos</div>
               <div class="stat">Valor estoque: <strong>{{ s.totalStockValue | currencyBr }}</strong></div>

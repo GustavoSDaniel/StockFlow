@@ -1,8 +1,12 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, APP_INITIALIZER, LOCALE_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import Keycloak from 'keycloak-js';
+
+registerLocaleData(localePt, 'pt-BR');
 
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
@@ -26,6 +30,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([apiInterceptor, errorInterceptor])),
     provideAnimations(),
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeKeycloak,

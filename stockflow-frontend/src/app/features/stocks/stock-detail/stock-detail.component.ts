@@ -42,7 +42,7 @@ import { finalize } from 'rxjs';
         <mat-card><mat-card-content><div class="stat-label">Máximo</div><div class="stat-value">{{ stock()!.maximumQuantity }}</div></mat-card-content></mat-card>
         <mat-card><mat-card-content><div class="stat-label">Ponto Reposição</div><div class="stat-value">{{ stock()!.reorderPoint }}</div></mat-card-content></mat-card>
         <mat-card><mat-card-content><div class="stat-label">Qtd Reposição</div><div class="stat-value">{{ stock()!.reorderQuantity }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><div class="stat-label">Warehouse</div><div class="stat-value">{{ stock()!.warehouseId }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><div class="stat-label">Galpão</div><div class="stat-value">{{ stock()!.warehouseId || 'Não informado' }}</div></mat-card-content></mat-card>
         <mat-card><mat-card-content><div class="stat-label">Localização</div><div class="stat-value">{{ stock()!.location }}</div></mat-card-content></mat-card>
       </div>
 
@@ -76,7 +76,7 @@ export class StockDetailComponent implements OnInit {
     { key: 'quantity', header: 'Qtd' },
     { key: 'quantityBefore', header: 'Antes' },
     { key: 'quantityAfter', header: 'Depois' },
-    { key: 'reason', header: 'Motivo', cell: (r: any) => new EnumLabelPipe().transform(r.reason, 'movementReason') as string },
+    { key: 'movementReason', header: 'Motivo', cell: (r: any) => new EnumLabelPipe().transform(r.movementReason, 'movementReason') as string },
     { key: 'createdAt', header: 'Data', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'dd/MM/yyyy HH:mm') as string },
   ];
 

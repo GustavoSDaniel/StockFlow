@@ -19,7 +19,7 @@ import { AuthService } from '../../core/auth/auth.service';
           </a>
           <div class="nav-actions">
             <button mat-stroked-button class="btn-nav-outline" (click)="login()">Entrar</button>
-            <button mat-flat-button class="btn-nav-solid" (click)="register()">Criar Conta</button>
+            <button mat-flat-button class="btn-nav-solid" (click)="register()">Demonstração</button>
           </div>
         </div>
       </nav>
@@ -32,38 +32,38 @@ import { AuthService } from '../../core/auth/auth.service';
       <section class="hero">
         <div class="hero-content">
           <div class="hero-badge">
-            <span class="badge-dot"></span> Sistema de gestão de inventário
+            <span class="badge-dot"></span> Ambiente de Demonstração
           </div>
           <h1 class="hero-title">
-            Controle total do seu<br />
-            <span class="gradient-text">estoque em tempo real</span>
+            Explore o futuro da<br />
+            <span class="gradient-text">gestão de inventário</span>
           </h1>
           <p class="hero-subtitle">
-            Gerencie produtos, fornecedores, movimentações e categorias com
-            uma plataforma moderna, segura e intuitiva. Tudo integrado com
-            dashboards inteligentes para decisões rápidas.
+            Navegue por um módulo de testes completo: cadastre produtos, controle
+            estoques, simule movimentações e visualize dashboards inteligentes.
+            Sem compromisso, sem custo — apenas sua avaliação.
           </p>
           <div class="hero-actions">
             <button mat-flat-button class="btn-primary" (click)="register()">
-              Começar gratuitamente
+              Testar o sistema
               <mat-icon>arrow_forward</mat-icon>
             </button>
             <button mat-stroked-button class="btn-secondary" (click)="login()">
-              Já tenho conta
+              Fazer login
             </button>
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-number">+99%</span>
-              <span class="stat-label">Uptime</span>
+              <span class="stat-number">6</span>
+              <span class="stat-label">Módulos disponíveis</span>
             </div>
             <div class="stat">
               <span class="stat-number">3</span>
-              <span class="stat-label">Níveis de acesso</span>
+              <span class="stat-label">Perfis de acesso</span>
             </div>
             <div class="stat">
-              <span class="stat-number">24/7</span>
-              <span class="stat-label">Monitoramento</span>
+              <span class="stat-number">100%</span>
+              <span class="stat-label">Funcionalidades liberadas</span>
             </div>
           </div>
         </div>
@@ -156,10 +156,10 @@ import { AuthService } from '../../core/auth/auth.service';
       <!-- ====== FEATURES ====== -->
       <section class="features-section">
         <div class="section-header">
-          <span class="section-eyebrow">Funcionalidades</span>
-          <h2 class="section-title">Tudo que você precisa em um só lugar</h2>
+          <span class="section-eyebrow">O que você pode testar</span>
+          <h2 class="section-title">Funcionalidades disponíveis para avaliação</h2>
           <p class="section-subtitle">
-            Da entrada de produtos ao relatório gerencial — sem complicação.
+            Explore todas as funcionalidades do sistema neste ambiente de demonstração.
           </p>
         </div>
 
@@ -217,27 +217,27 @@ import { AuthService } from '../../core/auth/auth.service';
       <!-- ====== HOW IT WORKS ====== -->
       <section class="how-section">
         <div class="section-header">
-          <span class="section-eyebrow">Como funciona</span>
-          <h2 class="section-title">Em 3 passos você está no controle</h2>
+          <span class="section-eyebrow">Como testar</span>
+          <h2 class="section-title">Comece a avaliar em 3 passos</h2>
         </div>
 
         <div class="steps-row">
           <div class="step">
             <div class="step-number">1</div>
-            <h3>Crie sua conta</h3>
-            <p>Registro rápido pelo Keycloak. Sua conta fica segura com autenticação de nível empresarial.</p>
+            <h3>Acesse o ambiente</h3>
+            <p>Registre-se ou faça login rapidamente para entrar no módulo de demonstração. Sem burocracia.</p>
           </div>
           <div class="step-connector"></div>
           <div class="step">
             <div class="step-number">2</div>
-            <h3>Cadastre seus dados</h3>
-            <p>Adicione produtos, fornecedores e estoques. A interface intuitiva te guia em cada etapa.</p>
+            <h3>Explore os módulos</h3>
+            <p>Navegue por produtos, estoques, fornecedores e dashboards. Todos os recursos liberados para teste.</p>
           </div>
           <div class="step-connector"></div>
           <div class="step">
             <div class="step-number">3</div>
-            <h3>Comece a gerenciar</h3>
-            <p>Dashboard em tempo real, alertas automáticos e relatórios prontos para tomada de decisão.</p>
+            <h3>Avalie o potencial</h3>
+            <p>Visualize relatórios, simule operações e veja como o StockFlow pode otimizar sua operação real.</p>
           </div>
         </div>
       </section>
@@ -246,14 +246,15 @@ import { AuthService } from '../../core/auth/auth.service';
       <section class="cta-section">
         <div class="cta-blob"></div>
         <div class="cta-card">
-          <h2>Pronto para transformar sua gestão?</h2>
+          <h2>Gostou do que viu?</h2>
           <p>
-            Junte-se a empresas que já otimizaram seu controle de inventário
-            com o StockFlow. Simples, rápido e seguro.
+            Este é um ambiente de demonstração do StockFlow — um futuro SaaS
+            para gestão inteligente de inventário. Explore à vontade e, se
+            quiser saber mais sobre a versão completa, entre em contato.
           </p>
           <div class="cta-actions">
             <button mat-flat-button class="btn-primary btn-lg" (click)="register()">
-              Criar conta gratuita
+              Explorar ambiente de demonstração
             </button>
           </div>
         </div>
@@ -271,7 +272,7 @@ import { AuthService } from '../../core/auth/auth.service';
           </div>
           <div class="footer-links">
             <a (click)="login()">Entrar</a>
-            <a (click)="register()">Criar Conta</a>
+            <a (click)="register()">Demonstração</a>
           </div>
         </div>
         <div class="blob blob-footer"></div>

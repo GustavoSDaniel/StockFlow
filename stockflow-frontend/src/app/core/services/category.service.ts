@@ -36,6 +36,11 @@ export class CategoryService {
     return this.http.get<Page<CategoryResponse>>(`${this.api}/${parentId}/all-active-subcategories`, { params });
   }
 
+  getAllDisabledSubcategories(parentId: string, page = 0, size = 20): Observable<Page<CategoryResponse>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Page<CategoryResponse>>(`${this.api}/${parentId}/all-disable-subcategories`, { params });
+  }
+
   getAllDisabledCategories(page = 0, size = 20): Observable<Page<CategoryResponse>> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Page<CategoryResponse>>(`${this.api}/all-disable-categories`, { params });

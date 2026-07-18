@@ -9,8 +9,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { StockService } from '../../../core/services/stock.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { StockResponse, InventoryMovementRequest, TransferRequest } from '../../../core/models/domain.models';
-import { MovementType, MOVEMENT_TYPE_LABELS, MovementReason, MOVEMENT_REASON_LABELS, VALID_REASONS_BY_TYPE } from '../../../core/models/enums';
+import { MovementType, MOVEMENT_TYPE_LABELS, MovementReason, MOVEMENT_REASON_LABELS, VALID_REASONS_BY_TYPE, UserRole } from '../../../core/models/enums';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 
 @Component({
@@ -29,7 +30,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
         <mat-card-content>
           <p class="stock-info">
             <strong>{{ stock()?.productName }}</strong> |
-            Warehouse: {{ stock()?.warehouseId }} |
+            Galpão: {{ stock()?.warehouseId }} |
             Quantidade atual: <strong>{{ stock()?.currentQuantity }}</strong>
           </p>
 
@@ -48,18 +49,20 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
               <input matInput type="number" formControlName="quantity" required min="1" />
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Motivo</mat-label>
-              <mat-select formControlName="movementReason">
-                @for (mr of availableReasons(); track mr) {
-                  <mat-option [value]="mr">{{ MOVEMENT_REASON_LABELS[mr] }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+            @if (!isTransfer) {
+              <mat-form-field appearance="outline">
+                <mat-label>Motivo</mat-label>
+                <mat-select formControlName="movementReason">
+                  @for (mr of availableReasons(); track mr) {
+                    <mat-option [value]="mr">{{ MOVEMENT_REASON_LABELS[mr] }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
 
             @if (isTransfer) {
               <mat-form-field appearance="outline">
-                <mat-label>Warehouse Destino</mat-label>
+                <mat-label>Galpão Destino</mat-label>
                 <input matInput formControlName="targetWarehouseId" required />
               </mat-form-field>
             }
@@ -104,6 +107,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
 export class StockMovementFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private stockService = inject(StockService);
+  private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
@@ -113,9 +117,22 @@ export class StockMovementFormComponent implements OnInit {
   saving = signal(false);
   protected MOVEMENT_REASON_LABELS = MOVEMENT_REASON_LABELS;
 
-  movementTypes = Object.values(MovementType)
-    .filter(t => t !== MovementType.TRANSFER)
-    .map(v => ({ value: v, label: MOVEMENT_TYPE_LABELS[v] }));
+  /** Tipos de movimentação disponíveis conforme o cargo:
+   *  - EMPLOYEE: ENTRY, EXIT, RETURN (operações do dia a dia)
+   *  - MANAGER+: ENTRY, EXIT, RETURN, ADJUSTMENT, TRANSFER (operações gerenciais) */
+  movementTypes = this.buildMovementTypes();
+
+  private buildMovementTypes(): { value: MovementType; label: string }[] {
+    const isManager = this.auth.hasRole(UserRole.MANAGER);
+    return Object.values(MovementType)
+      .filter(t => {
+        if (t === MovementType.ADJUSTMENT || t === MovementType.TRANSFER) {
+          return isManager; // Apenas MANAGER+ pode ajustar ou transferir
+        }
+        return true; // ENTRY, EXIT, RETURN disponíveis para todos
+      })
+      .map(v => ({ value: v, label: MOVEMENT_TYPE_LABELS[v] }));
+  }
 
   form: FormGroup = this.fb.group({
     movementType: [MovementType.ENTRY, Validators.required],
@@ -137,8 +154,16 @@ export class StockMovementFormComponent implements OnInit {
     this.stockService.getById(id).subscribe(s => { this.stock.set(s); this.loading.set(false); });
 
     this.form.get('movementType')?.valueChanges.subscribe((type: MovementType) => {
-      this.availableReasons.set(VALID_REASONS_BY_TYPE[type] || []);
-      this.form.get('movementReason')?.setValue('');
+      const reasonControl = this.form.get('movementReason')!;
+      if (type === MovementType.TRANSFER) {
+        // Transferência não exige motivo no backend
+        reasonControl.clearValidators();
+        reasonControl.setValue('');
+      } else {
+        reasonControl.setValidators(Validators.required);
+        this.availableReasons.set(VALID_REASONS_BY_TYPE[type] || []);
+      }
+      reasonControl.updateValueAndValidity();
     });
     // Trigger initial load
     this.availableReasons.set(VALID_REASONS_BY_TYPE[MovementType.ENTRY] || []);
@@ -151,18 +176,30 @@ export class StockMovementFormComponent implements OnInit {
     const stockId = this.route.snapshot.paramMap.get('id')!;
     const movementType: MovementType = data.movementType;
 
-    const request: InventoryMovementRequest = {
-      movementType, quantity: data.quantity, movementReason: data.movementReason,
-      referenceNumber: data.referenceNumber, note: data.note,
-      supplierId: '', customerId: '', unitCost: data.unitCost || 0,
-    };
-
     let obs;
-    switch (movementType) {
-      case MovementType.ENTRY: case MovementType.RETURN: obs = this.stockService.entry(stockId, request); break;
-      case MovementType.EXIT: obs = this.stockService.exit(stockId, request); break;
-      case MovementType.ADJUSTMENT: obs = this.stockService.adjust(stockId, request); break;
-      default: obs = this.stockService.exit(stockId, request);
+    if (movementType === MovementType.TRANSFER) {
+      // Transferência usa endpoint e payload diferentes
+      const transferReq: TransferRequest = {
+        quantity: data.quantity,
+        sourceWarehouseId: this.stock()?.warehouseId || '',
+        targetWarehouseId: data.targetWarehouseId,
+        referenceNumber: data.referenceNumber,
+        note: data.note,
+      };
+      obs = this.stockService.transfer(stockId, transferReq);
+    } else {
+      const request: InventoryMovementRequest = {
+        movementType, quantity: data.quantity, movementReason: data.movementReason,
+        referenceNumber: data.referenceNumber, note: data.note,
+        supplierId: '', customerId: '', unitCost: data.unitCost || 0,
+      };
+
+      switch (movementType) {
+        case MovementType.ENTRY: case MovementType.RETURN: obs = this.stockService.entry(stockId, request); break;
+        case MovementType.EXIT: obs = this.stockService.exit(stockId, request); break;
+        case MovementType.ADJUSTMENT: obs = this.stockService.adjust(stockId, request); break;
+        default: obs = this.stockService.exit(stockId, request);
+      }
     }
 
     obs.subscribe({

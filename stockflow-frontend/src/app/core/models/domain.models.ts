@@ -67,12 +67,11 @@ export interface StockSummaryResponse {
   id: string;
   productId: string;
   productName: string;
-  productSku: string;
+  sku: string;
   currentQuantity: number;
-  minimumQuantity: number;
-  maximumQuantity: number;
-  stockStatus: StockStatus;
+  status: StockStatus;
   warehouseId: string;
+  location: string;
 }
 
 export interface StockRequest {
@@ -121,7 +120,7 @@ export interface InventoryMovementResponse {
   quantity: number;
   quantityBefore: number;
   quantityAfter: number;
-  reason: MovementReason;
+  movementReason: MovementReason;
   referenceNumber: string;
   supplierId: string;
   supplierName: string;
@@ -222,6 +221,8 @@ export interface AddressRequest {
   stateUF: StateUF;
   country: string;
   isMain: boolean;
+  /** true = endereço preenchido manualmente (ignorar ViaCEP); false = CEP válido consultado */
+  hasManualAddress: boolean;
 }
 
 export interface AddressResponse {
@@ -243,12 +244,10 @@ export interface AddressResponse {
 
 export interface UserResponse {
   id: string;
-  keycloakId: string;
   userName: string;
   role: UserRole;
-  isActive: boolean;
+  active: boolean;
   createdAt: string;
-  updatedAt: string;
 }
 
 // ─── Notificação ───
@@ -301,9 +300,9 @@ export interface DashboardOverviewResponse {
 export interface TopStockItem {
   productId: string;
   productName: string;
-  productSku: string;
+  sku: string;
   currentQuantity: number;
-  stockStatus: StockStatus;
+  status: StockStatus;
 }
 
 export interface DashboardStockResponse {
@@ -323,7 +322,7 @@ export interface MovementsByType {
 }
 
 export interface MovementsByReason {
-  reason: MovementReason;
+  movementReason: MovementReason;
   count: number;
   totalQuantity: number;
 }
@@ -338,7 +337,7 @@ export interface DailyHistory {
 export interface TopMovedProduct {
   productId: string;
   productName: string;
-  productSku: string;
+  sku: string;
   totalMoved: number;
 }
 

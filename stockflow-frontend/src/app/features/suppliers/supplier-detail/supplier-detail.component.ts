@@ -4,7 +4,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SupplierService } from '../../../core/services/supplier.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { SupplierResponse } from '../../../core/models/domain.models';
@@ -18,7 +21,7 @@ import { finalize, switchMap, catchError, of } from 'rxjs';
 @Component({
   selector: 'app-supplier-detail',
   standalone: true,
-  imports: [RouterModule, MatCardModule, MatTabsModule, MatButtonModule, MatIconModule, LoadingSpinnerComponent, CurrencyBrPipe, EnumLabelPipe, DatePipe],
+  imports: [RouterModule, MatCardModule, MatTabsModule, MatButtonModule, MatIconModule, MatTooltipModule, LoadingSpinnerComponent, CurrencyBrPipe, EnumLabelPipe, DatePipe],
   template: `
     <div class="header">
       <button mat-icon-button routerLink="/suppliers"><mat-icon>arrow_back</mat-icon></button>
@@ -50,10 +53,17 @@ import { finalize, switchMap, catchError, of } from 'rxjs';
           @if (supplier()?.contacts?.length) {
             @for (c of supplier()?.contacts; track c.id) {
               <mat-card class="sub-card"><mat-card-content>
-                <div class="detail-grid">
-                  <div class="detail-field"><strong>Nome</strong><span>{{ c.contactName }}</span></div>
-                  <div class="detail-field"><strong>Email</strong><span>{{ c.email }}</span></div>
-                  <div class="detail-field"><strong>Telefone</strong><span>{{ c.phoneNumber }}</span></div>
+                <div class="sub-card-row">
+                  <div class="detail-grid" style="flex:1">
+                    <div class="detail-field"><strong>Nome</strong><span>{{ c.contactName }}</span></div>
+                    <div class="detail-field"><strong>Email</strong><span>{{ c.email }}</span></div>
+                    <div class="detail-field"><strong>Telefone</strong><span>{{ c.phoneNumber }}</span></div>
+                  </div>
+                  @if (auth.hasRole(UserRole.ADMIN)) {
+                    <button mat-icon-button color="warn" (click)="onDeleteContact(c.id, c.contactName)" matTooltip="Remover contato">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </mat-card-content></mat-card>
             }
@@ -66,11 +76,18 @@ import { finalize, switchMap, catchError, of } from 'rxjs';
           @if (supplier()?.addresses?.length) {
             @for (a of supplier()?.addresses; track a.id) {
               <mat-card class="sub-card"><mat-card-content>
-                <div class="detail-grid">
-                  <div class="detail-field"><strong>CEP</strong><span>{{ a.zipCode }}</span></div>
-                  <div class="detail-field"><strong>Logradouro</strong><span>{{ a.street }}, {{ a.streetNumber }} {{ a.complement || '' }}</span></div>
-                  <div class="detail-field"><strong>Bairro / Cidade</strong><span>{{ a.neighborhood }} — {{ a.city }}/{{ a.stateUF | enumLabel:'stateUF' }}</span></div>
-                  <div class="detail-field"><strong>País</strong><span>{{ a.country }} @if(a.isMain) {<span class="badge">Principal</span>}</span></div>
+                <div class="sub-card-row">
+                  <div class="detail-grid" style="flex:1">
+                    <div class="detail-field"><strong>CEP</strong><span>{{ a.zipCode }}</span></div>
+                    <div class="detail-field"><strong>Logradouro</strong><span>{{ a.street }}, {{ a.streetNumber }} {{ a.complement || '' }}</span></div>
+                    <div class="detail-field"><strong>Bairro / Cidade</strong><span>{{ a.neighborhood }} — {{ a.city }}/{{ a.stateUF | enumLabel:'stateUF' }}</span></div>
+                    <div class="detail-field"><strong>País</strong><span>{{ a.country }} @if(a.isMain) {<span class="badge">Principal</span>}</span></div>
+                  </div>
+                  @if (auth.hasRole(UserRole.ADMIN)) {
+                    <button mat-icon-button color="warn" (click)="onDeleteAddress(a.id)" matTooltip="Remover endereço">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </mat-card-content></mat-card>
             }
@@ -91,6 +108,7 @@ import { finalize, switchMap, catchError, of } from 'rxjs';
     .detail-field strong { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
     .detail-field span { font-size: 15px; color: #1a1a2e; }
     .sub-card { margin: 12px 0; }
+    .sub-card-row { display: flex; align-items: flex-start; gap: 8px; }
     .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-left: 8px; }
     .empty-text { color: #9ca3af; font-size: 14px; text-align: center; padding: 20px 0; margin: 0; }
   `],
@@ -99,6 +117,7 @@ export class SupplierDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private supplierService = inject(SupplierService);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
   protected auth = inject(AuthService);
   protected UserRole = UserRole;
   supplier = signal<SupplierResponse | null>(null);
@@ -124,6 +143,45 @@ export class SupplierDetailComponent implements OnInit {
       catchError(() => {
         this.snackBar.open('Erro ao carregar fornecedor.', 'OK', { duration: 3000 });
         return of(null);
+      })
+    ).subscribe(detail => {
+      if (detail) this.supplier.set(detail);
+    });
+  }
+
+  onDeleteContact(contactId: string, contactName: string): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Remover Contato', message: `Remover o contato "${contactName}"?`, confirmLabel: 'Remover' }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.supplierService.deleteContact(contactId).subscribe(() => {
+          this.snackBar.open('Contato removido!', 'OK', { duration: 3000 });
+          this.reloadSupplier();
+        });
+      }
+    });
+  }
+
+  onDeleteAddress(addressId: string): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Remover Endereço', message: 'Remover este endereço?', confirmLabel: 'Remover' }
+    }).afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.supplierService.deleteAddress(addressId).subscribe(() => {
+          this.snackBar.open('Endereço removido!', 'OK', { duration: 3000 });
+          this.reloadSupplier();
+        });
+      }
+    });
+  }
+
+  private reloadSupplier(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) return;
+    this.supplierService.getAll(0, 100).pipe(
+      switchMap(page => {
+        const found = page.content.find(s => s.id === id);
+        return found ? this.supplierService.getByCnpj(found.cnpj) : of(null);
       })
     ).subscribe(detail => {
       if (detail) this.supplier.set(detail);

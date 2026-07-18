@@ -31,7 +31,7 @@ import { StockStatusIndicatorComponent } from '../../../shared/components/stock-
           <mat-card-content>
             <mat-list>
               @for (item of data()?.top10LowStock; track item.productId) {
-                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.stockStatus" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.productSku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
+                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.status" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.sku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
               }
             </mat-list>
           </mat-card-content>
@@ -42,7 +42,7 @@ import { StockStatusIndicatorComponent } from '../../../shared/components/stock-
           <mat-card-content>
             <mat-list>
               @for (item of data()?.top10HighStock; track item.productId) {
-                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.stockStatus" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.productSku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
+                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.status" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.sku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
               }
             </mat-list>
           </mat-card-content>

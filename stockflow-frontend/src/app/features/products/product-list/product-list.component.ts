@@ -7,11 +7,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { ProductService } from '../../../core/services/product.service';
+import { CategoryService } from '../../../core/services/category.service';
+import { SupplierService } from '../../../core/services/supplier.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { UserRole, ProductStatus, PRODUCT_STATUS_LABELS } from '../../../core/models/enums';
-import { ProductResponse } from '../../../core/models/domain.models';
+import { ProductResponse, CategoryResponse, SupplierSummaryResponse } from '../../../core/models/domain.models';
 import { Page } from '../../../core/models/page.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DataTableComponent, ColumnDef } from '../../../shared/components/data-table/data-table.component';
@@ -74,6 +76,8 @@ import { NgTemplateOutlet } from '@angular/common';
 })
 export class ProductListComponent implements OnInit {
   private productService = inject(ProductService);
+  private categoryService = inject(CategoryService);
+  private supplierService = inject(SupplierService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   protected auth = inject(AuthService);
@@ -87,6 +91,12 @@ export class ProductListComponent implements OnInit {
   private searchTerm = '';
   private statusFilter = '';
 
+  /** Mapeamento categoryId → categoryName para fallback quando o backend não envia o nome */
+  private categoryMap = new Map<string, string>();
+
+  /** Mapeamento supplierId → supplierName para fallback quando o backend não envia o nome */
+  private supplierMap = new Map<string, string>();
+
   filterFields: FilterField[] = [
     { key: 'status', label: 'Status', type: 'select', options: Object.values(ProductStatus).map(s => ({ value: s, label: PRODUCT_STATUS_LABELS[s] })) },
   ];
@@ -94,14 +104,38 @@ export class ProductListComponent implements OnInit {
   columns: ColumnDef[] = [
     { key: 'name', header: 'Nome', sortable: true },
     { key: 'sku', header: 'SKU' },
-    { key: 'categoryName', header: 'Categoria' },
+    { key: 'categoryName', header: 'Categoria', cell: (r: ProductResponse) => r.categoryName || this.categoryMap.get(r.categoryId) || r.categoryId },
+    { key: 'supplierName', header: 'Fornecedor', cell: (r: ProductResponse) => r.supplierName || this.supplierMap.get(r.supplierId) || r.supplierId },
     { key: 'costPrice', header: 'Preço Custo', cell: (r) => new CurrencyBrPipe().transform(r.costPrice) },
     { key: 'salePrice', header: 'Preço Venda', cell: (r) => new CurrencyBrPipe().transform(r.salePrice) },
     { key: 'unitMeasure', header: 'Unidade', cell: (r) => new EnumLabelPipe().transform(r.unitMeasure, 'unitMeasure') },
     { key: 'status', header: 'Status' },
   ];
 
-  ngOnInit(): void { this.loadData(); }
+  ngOnInit(): void {
+    // Carrega categorias e fornecedores em paralelo para fallback de nomes
+    forkJoin([
+      this.categoryService.getAll(0, 100),
+      this.supplierService.getAll(0, 500),
+    ]).subscribe(([catPage, supPage]) => {
+      this.buildCategoryMap(catPage.content);
+      for (const s of supPage.content) {
+        this.supplierMap.set(s.id, s.name);
+      }
+      this.loadData();
+    });
+  }
+
+  /** Constrói um mapa plano categoryId → nome a partir da árvore de categorias */
+  private buildCategoryMap(categories: CategoryResponse[]): void {
+    const walk = (list: CategoryResponse[]): void => {
+      for (const c of list) {
+        this.categoryMap.set(c.id, c.name);
+        if (c.subCategories?.length) walk(c.subCategories);
+      }
+    };
+    walk(categories);
+  }
 
   private loadData(): void {
     this.loading.set(true);

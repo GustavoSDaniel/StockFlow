@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, TemplateRef, ViewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,6 +6,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTabsModule } from '@angular/material/tabs';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
+import { NgTemplateOutlet } from '@angular/common';
 import { StockService } from '../../../core/services/stock.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { UserRole } from '../../../core/models/enums';
@@ -13,19 +14,18 @@ import { StockSummaryResponse } from '../../../core/models/domain.models';
 import { Page } from '../../../core/models/page.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DataTableComponent, ColumnDef } from '../../../shared/components/data-table/data-table.component';
-import { StockStatusIndicatorComponent } from '../../../shared/components/stock-status-indicator/stock-status-indicator.component';
+import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { finalize } from 'rxjs';
-import { NgTemplateOutlet } from '@angular/common';
 
 @Component({
   selector: 'app-stock-list',
   standalone: true,
   imports: [
     RouterModule, MatButtonModule, MatIconModule, MatMenuModule, MatTabsModule,
-    PageHeaderComponent, DataTableComponent, StockStatusIndicatorComponent, NgTemplateOutlet,
+    PageHeaderComponent, DataTableComponent, StatusBadgeComponent, NgTemplateOutlet,
   ],
   template: `
-    <app-page-header title="Estoque" subtitle="Gerencie o inventário por warehouse" />
+    <app-page-header title="Estoque" subtitle="Gerencie o inventário por galpão" />
 
     <mat-tab-group (selectedIndexChange)="onTabChange($event)" class="tabs">
       <mat-tab label="Todos">
@@ -58,6 +58,11 @@ import { NgTemplateOutlet } from '@angular/common';
       </mat-tab>
     </mat-tab-group>
 
+    <!-- Template de badge para a coluna Status -->
+    <ng-template #statusCell let-row>
+      <app-status-badge [label]="row.status" />
+    </ng-template>
+
     <ng-template #actionsTemplate let-row>
       <button mat-icon-button [matMenuTriggerFor]="menu">
         <mat-icon>more_vert</mat-icon>
@@ -75,22 +80,28 @@ export class StockListComponent implements OnInit {
   protected auth = inject(AuthService);
   protected UserRole = UserRole;
 
+  @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
+
   data = signal<Page<StockSummaryResponse> | null>(null);
   loading = signal(false);
   private currentTab = 0;
   private currentPage = 0;
   private currentSize = 10;
 
-  columns: ColumnDef[] = [
-    { key: 'productName', header: 'Produto', sortable: true },
-    { key: 'productSku', header: 'SKU' },
-    { key: 'warehouseId', header: 'Warehouse' },
-    { key: 'currentQuantity', header: 'Qtd Atual' },
-    { key: 'minimumQuantity', header: 'Qtd Mínima' },
-    { key: 'stockStatus', header: 'Status' },
-  ];
+  columns: ColumnDef[] = [];
 
-  ngOnInit(): void { this.loadData(); }
+  ngOnInit(): void {
+    // Define as colunas aqui para usar o template capturado via ViewChild
+    this.columns = [
+      { key: 'productName', header: 'Produto', sortable: true },
+      { key: 'sku', header: 'SKU' },
+      { key: 'warehouseId', header: 'Galpão', cell: (r: StockSummaryResponse) => r.warehouseId || 'Não informado' },
+      { key: 'location', header: 'Prateleira', cell: (r: StockSummaryResponse) => r.location || 'Não informado' },
+      { key: 'currentQuantity', header: 'Qtd Atual' },
+      { key: 'status', header: 'Status', cellTemplate: this.statusCellTemplate },
+    ];
+    this.loadData();
+  }
 
   onTabChange(index: number): void { this.currentTab = index; this.currentPage = 0; this.loadData(); }
 

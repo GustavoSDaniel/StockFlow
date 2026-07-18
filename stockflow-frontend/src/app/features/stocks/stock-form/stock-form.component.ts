@@ -24,7 +24,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
     @else {
       <mat-card><mat-card-content>
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-grid">
-          <mat-form-field appearance="outline"><mat-label>Warehouse ID</mat-label><input matInput formControlName="warehouseId" required /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Galpão</mat-label><input matInput formControlName="warehouseId" required /></mat-form-field>
           <mat-form-field appearance="outline"><mat-label>Localização</mat-label><input matInput formControlName="location" required /></mat-form-field>
           <mat-form-field appearance="outline"><mat-label>Quantidade Mínima</mat-label><input matInput type="number" formControlName="minimumQuantity" required /></mat-form-field>
           <mat-form-field appearance="outline"><mat-label>Quantidade Máxima</mat-label><input matInput type="number" formControlName="maximumQuantity" required /></mat-form-field>

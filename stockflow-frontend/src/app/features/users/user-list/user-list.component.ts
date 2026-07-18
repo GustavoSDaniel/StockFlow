@@ -31,10 +31,10 @@ import { finalize } from 'rxjs';
     <ng-template #actionsTemplate let-row>
       <button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
       <mat-menu #menu="matMenu">
-        @if (auth.hasRole(UserRole.MANAGER) && row.isActive) {
+        @if (auth.hasRole(UserRole.MANAGER) && row.active) {
           <button mat-menu-item (click)="onPromote(row)"><mat-icon>arrow_upward</mat-icon> Promover</button>
           <button mat-menu-item (click)="onDisable(row)"><mat-icon color="warn">block</mat-icon> Desativar</button>
-        } @else if (auth.hasRole(UserRole.MANAGER) && !row.isActive) {
+        } @else if (auth.hasRole(UserRole.MANAGER) && !row.active) {
           <button mat-menu-item (click)="onActivate(row)"><mat-icon color="primary">check_circle</mat-icon> Ativar</button>
         }
         @if (auth.hasRole(UserRole.ADMIN)) {
@@ -57,8 +57,8 @@ export class UserListComponent implements OnInit {
   columns: ColumnDef[] = [
     { key: 'userName', header: 'Usuário', sortable: true },
     { key: 'role', header: 'Role', cell: (r: any) => new EnumLabelPipe().transform(r.role, 'userRole') as string },
-    { key: 'isActive', header: 'Status', cell: (r: any) => r.isActive ? 'Ativo' : 'Inativo' },
-    { key: 'createdAt', header: 'Criado em', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'dd/MM/yyyy') as string },
+    { key: 'active', header: 'Status', cell: (r: any) => r.active ? 'Ativo' : 'Inativo' },
+    { key: 'createdAt', header: 'Criado em', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'shortDate') as string },
   ];
 
   ngOnInit(): void { this.loadData(); }

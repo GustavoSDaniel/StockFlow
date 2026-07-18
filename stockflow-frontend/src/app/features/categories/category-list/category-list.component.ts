@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTreeModule, MatTreeNestedDataSource } from '@angular/material/tree';
@@ -20,7 +21,7 @@ import { finalize } from 'rxjs';
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [RouterModule, MatButtonModule, MatIconModule, MatMenuModule, MatTreeModule, PageHeaderComponent, StatusBadgeComponent, LoadingSpinnerComponent],
+  imports: [RouterModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, MatTreeModule, PageHeaderComponent, StatusBadgeComponent, LoadingSpinnerComponent],
   template: `
     <app-page-header title="Categorias" subtitle="Gerencie a hierarquia de categorias" createLabel="Nova Categoria" createRoute="/categories/new" requiredRole="MANAGER" />
     @if (loading()) { <app-loading-spinner /> }
@@ -33,6 +34,11 @@ import { finalize } from 'rxjs';
           <span class="spacer"></span>
           @if (auth.hasRole(UserRole.MANAGER)) {
             <button mat-icon-button [routerLink]="['/categories', node.id, 'edit']"><mat-icon>edit</mat-icon></button>
+            @if (node.active) {
+              <button mat-icon-button (click)="onDisable(node)" matTooltip="Desativar categoria"><mat-icon>toggle_off</mat-icon></button>
+            } @else {
+              <button mat-icon-button (click)="onActivate(node)" matTooltip="Ativar categoria"><mat-icon>toggle_on</mat-icon></button>
+            }
           }
           @if (auth.hasRole(UserRole.ADMIN)) {
             <button mat-icon-button (click)="onDelete(node)"><mat-icon color="warn">delete</mat-icon></button>
@@ -47,6 +53,11 @@ import { finalize } from 'rxjs';
             <span class="spacer"></span>
             @if (auth.hasRole(UserRole.MANAGER)) {
               <button mat-icon-button [routerLink]="['/categories', node.id, 'edit']"><mat-icon>edit</mat-icon></button>
+              @if (node.active) {
+                <button mat-icon-button (click)="onDisable(node)" matTooltip="Desativar categoria"><mat-icon>toggle_off</mat-icon></button>
+              } @else {
+                <button mat-icon-button (click)="onActivate(node)" matTooltip="Ativar categoria"><mat-icon>toggle_on</mat-icon></button>
+              }
             }
             @if (auth.hasRole(UserRole.ADMIN)) {
               <button mat-icon-button (click)="onDelete(node)"><mat-icon color="warn">delete</mat-icon></button>
@@ -85,6 +96,23 @@ export class CategoryListComponent implements OnInit {
   ngOnInit(): void {
     this.categoryService.getAll(0, 100).pipe(finalize(() => this.loading.set(false)))
       .subscribe(page => this.dataSource.data = page.content);
+  }
+
+  onActivate(node: CategoryResponse): void {
+    this.categoryService.activate(node.id).subscribe(() => {
+      this.snackBar.open('Categoria ativada!', 'OK', { duration: 3000 });
+      this.ngOnInit();
+    });
+  }
+
+  onDisable(node: CategoryResponse): void {
+    this.dialog.open(ConfirmDialogComponent, { data: { title: 'Desativar Categoria', message: `Desativar "${node.name}"?` } })
+      .afterClosed().subscribe(confirmed => {
+        if (confirmed) this.categoryService.disable(node.id).subscribe(() => {
+          this.snackBar.open('Categoria desativada!', 'OK', { duration: 3000 });
+          this.ngOnInit();
+        });
+      });
   }
 
   onDelete(node: CategoryResponse): void {

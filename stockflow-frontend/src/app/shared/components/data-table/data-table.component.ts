@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
@@ -14,6 +14,8 @@ export interface ColumnDef {
   header: string;
   sortable?: boolean;
   cell?: (item: any) => string;
+  /** Template para renderização customizada da célula. Recebe `$implicit` = row. */
+  cellTemplate?: TemplateRef<any>;
 }
 
 @Component({
@@ -39,7 +41,9 @@ export interface ColumnDef {
               {{ col.header }}
             </th>
             <td mat-cell *matCellDef="let row">
-              @if (col.cell) {
+              @if (col.cellTemplate) {
+                <ng-container *ngTemplateOutlet="col.cellTemplate; context: { $implicit: row }" />
+              } @else if (col.cell) {
                 {{ col.cell(row) }}
               } @else {
                 {{ row[col.key] }}
