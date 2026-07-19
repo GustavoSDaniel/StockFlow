@@ -5,6 +5,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import io.r2dbc.postgresql.codec.Json;
 
 /**
  * Representa um evento pendente de publicação na tabela de outbox.
@@ -43,7 +44,7 @@ public class OutboxEvent extends BaseImmutableEntity {
                        String topic, String partitionKey) {
         this.aggregateId = aggregateId;
         this.eventType = eventType;
-        this.payload = payload;
+        this.payload = Json.of(payload);
         this.topic = topic;
         this.partitionKey = partitionKey;
         this.processed = false;
@@ -57,7 +58,7 @@ public class OutboxEvent extends BaseImmutableEntity {
     private String eventType;
 
     @Column("payload")
-    private String payload;
+    private Json payload;
 
     @Column("topic")
     private String topic;
@@ -112,7 +113,7 @@ public class OutboxEvent extends BaseImmutableEntity {
     }
 
     public String getPayload() {
-        return payload;
+        return payload != null ? payload.asString() : null;
     }
 
     public String getTopic() {

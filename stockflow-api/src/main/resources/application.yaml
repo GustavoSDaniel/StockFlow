@@ -17,7 +17,7 @@ spring:
     enabled: true
 
   r2dbc:
-    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:6061}/${POSTGRES_DB:db_stockflow}?schema=inventory
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:6061}/${POSTGRES_DB:db_stockflow}?currentSchema=inventory
     username: ${POSTGRES_USER:gustavo}
     password: ${POSTGRES_PASSWORD:123456}
     pool:

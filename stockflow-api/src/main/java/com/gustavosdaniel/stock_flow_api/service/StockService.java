@@ -214,7 +214,6 @@ public class StockService {
                                 return inventoryMovementRepository.save(movement)
                                         .flatMap(m -> stockEventPublisher.writeToOutbox(
                                                         m, outboxEventRepository, stockAlertsTopic)
-                                                // CORREÇÃO 2: Uso de then(Mono.just(m))
                                                 .then(Mono.just(m)))
                                         .doOnSuccess(m -> m.clearDomainEvent());
                             });

@@ -98,12 +98,16 @@ public class NotificationConsumer {
 
                         NotificationResponse response = notificationMapper.toNotificationResponse(saved);
 
-                        Sinks.EmitResult result = notificationSink.tryEmitNext(response);
-                        if (result.isFailure()) {
-                            log.warn("Falha ao emitir notificação SSE para o produto {}. " +
-                                            "Resultado: {}. O buffer pode estar cheio ou o sink foi cancelado.",
-                                    alertEvent.productId(), result);
-                        }
+                        notificationSink.emitNext(response, (signalType, emitResult) -> {
+
+                            if (emitResult == Sinks.EmitResult.FAIL_NON_SERIALIZED) {
+                                return true;
+                            }
+
+                            log.warn("Falha ao emitir notificação SSE para o produto {}. Resultado: {}",
+                                    alertEvent.productId(), emitResult);
+                            return false;
+                        });
                     }
                 })
                 .doOnError(e -> log.error("Erro ao salvar notificação: {}", e.getMessage()))
