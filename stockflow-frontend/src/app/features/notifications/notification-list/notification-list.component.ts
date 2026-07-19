@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, TemplateRef, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -7,15 +7,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
 import { PageEvent } from '@angular/material/paginator';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
 import { NotificationResponse } from '../../../core/models/domain.models';
-import { NotificationPriority, NOTIFICATION_PRIORITY_LABELS, NotificationType, NOTIFICATION_TYPE_LABELS } from '../../../core/models/enums';
 import { Page } from '../../../core/models/page.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DataTableComponent, ColumnDef } from '../../../shared/components/data-table/data-table.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { EnumLabelPipe } from '../../../shared/pipes/enum-label.pipe';
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { NOTIFICATION_PRIORITY_LABELS } from '../../../core/models/enums';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -35,6 +35,11 @@ import { finalize } from 'rxjs';
         <app-data-table [data]="data()" [columns]="columns" [loading]="loading()" (onPage)="onPage($event)" [actionsTemplate]="actions" />
       </mat-tab>
     </mat-tab-group>
+
+    <ng-template #priorityCell let-row>
+      <app-status-badge [label]="priorityLabel(row.notificationPriority)" />
+    </ng-template>
+
     <ng-template #actions let-row>
       <button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
       <mat-menu #menu="matMenu">
@@ -50,16 +55,22 @@ export class NotificationListComponent implements OnInit {
   loading = signal(false);
   private tab = 0; private page = 0;
 
-  columns: ColumnDef[] = [
-    { key: 'title', header: 'Título' },
-    { key: 'productName', header: 'Produto' },
-    { key: 'notificationType', header: 'Tipo', cell: (r: any) => new EnumLabelPipe().transform(r.notificationType, 'notificationType') as string },
-    { key: 'notificationPriority', header: 'Prioridade' },
-    { key: 'read', header: 'Lida', cell: (r: any) => r.read ? 'Sim' : 'Não' },
-    { key: 'createdAt', header: 'Data', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'dd/MM/yyyy HH:mm') as string },
-  ];
+  @ViewChild('priorityCell', { static: true }) priorityCellTemplate!: TemplateRef<any>;
 
-  ngOnInit(): void { this.loadData(); }
+  columns: ColumnDef[] = [];
+
+  ngOnInit(): void {
+    this.columns = [
+      { key: 'title', header: 'Título' },
+      { key: 'productName', header: 'Produto' },
+      { key: 'notificationType', header: 'Tipo', cell: (r: any) => new EnumLabelPipe().transform(r.notificationType, 'notificationType') as string },
+      { key: 'notificationPriority', header: 'Prioridade', cellTemplate: this.priorityCellTemplate },
+      { key: 'read', header: 'Lida', cell: (r: any) => r.read ? 'Sim' : 'Não' },
+      { key: 'createdAt', header: 'Data', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'dd/MM/yyyy HH:mm') as string },
+    ];
+    this.loadData();
+  }
+
 
   onTabChange(i: number): void { this.tab = i; this.page = 0; this.loadData(); }
   onPage(e: PageEvent): void { this.page = e.pageIndex; this.loadData(); }
@@ -72,6 +83,11 @@ export class NotificationListComponent implements OnInit {
     else obs = this.notificationService.getAll(this.page);
     obs.pipe(finalize(() => this.loading.set(false)))
       .subscribe({ next: p => this.data.set(p), error: () => this.data.set(null) });
+  }
+
+  /** Traduz prioridade de notificação (HIGH→Alta, MEDIUM→Média, etc.) */
+  priorityLabel(priority: string): string {
+    return NOTIFICATION_PRIORITY_LABELS[priority as keyof typeof NOTIFICATION_PRIORITY_LABELS] ?? priority;
   }
 
   markRead(row: NotificationResponse): void {

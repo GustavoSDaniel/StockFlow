@@ -284,53 +284,61 @@ export interface NotificationFilter {
 // ─── Dashboard ───
 
 export interface DashboardOverviewResponse {
-  totalProducts: number;
-  activeProducts: number;
-  inactiveProducts: number;
-  discontinuedProducts: number;
-  totalStockValue: number;
-  potentialSalesValue: number;
-  averageMargin: number;
+  products: ProductStats;
+  financials: FinancialStats;
   totalSuppliers: number;
   totalCategories: number;
-  pendingCriticalNotifications: number;
-  pendingHighNotifications: number;
+  totalNotifications: number;
 }
 
-export interface TopStockItem {
+export interface ProductStats {
+  total: number;
+  active: number;
+  inactive: number;
+  discontinued: number;
+}
+
+export interface FinancialStats {
+  totalStockValue: number;
+  potentialSalesValue: number;
+  averageMarginPercentage: number;
+}
+
+export interface ProductStockItem {
   productId: string;
   productName: string;
   sku: string;
   currentQuantity: number;
+  minimumQuantity: number;
   status: StockStatus;
 }
 
 export interface DashboardStockResponse {
-  outOfStockCount: number;
-  lowStockCount: number;
-  reorderPointCount: number;
-  normalCount: number;
-  overStockedCount: number;
-  top10LowStock: TopStockItem[];
-  top10HighStock: TopStockItem[];
+  statusCounts: StockStatusCounts;
+  top10LowestStock: ProductStockItem[];
+  top10HighestStock: ProductStockItem[];
+}
+
+export interface StockStatusCounts {
+  outOfStock: number;
+  lowStock: number;
+  reorderPoint: number;
+  normal: number;
+  overStocked: number;
 }
 
 export interface MovementsByType {
   movementType: MovementType;
-  count: number;
-  totalQuantity: number;
+  total: number;
 }
 
 export interface MovementsByReason {
   movementReason: MovementReason;
-  count: number;
-  totalQuantity: number;
+  total: number;
 }
 
 export interface DailyHistory {
   date: string;
-  entries: number;
-  exits: number;
   totalMovements: number;
 }
 
@@ -338,24 +346,27 @@ export interface TopMovedProduct {
   productId: string;
   productName: string;
   sku: string;
-  totalMoved: number;
+  totalQuantityMoved: number;
 }
 
 export interface DashboardMovementsResponse {
-  todayMovements: number;
-  monthEntries: number;
-  monthExits: number;
+  summary: MovementSummary;
   movementsByType: MovementsByType[];
   movementsByReason: MovementsByReason[];
-  dailyHistory: DailyHistory[];
-  top10MovedProducts: TopMovedProduct[];
+  dailyHistories: DailyHistory[];
+  topMovedProducts: TopMovedProduct[];
+}
+
+export interface MovementSummary {
+  totalMovementsToday: number;
+  entriesThisMonth: number;
+  exitsThisMonth: number;
 }
 
 export interface DashboardSupplierItem {
-  supplierId: string;
-  supplierName: string;
-  tradeName: string;
-  productCount: number;
+  id: string;
+  name: string;
+  totalProducts: number;
   totalStockValue: number;
 }
 

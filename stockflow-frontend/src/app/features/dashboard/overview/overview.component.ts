@@ -17,23 +17,23 @@ import { CurrencyBrPipe } from '../../../shared/pipes/currency.pipe';
       <div class="kpi-grid">
         <mat-card class="kpi"><mat-card-content>
           <mat-icon class="kpi-icon" style="color:#7c3aed">category</mat-icon>
-          <div class="kpi-value">{{ data()?.totalProducts }}</div><div class="kpi-label">Total Produtos</div>
-          <div class="kpi-detail">Ativos: {{ data()?.activeProducts }} | Inativos: {{ data()?.inactiveProducts }} | Descontinuados: {{ data()?.discontinuedProducts }}</div>
+          <div class="kpi-value">{{ data()?.products?.total }}</div><div class="kpi-label">Total Produtos</div>
+          <div class="kpi-detail">Ativos: {{ data()?.products?.active }} | Inativos: {{ data()?.products?.inactive }} | Descontinuados: {{ data()?.products?.discontinued }}</div>
         </mat-card-content></mat-card>
 
         <mat-card class="kpi"><mat-card-content>
           <mat-icon class="kpi-icon" style="color:#16a34a">attach_money</mat-icon>
-          <div class="kpi-value">{{ data()?.totalStockValue | currencyBr }}</div><div class="kpi-label">Valor Total em Estoque</div>
+          <div class="kpi-value">{{ data()?.financials?.totalStockValue | currencyBr }}</div><div class="kpi-label">Valor Total em Estoque</div>
         </mat-card-content></mat-card>
 
         <mat-card class="kpi"><mat-card-content>
           <mat-icon class="kpi-icon" style="color:#2563eb">trending_up</mat-icon>
-          <div class="kpi-value">{{ data()?.potentialSalesValue | currencyBr }}</div><div class="kpi-label">Potencial de Vendas</div>
+          <div class="kpi-value">{{ data()?.financials?.potentialSalesValue | currencyBr }}</div><div class="kpi-label">Potencial de Vendas</div>
         </mat-card-content></mat-card>
 
         <mat-card class="kpi"><mat-card-content>
           <mat-icon class="kpi-icon" style="color:#d97706">percent</mat-icon>
-          <div class="kpi-value">{{ data()?.averageMargin?.toFixed(1) }}%</div><div class="kpi-label">Margem Média</div>
+          <div class="kpi-value">{{ data()?.financials?.averageMarginPercentage?.toFixed(1) }}%</div><div class="kpi-label">Margem Média</div>
         </mat-card-content></mat-card>
 
         <mat-card class="kpi"><mat-card-content>
@@ -48,12 +48,7 @@ import { CurrencyBrPipe } from '../../../shared/pipes/currency.pipe';
 
         <mat-card class="kpi warning"><mat-card-content>
           <mat-icon class="kpi-icon" style="color:#dc2626">warning</mat-icon>
-          <div class="kpi-value">{{ data()?.pendingCriticalNotifications }}</div><div class="kpi-label">Notificações Críticas</div>
-        </mat-card-content></mat-card>
-
-        <mat-card class="kpi warning"><mat-card-content>
-          <mat-icon class="kpi-icon" style="color:#d97706">error</mat-icon>
-          <div class="kpi-value">{{ data()?.pendingHighNotifications }}</div><div class="kpi-label">Notificações Alta Prioridade</div>
+          <div class="kpi-value">{{ data()?.totalNotifications }}</div><div class="kpi-label">Notificações Pendentes</div>
         </mat-card-content></mat-card>
       </div>
     }

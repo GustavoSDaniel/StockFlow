@@ -12,45 +12,71 @@ import { StockStatusIndicatorComponent } from '../../../shared/components/stock-
 @Component({
   selector: 'app-stock-dashboard',
   standalone: true,
-  imports: [RouterModule, MatCardModule, MatIconModule, MatListModule, LoadingSpinnerComponent, StockStatusIndicatorComponent],
+  imports: [RouterModule, MatCardModule, MatIconModule, LoadingSpinnerComponent, StockStatusIndicatorComponent],
   template: `
     <h2>Dashboard de Estoque</h2>
     @if (loading()) { <app-loading-spinner /> }
     @else if (data()) {
       <div class="kpi-grid">
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OUT_OF_STOCK" /><div class="val">{{ data()?.outOfStockCount }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.LOW" /><div class="val">{{ data()?.lowStockCount }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.REORDER_POINT" /><div class="val">{{ data()?.reorderPointCount }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.NORMAL" /><div class="val">{{ data()?.normalCount }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OVER_STOCKED" /><div class="val">{{ data()?.overStockedCount }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OUT_OF_STOCK" /><div class="val">{{ data()?.statusCounts?.outOfStock }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.LOW" /><div class="val">{{ data()?.statusCounts?.lowStock }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.REORDER_POINT" /><div class="val">{{ data()?.statusCounts?.reorderPoint }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.NORMAL" /><div class="val">{{ data()?.statusCounts?.normal }}</div></mat-card-content></mat-card>
+        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OVER_STOCKED" /><div class="val">{{ data()?.statusCounts?.overStocked }}</div></mat-card-content></mat-card>
       </div>
 
       <div class="lists">
         <mat-card>
           <mat-card-header><mat-card-title>Top 10 - Estoque Mais Baixo</mat-card-title></mat-card-header>
           <mat-card-content>
-            <mat-list>
-              @for (item of data()?.top10LowStock; track item.productId) {
-                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.status" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.sku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
+            <div class="stock-list">
+              @for (item of data()?.top10LowestStock; track item.productId) {
+                <div class="stock-item">
+                  <app-stock-status-indicator [status]="item.status" />
+                  <div class="stock-info">
+                    <span class="stock-name">{{ item.productName }}</span>
+                    <span class="stock-detail">{{ item.sku }} - Qtd: {{ item.currentQuantity }} (Mín: {{ item.minimumQuantity }})</span>
+                  </div>
+                </div>
               }
-            </mat-list>
+            </div>
           </mat-card-content>
         </mat-card>
 
         <mat-card>
           <mat-card-header><mat-card-title>Top 10 - Estoque Mais Alto</mat-card-title></mat-card-header>
           <mat-card-content>
-            <mat-list>
-              @for (item of data()?.top10HighStock; track item.productId) {
-                <mat-list-item><app-stock-status-indicator matListItemIcon [status]="item.status" /><span matListItemTitle>{{ item.productName }}</span><span matListItemLine>{{ item.sku }} - Qtd: {{ item.currentQuantity }}</span></mat-list-item>
+            <div class="stock-list">
+              @for (item of data()?.top10HighestStock; track item.productId) {
+                <div class="stock-item">
+                  <app-stock-status-indicator [status]="item.status" />
+                  <div class="stock-info">
+                    <span class="stock-name">{{ item.productName }}</span>
+                    <span class="stock-detail">{{ item.sku }} - Qtd: {{ item.currentQuantity }} (Mín: {{ item.minimumQuantity }})</span>
+                  </div>
+                </div>
               }
-            </mat-list>
+            </div>
           </mat-card-content>
         </mat-card>
       </div>
     }
   `,
-  styles: [`.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; } .val { font-size: 32px; font-weight: 700; margin-top: 8px; } .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } @media(max-width:768px){ .lists { grid-template-columns: 1fr; } }`],
+  styles: [`
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .val { font-size: 32px; font-weight: 700; margin-top: 8px; }
+    .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:768px){ .lists { grid-template-columns: 1fr; } }
+    .stock-list { display: flex; flex-direction: column; gap: 12px; }
+    .stock-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .stock-item:last-child { border-bottom: none; }
+    .stock-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .stock-name { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+    .stock-detail { font-size: 12px; color: #6b7280; }
+  `],
 })
 export class StockDashboardComponent implements OnInit {
   private ds = inject(DashboardService);
