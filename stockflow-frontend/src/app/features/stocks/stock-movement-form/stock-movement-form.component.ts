@@ -186,7 +186,7 @@ export class StockMovementFormComponent implements OnInit {
         referenceNumber: data.referenceNumber,
         note: data.note,
       };
-      obs = this.stockService.transfer(stockId, transferReq);
+      obs = this.stockService.transfer(this.stock()!.productId, transferReq);
     } else {
       const request: InventoryMovementRequest = {
         movementType, quantity: data.quantity, movementReason: data.movementReason,

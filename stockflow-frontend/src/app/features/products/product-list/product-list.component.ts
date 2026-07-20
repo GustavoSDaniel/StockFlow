@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, TemplateRef, ViewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -51,6 +51,10 @@ import { NgTemplateOutlet } from '@angular/common';
       [actionsTemplate]="actionsTemplate"
     />
 
+    <ng-template #statusCell let-row>
+      <app-status-badge [label]="row.status" />
+    </ng-template>
+
     <ng-template #actionsTemplate let-row>
       <button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
       <mat-menu #menu="matMenu">
@@ -101,18 +105,21 @@ export class ProductListComponent implements OnInit {
     { key: 'status', label: 'Status', type: 'select', options: Object.values(ProductStatus).map(s => ({ value: s, label: PRODUCT_STATUS_LABELS[s] })) },
   ];
 
-  columns: ColumnDef[] = [
-    { key: 'name', header: 'Nome', sortable: true },
-    { key: 'sku', header: 'SKU' },
-    { key: 'categoryName', header: 'Categoria', cell: (r: ProductResponse) => r.categoryName || this.categoryMap.get(r.categoryId) || r.categoryId },
-    { key: 'supplierName', header: 'Fornecedor', cell: (r: ProductResponse) => r.supplierName || this.supplierMap.get(r.supplierId) || r.supplierId },
-    { key: 'costPrice', header: 'Preço Custo', cell: (r) => new CurrencyBrPipe().transform(r.costPrice) },
-    { key: 'salePrice', header: 'Preço Venda', cell: (r) => new CurrencyBrPipe().transform(r.salePrice) },
-    { key: 'unitMeasure', header: 'Unidade', cell: (r) => new EnumLabelPipe().transform(r.unitMeasure, 'unitMeasure') },
-    { key: 'status', header: 'Status' },
-  ];
+  @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
+
+  columns: ColumnDef[] = [];
 
   ngOnInit(): void {
+    this.columns = [
+      { key: 'name', header: 'Nome', sortable: true },
+      { key: 'sku', header: 'SKU' },
+      { key: 'categoryName', header: 'Categoria', cell: (r: ProductResponse) => r.categoryName || this.categoryMap.get(r.categoryId) || r.categoryId },
+      { key: 'supplierName', header: 'Fornecedor', cell: (r: ProductResponse) => r.supplierName || this.supplierMap.get(r.supplierId) || r.supplierId },
+      { key: 'costPrice', header: 'Preço Custo', cell: (r) => new CurrencyBrPipe().transform(r.costPrice) },
+      { key: 'salePrice', header: 'Preço Venda', cell: (r) => new CurrencyBrPipe().transform(r.salePrice) },
+      { key: 'unitMeasure', header: 'Unidade', cell: (r) => new EnumLabelPipe().transform(r.unitMeasure, 'unitMeasure') },
+      { key: 'status', header: 'Status', cellTemplate: this.statusCellTemplate },
+    ];
     // Carrega categorias e fornecedores em paralelo para fallback de nomes
     forkJoin([
       this.categoryService.getAll(0, 100),
