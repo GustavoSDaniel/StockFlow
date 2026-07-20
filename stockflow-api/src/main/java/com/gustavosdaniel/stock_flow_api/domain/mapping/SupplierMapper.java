@@ -108,7 +108,8 @@ public class SupplierMapper {
                 supplier.getWebsite(),
                 supplier.getMinOrderValue(),
                 supplier.getNotes(),
-                addressResponses
+                addressResponses,
+                supplier.getCreatedAt()
 
         );
     }

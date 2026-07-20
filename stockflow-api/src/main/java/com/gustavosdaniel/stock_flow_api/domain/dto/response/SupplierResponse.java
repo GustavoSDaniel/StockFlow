@@ -2,6 +2,7 @@ package com.gustavosdaniel.stock_flow_api.domain.dto.response;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,8 @@ public record SupplierResponse(
 
         String notes,
 
-        List<AddressResponse> addresses
+        List<AddressResponse> addresses,
+
+        LocalDateTime createdAt
 ) {
 }

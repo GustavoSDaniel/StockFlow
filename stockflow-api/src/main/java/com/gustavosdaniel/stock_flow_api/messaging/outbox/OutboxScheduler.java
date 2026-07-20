@@ -77,7 +77,7 @@ public class OutboxScheduler {
         }
 
         return stockEventProducer.sendInventoryAlert(alertEvent)
-                .flatMap(v -> markAsProcessed(outboxEvent))
+                .then(Mono.defer(() -> markAsProcessed(outboxEvent)))
                 .onErrorResume(e -> markAsFailed(outboxEvent,
                         e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()))
                 .then();

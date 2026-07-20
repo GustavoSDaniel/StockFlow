@@ -260,6 +260,9 @@ public class StockService {
     @Transactional
     public Mono<Void> transferStock(UUID productId, TransferRequest request){
 
+        log.info("Iniciando Transferência. Produto: {}, Origem: {}, Destino: {}",
+                productId, request.sourceWarehouseId(), request.targetWarehouseId());
+
         Mono<Stock> stockSourceMono = stockRepository
                 .findByProductIdAndWarehouseId(productId, request.sourceWarehouseId())
                 .switchIfEmpty(Mono.error(new StockNotFoundException()));

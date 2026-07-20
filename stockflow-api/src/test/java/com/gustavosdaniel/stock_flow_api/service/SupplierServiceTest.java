@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,6 +85,7 @@ class SupplierServiceTest {
         String cnpj = "11122233344455";
         String tradeName = "Nome Fantasia";
         BigDecimal minOrderValue = BigDecimal.valueOf(300.00);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 7, 20, 14, 2);
 
         SupplierContactRequest contactRequest = new SupplierContactRequest(
                contactName, email, phoneNumber
@@ -138,7 +140,7 @@ class SupplierServiceTest {
 
         SupplierResponse response = new SupplierResponse(
                 supplierId, name, cnpj, tradeName, supplierContactResponses,
-                null, minOrderValue, null, addressResponseList
+                null, minOrderValue, null, addressResponseList, createdAt
         );
 
         when(suppliersRepository.existsByCnpj(cnpj)).thenReturn(Mono.just(false));
@@ -260,6 +262,8 @@ class SupplierServiceTest {
         String name = "Fornecedor";
         String tradeName = "Nome fantasia";
         BigDecimal minOrderValue = BigDecimal.valueOf(532);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 7, 20, 14, 2);
+
 
         Supplier supplier = new Supplier(name, cnpj, tradeName,
                 null, minOrderValue, null);
@@ -295,7 +299,7 @@ class SupplierServiceTest {
 
         SupplierResponse response = new SupplierResponse(
                 supplierId, name, cnpj, tradeName, supplierContactResponses,
-                null, minOrderValue, null, addressResponseList
+                null, minOrderValue, null, addressResponseList, createdAt
         );
 
         when(suppliersRepository.findByCnpj(cnpj)).thenReturn(Mono.just(supplier));
