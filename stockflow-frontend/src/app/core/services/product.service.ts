@@ -73,4 +73,8 @@ export class ProductService {
   discontinue(id: string): Observable<void> {
     return this.http.patch<void>(`${this.api}/${id}/discontinue`, {});
   }
+
+  downloadPdfReport(): Observable<Blob> {
+    return this.http.get(`${this.api}/report/pdf`, { responseType: 'blob' });
+  }
 }

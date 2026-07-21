@@ -7,7 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
-import { finalize, forkJoin } from 'rxjs';
+import { catchError, EMPTY, finalize, forkJoin } from 'rxjs';
 import { ProductService } from '../../../core/services/product.service';
 import { CategoryService } from '../../../core/services/category.service';
 import { SupplierService } from '../../../core/services/supplier.service';
@@ -36,7 +36,12 @@ import { NgTemplateOutlet } from '@angular/common';
     <app-page-header
       title="Produtos" subtitle="Gerencie o catálogo de produtos"
       createLabel="Novo Produto" createRoute="/products/new" requiredRole="MANAGER"
-    />
+    >
+      <button mat-stroked-button (click)="exportReportToPdf()" [disabled]="isExportingPdf()">
+        <mat-icon>{{ isExportingPdf() ? 'hourglass_empty' : 'picture_as_pdf' }}</mat-icon>
+        {{ isExportingPdf() ? 'Exportando...' : 'Exportar PDF' }}
+      </button>
+    </app-page-header>
 
     <app-filter-bar
       searchPlaceholder="Buscar por nome..."
@@ -89,6 +94,7 @@ export class ProductListComponent implements OnInit {
 
   data = signal<Page<ProductResponse> | null>(null);
   loading = signal(false);
+  isExportingPdf = signal(false);
   private currentPage = 0;
   private currentSize = 10;
   private currentSort = 'name,asc';
@@ -215,5 +221,26 @@ export class ProductListComponent implements OnInit {
         });
       }
     });
+  }
+
+  exportReportToPdf(): void {
+    this.isExportingPdf.set(true);
+    this.productService.downloadPdfReport()
+      .pipe(
+        catchError(() => {
+          this.snackBar.open('Erro ao exportar relatório PDF. Tente novamente.', 'OK', { duration: 5000 });
+          return EMPTY;
+        }),
+        finalize(() => this.isExportingPdf.set(false)),
+      )
+      .subscribe(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'relatorio_produtos.pdf';
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+        this.snackBar.open('Relatório exportado com sucesso!', 'OK', { duration: 3000 });
+      });
   }
 }
