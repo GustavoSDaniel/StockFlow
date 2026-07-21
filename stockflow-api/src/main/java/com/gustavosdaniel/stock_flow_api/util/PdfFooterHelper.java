@@ -10,53 +10,71 @@ import java.time.format.DateTimeFormatter;
 
 public class PdfFooterHelper extends PdfPageEventHelper {
 
+    private static final float FOOTER_FONT_SIZE = 9f;
+    private static final float FOOTER_MARGIN_BOTTOM = 20f;
+
+    private static final float TEMPLATE_WIDTH = 30f;
+    private static final float TEMPLATE_HEIGHT = 16f;
+
+    private static final float TEXT_RIGHT_MARGIN = 30f;
+    private static final float TEMPLATE_RIGHT_MARGIN = 28f;
+
     private PdfTemplate totalPagesTemplate;
     private BaseFont baseFont;
     private String dataGeracao;
 
     @Override
-    public void onOpenDocument(PdfWriter writer, Document document){
-
+    public void onOpenDocument(PdfWriter writer, Document document) {
         try {
+
             baseFont = FontFactory.getFont(FontFactory.HELVETICA).getBaseFont();
 
-            totalPagesTemplate = writer.getDirectContent().createTemplate(30, 16);
+            totalPagesTemplate = writer.getDirectContent().createTemplate(TEMPLATE_WIDTH, TEMPLATE_HEIGHT);
 
             dataGeracao = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
         } catch (Exception e) {
 
             throw new ExceptionConverter(e);
         }
     }
 
-    public void onEndPage(PdfWriter writer, Document document){
+    @Override
+    public void onEndPage(PdfWriter writer, Document document) {
 
-        PdfContentByte pdfContentByte = writer.getDirectContent();
-        float textSize = 9f;
-        float textBase = document.bottom() - 20;
+        PdfContentByte cb  = writer.getDirectContent();
 
-        pdfContentByte.beginText();
-        pdfContentByte.setFontAndSize(baseFont, textSize);
+        float textSize = FOOTER_FONT_SIZE;
 
-        String textData = "StockFlow - Gerado em: " + dataGeracao;
-        pdfContentByte.setTextMatrix(document.left(), textBase);
-        pdfContentByte.showText(textData);
+        float textBase = document.bottom() - FOOTER_MARGIN_BOTTOM;
 
-        String textPage = "Pagina " + writer.getPageNumber() + "de ";
-        float textSizeWidth = baseFont.getWidthPoint(textPage, textSize);
-        pdfContentByte.setTextMatrix(document.right() - textSizeWidth - 15, textBase);
+        cb.beginText();
+        cb.setFontAndSize(baseFont, textSize);
 
-        pdfContentByte.endText();
+        cb.setTextMatrix(document.left(), textBase);
+        cb.showText("StockFlow - Gerado em: " + dataGeracao);
 
-        pdfContentByte.addTemplate(totalPagesTemplate, document.right() - 15, textBase);
+        String pageText     = "Página " + writer.getPageNumber() + " de ";
+
+        float pageTextWidth = baseFont.getWidthPoint(pageText, textSize);
+
+        cb.setTextMatrix(document.right() - pageTextWidth - TEXT_RIGHT_MARGIN, textBase);
+        cb.showText(pageText);
+
+        cb.endText();
+
+        cb.addTemplate(totalPagesTemplate, document.right() - TEMPLATE_RIGHT_MARGIN, textBase);
     }
 
     @Override
-    public void onCloseDocument(PdfWriter writer, Document document){
+    public void onCloseDocument(PdfWriter writer, Document document) {
 
         totalPagesTemplate.beginText();
-        totalPagesTemplate.setFontAndSize(baseFont, 9f);
-        totalPagesTemplate.showText(String.valueOf(writer.getPageNumber()));
+
+        totalPagesTemplate.setFontAndSize(baseFont, FOOTER_FONT_SIZE);
+
+        totalPagesTemplate.showText(String.valueOf(writer.getPageNumber() - 1));
+
         totalPagesTemplate.endText();
     }
 }

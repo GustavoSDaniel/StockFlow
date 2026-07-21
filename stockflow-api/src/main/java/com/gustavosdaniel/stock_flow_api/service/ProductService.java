@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -102,6 +103,15 @@ public class ProductService {
                 .doFirst(() -> log.info("Buscando todos os produtos"))
                 .doOnNext(page ->
                         log.info("Quantidade de produtos encontrados com sucesso : {}", page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Flux<ProductResponse> allProductsForReport(){
+
+        return productRepository.findAll()
+                .map(productMapper::toProductResponse)
+                .doFirst(() -> log.info("Buscando todos os produtos para geração de relatório PDF"))
+                .doOnComplete(() -> log.info("Busca de produtos para relatório finalizada com sucesso."));
     }
 
     @Transactional(readOnly = true)

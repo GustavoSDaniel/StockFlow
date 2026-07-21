@@ -5,6 +5,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.request.ProductUpdateRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
+import com.gustavosdaniel.stock_flow_api.service.ProductPdfReport;
 import com.gustavosdaniel.stock_flow_api.service.ProductService;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -12,10 +13,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.UUID;
 
@@ -24,9 +28,11 @@ import java.util.UUID;
 public class ProductController implements ProductOpenApi {
 
     private final ProductService productService;
+    private final ProductPdfReport productPdfReport;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, ProductPdfReport productPdfReport) {
         this.productService = productService;
+        this.productPdfReport = productPdfReport;
     }
 
     @PostMapping
@@ -138,5 +144,25 @@ public class ProductController implements ProductOpenApi {
     public Mono<ResponseEntity<Void>> deleteProduct(@PathVariable UUID id){
 
         return productService.deleteProduct(id).thenReturn(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping(value = "/report/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public Mono<ResponseEntity<byte[]>> downloadProductReport(){
+
+        return productService.allProductsForReport()
+                .collectList()
+                .publishOn(Schedulers.boundedElastic())
+                .map(products -> {
+                    byte[] pdfBytes = productPdfReport.generateReport(products);
+
+                    HttpHeaders headers = new HttpHeaders();
+
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", "relatorio_produtos.pdf");
+
+                    return ResponseEntity.ok()
+                            .headers(headers)
+                            .body(pdfBytes);
+                });
     }
 }

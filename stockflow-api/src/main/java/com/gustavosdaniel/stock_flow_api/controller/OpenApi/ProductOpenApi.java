@@ -226,4 +226,15 @@ public interface ProductOpenApi {
     Mono<ResponseEntity<Void>> deleteProduct(
             @Parameter(description = "ID do produto", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID id);
+
+    // ---------- NOVO ENDPOINT ----------
+    @Operation(summary = "Exportar relatório de produtos em PDF",
+            description = "Gera e faz o download de um relatório PDF com todos os produtos cadastrados")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Relatório PDF gerado com sucesso",
+                    content = @Content(mediaType = "application/pdf",
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content)
+    })
+    Mono<ResponseEntity<byte[]>> downloadProductReport();
 }
