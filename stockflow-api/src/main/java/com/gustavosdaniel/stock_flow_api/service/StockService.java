@@ -6,6 +6,7 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementReason;
 import com.gustavosdaniel.stock_flow_api.domain.enums.MovementType;
+import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
 import com.gustavosdaniel.stock_flow_api.domain.mapping.StockMapper;
 import com.gustavosdaniel.stock_flow_api.domain.po.InventoryMovement;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
@@ -141,6 +142,22 @@ public class StockService {
                 .doFirst(() -> log.info("Buscando todos os estoques"))
                 .doOnNext(page ->
                         log.info("Total de estoques: {}", page.getTotalElements()));
+    }
+
+    @Transactional(readOnly = true)
+    public Flux<StockResponse> allStocksForReportByStatus(StockStatus status) {
+        return allStocksForReport()
+                .filter(stock -> stock.status() == status)
+                .doFirst(() -> log.info("Filtrando relatório de estoque pelo status: {}", status));
+    }
+
+    @Transactional(readOnly = true)
+    public Flux<StockResponse> allStocksForReport(){
+
+        return stockRepository.findAll()
+                .flatMap(stock ->
+                        productRepository.findById(stock.getProductId())
+                                .map(product -> stockMapper.toStockResponse(stock, product)));
     }
 
     @Transactional(readOnly = true)

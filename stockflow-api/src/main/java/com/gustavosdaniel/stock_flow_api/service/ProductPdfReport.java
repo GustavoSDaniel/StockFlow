@@ -1,6 +1,8 @@
 package com.gustavosdaniel.stock_flow_api.service;
 
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
+import com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus;
+import com.gustavosdaniel.stock_flow_api.domain.enums.UnitMeasure;
 import com.gustavosdaniel.stock_flow_api.util.PdfFooterHelper;
 import org.openpdf.text.*;
 import org.openpdf.text.Font;
@@ -11,6 +13,9 @@ import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;
+
+import static com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus.DISCONTINUED;
+import static com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus.INACTIVE;
 
 @Service
 public class ProductPdfReport {
@@ -48,59 +53,15 @@ public class ProductPdfReport {
 
             document.open();
 
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, TITLE_FONT_SIZE);
-            Paragraph title = new Paragraph("StockFlow - Relatório de Produtos", titleFont);
+            addTitle(document);
 
-            title.setAlignment(Element.ALIGN_CENTER);
-            title.setSpacingAfter(TITLE_SPACING_AFTER);
-            document.add(title);
-
-            PdfPTable table = new PdfPTable(COLUMN_WIDTHS);
-            table.setWidthPercentage(TABLE_WIDTH_PERCENTAGE);
-
-            String[] headers = {"Nome", "SKU", "P. Custo", "P. Venda", "Unidade", "Status"};
-
-            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, HEADER_FONT_SIZE);
-
-            for (String h : headers){
-                PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
-                cell.setBackgroundColor(HEADER_BG_COLOR);
-                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-                cell.setPadding(HEADER_PADDING);
-                table.addCell(cell);
+            if (products.isEmpty()) {
+                addEmptyMessage(document);
+            } else {
+                document.add(buildTable(products));
             }
 
-            Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, CELL_FONT_SIZE);
-
-            for (ProductResponse p : products) {
-
-                addCell(table, p.name(), cellFont, Element.ALIGN_LEFT);
-                addCell(table, p.sku(), cellFont, Element.ALIGN_LEFT);
-
-                addCell(table, formatarMoeda(p.costPrice()), cellFont, Element.ALIGN_RIGHT);
-                addCell(table, formatarMoeda(p.salePrice()), cellFont, Element.ALIGN_RIGHT);
-
-                String unitStr = p.unitMeasure() != null ? p.unitMeasure().name() : "-";
-                addCell(table, unitStr, cellFont, Element.ALIGN_CENTER);
-
-                String statusStr = "-";
-                if (p.status() != null) {
-                    statusStr = switch (p.status()) {
-                        case ACTIVE -> "Ativo";
-                        case INACTIVE -> "Inativo";
-                        case DISCONTINUED -> "Descontinuado";
-                    };
-                }
-                addCell(table, statusStr, cellFont, Element.ALIGN_CENTER);
-            }
-
-            document.add(table);
-
-            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, SUMMARY_FONT_SIZE);
-            Paragraph resumo = new Paragraph("Total de Produtos: " + products.size(), boldFont);
-            resumo.setSpacingBefore(SUMMARY_SPACING_BEFORE);
-            resumo.setAlignment(Element.ALIGN_RIGHT);
-            document.add(resumo);
+            addSummary(document, products);
 
             document.close();
             return output.toByteArray();
@@ -110,12 +71,94 @@ public class ProductPdfReport {
         }
     }
 
+    private void addTitle(Document document) throws DocumentException {
+
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, TITLE_FONT_SIZE);
+        Paragraph title = new Paragraph("StockFlow - Relatório de Produtos", titleFont);
+
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(TITLE_SPACING_AFTER);
+        document.add(title);
+    }
+
+    private PdfPTable buildTable(List<ProductResponse> products){
+
+        PdfPTable table = new PdfPTable(COLUMN_WIDTHS);
+        table.setWidthPercentage(TABLE_WIDTH_PERCENTAGE);
+
+        String[] headers = {"Nome", "SKU", "P. Custo", "P. Venda", "Unidade", "Status"};
+
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, HEADER_FONT_SIZE);
+
+        for (String h : headers){
+            PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+            cell.setBackgroundColor(HEADER_BG_COLOR);
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setPadding(HEADER_PADDING);
+            table.addCell(cell);
+        }
+
+        Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, CELL_FONT_SIZE);
+
+        for (ProductResponse p : products) {
+
+            addCell(table, p.name(), cellFont, Element.ALIGN_LEFT);
+            addCell(table, p.sku(), cellFont, Element.ALIGN_LEFT);
+            addCell(table, formatarMoeda(p.costPrice()), cellFont, Element.ALIGN_RIGHT);
+            addCell(table, formatarMoeda(p.salePrice()), cellFont, Element.ALIGN_RIGHT);
+            addCell(table, translateUnit(p.unitMeasure()), cellFont, Element.ALIGN_CENTER);
+            addCell(table, translateStatus(p.status()), cellFont, Element.ALIGN_CENTER);
+        }
+
+        return table;
+    }
+
+    private String translateUnit(UnitMeasure unit) {
+        return unit != null ? unit.name() : "-";
+    }
+
+    private String translateStatus(ProductStatus status) {
+        if (status == null) return "-";
+        return switch (status) {
+            case ACTIVE       -> "Ativo";
+            case INACTIVE     -> "Inativo";
+            case DISCONTINUED -> "Descontinuado";
+        };
+    }
+
     private void addCell(PdfPTable table, String text, Font font, int alignment){
         PdfPCell cell = new PdfPCell(new Phrase(text != null ? text : "-", font));
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPadding(CELL_PADDING);
         table.addCell(cell);
+    }
+
+    private void addEmptyMessage(Document document) throws DocumentException {
+        Font emptyFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 12f);
+        Paragraph empty = new Paragraph("Nenhum produto encontrado.", emptyFont);
+        empty.setAlignment(Element.ALIGN_CENTER);
+        empty.setSpacingBefore(20f);
+        document.add(empty);
+    }
+
+    private void addSummary(Document document, List<ProductResponse> products) throws DocumentException {
+
+        long active = products.stream().filter(p -> p.status() == ProductStatus.ACTIVE).count();
+        long inactive = products.stream().filter(p -> p.status() == ProductStatus.INACTIVE).count();
+        long discontinued = products.stream().filter(p -> p.status() == ProductStatus.DISCONTINUED).count();
+
+        Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, SUMMARY_FONT_SIZE);
+
+        Paragraph resumo = new Paragraph();
+        resumo.setSpacingBefore(SUMMARY_SPACING_BEFORE);
+        resumo.setAlignment(Element.ALIGN_RIGHT);
+        resumo.add(new Chunk("Total: " + products.size() + "  |  ", boldFont));
+        resumo.add(new Chunk("Ativos: " + active + "  |  ", boldFont));
+        resumo.add(new Chunk("Inativos: " + inactive + "  |  ", boldFont));
+        resumo.add(new Chunk("Descontinuados: " + discontinued, boldFont));
+
+        document.add(resumo);
     }
 
     private String formatarMoeda(BigDecimal valor) {

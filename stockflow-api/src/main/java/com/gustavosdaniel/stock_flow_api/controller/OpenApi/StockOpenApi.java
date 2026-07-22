@@ -2,13 +2,6 @@ package com.gustavosdaniel.stock_flow_api.controller.OpenApi;
 
 import java.util.UUID;
 
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
-import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
-import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +9,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.InventoryMovementRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.StockUpdate;
+import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
+import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -71,16 +74,14 @@ public interface StockOpenApi {
     @Operation(summary = "Buscar estoques por produto",
             description = "Retorna uma página com todos os estoques associados a um determinado produto")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de estoques do produto",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "200", description = "Página de estoques do produto"),
             @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado", content = @Content)
     })
-    Mono<ResponseEntity<Page<StockResponse>>> getStockByProduct(
-            @Parameter(description = "ID do produto", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID productId,
-            @ParameterObject @PageableDefault(size = 20) Pageable pageable);
+    Mono<ResponseEntity<Page<StockResponse>>> getStockByProduct(   // ← atualizado (Flux → Mono<Page>)
+                                                                   @Parameter(description = "ID do produto", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
+                                                                   @PathVariable UUID productId,
+                                                                   @ParameterObject @PageableDefault(size = 20) Pageable pageable);  // ← adicionado Pageable
 
     @Operation(summary = "Listar todos os estoques",
             description = "Retorna uma página com todos os registros de estoque, com paginação")
@@ -104,7 +105,7 @@ public interface StockOpenApi {
             @Parameter(description = "ID do estoque", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID stockId,
             @ParameterObject
-            @PageableDefault(size = 20, sort = "productName", direction = Sort.Direction.DESC)
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) // ← "productName" → "createdAt"
             Pageable pageable);
 
     @Operation(
@@ -186,10 +187,10 @@ public interface StockOpenApi {
             @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content),
             @ApiResponse(responseCode = "404", description = "Produto origem/destino não encontrado", content = @Content)
     })
-    Mono<ResponseEntity<Void>> transferStock(   // ← nome atualizado
-                                                @Parameter(description = "ID do produto de origem", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-                                                @PathVariable UUID productId,
-                                                @Valid @org.springframework.web.bind.annotation.RequestBody TransferRequest request);
+    Mono<ResponseEntity<Void>> transferStock(
+            @Parameter(description = "ID do produto de origem", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable UUID productId,
+            @Valid @org.springframework.web.bind.annotation.RequestBody TransferRequest request);
 
     @Operation(summary = "Produtos sem estoque",
             description = "Retorna produtos cujo estoque está zerado (out of stock)")
@@ -199,7 +200,7 @@ public interface StockOpenApi {
     })
     Mono<ResponseEntity<Page<StockSummaryResponse>>> findOutOfStock(
             @ParameterObject
-            @PageableDefault(size = 20, direction = Sort.Direction.ASC)   // ← sem sort
+            @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
     @Operation(summary = "Produtos com estoque baixo",
@@ -210,7 +211,7 @@ public interface StockOpenApi {
     })
     Mono<ResponseEntity<Page<StockSummaryResponse>>> findLowStock(
             @ParameterObject
-            @PageableDefault(size = 20, direction = Sort.Direction.ASC)   // ← sem sort
+            @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
     @Operation(summary = "Produtos com excesso de estoque",
@@ -221,7 +222,7 @@ public interface StockOpenApi {
     })
     Mono<ResponseEntity<Page<StockSummaryResponse>>> findOverStock(
             @ParameterObject
-            @PageableDefault(size = 20, direction = Sort.Direction.ASC)   // ← sem sort
+            @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
     @Operation(
@@ -246,4 +247,17 @@ public interface StockOpenApi {
             @Parameter(description = "ID do estoque", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID id,
             @Valid @org.springframework.web.bind.annotation.RequestBody StockUpdate request);
+
+    @Operation(summary = "Exportar relatório de estoque em PDF",
+            description = "Gera e faz o download de um relatório PDF com os estoques cadastrados. "
+                    + "Opcionalmente, é possível filtrar por status do produto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Relatório PDF gerado com sucesso",
+                    content = @Content(mediaType = "application/pdf",
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content)
+    })
+    Mono<ResponseEntity<byte[]>> downloadStockReport(
+            @Parameter(description = "Status opcional para filtrar os estoques do relatório", required = false, example = "ACTIVE")
+            @RequestParam(required = false) StockStatus status);
 }

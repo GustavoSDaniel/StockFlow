@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -147,13 +148,20 @@ public class ProductController implements ProductOpenApi {
     }
 
     @GetMapping(value = "/report/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-    public Mono<ResponseEntity<byte[]>> downloadProductReport(){
+    public Mono<ResponseEntity<byte[]>> downloadProductReport(
+            @RequestParam(required = false) ProductStatus status
+    ){
 
-        return productService.allProductsForReport()
+        Flux<ProductResponse> products = status != null
+                ? productService.findAllProductsByStatus(status, Pageable.unpaged())
+                .flatMapMany(page -> Flux.fromIterable(page.getContent()))
+                : productService.allProductsForReport();
+
+        return products
                 .collectList()
                 .publishOn(Schedulers.boundedElastic())
-                .map(products -> {
-                    byte[] pdfBytes = productPdfReport.generateReport(products);
+                .map(list -> {
+                    byte[] pdfBytes = productPdfReport.generateReport(list);
 
                     HttpHeaders headers = new HttpHeaders();
 

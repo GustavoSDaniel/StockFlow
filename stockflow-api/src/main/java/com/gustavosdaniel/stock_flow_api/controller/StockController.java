@@ -8,8 +8,12 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.request.TransferRequest;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.InventoryMovementResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockResponse;
 import com.gustavosdaniel.stock_flow_api.domain.dto.response.StockSummaryResponse;
+import com.gustavosdaniel.stock_flow_api.domain.enums.StockStatus;
+import com.gustavosdaniel.stock_flow_api.service.StockPdfReport;
 import com.gustavosdaniel.stock_flow_api.service.StockService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -18,7 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.UUID;
 
@@ -27,9 +33,11 @@ import java.util.UUID;
 public class StockController implements StockOpenApi {
 
     private final StockService stockService;
+    private final StockPdfReport stockPdfReport;
 
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, StockPdfReport stockPdfReport) {
         this.stockService = stockService;
+        this.stockPdfReport = stockPdfReport;
     }
 
     @PostMapping("/{productId}")
@@ -140,5 +148,35 @@ public class StockController implements StockOpenApi {
             @RequestBody @Valid StockUpdate request)
     {
         return stockService.updateStock(id, request).map(ResponseEntity::ok);
+    }
+
+    @GetMapping(value = "/report/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public Mono<ResponseEntity<byte[]>> downloadStockReport(
+            @RequestParam(required = false) StockStatus status
+    ){
+
+        Flux<StockResponse> stocks = status != null
+                ? stockService.allStocksForReportByStatus(status)
+                : stockService.allStocksForReport();
+
+
+        return stocks
+                .collectList()
+                .publishOn(Schedulers.boundedElastic())
+                .map(list -> {
+                    byte[] pdfBytes = stockPdfReport.generateReport(list);
+
+                    String filename = status != null
+                            ? "relatorio_estoque_" + status.name().toLowerCase() + ".pdf"
+                            : "relatorio_estoque.pdf";
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", filename);
+
+                    return ResponseEntity.ok()
+                            .headers(headers)
+                            .body(pdfBytes);
+                });
     }
 }
