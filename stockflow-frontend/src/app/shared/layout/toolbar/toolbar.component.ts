@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,10 +14,15 @@ import { MatDividerModule } from '@angular/material/divider';
   standalone: true,
   imports: [
     MatToolbarModule, MatIconModule, MatButtonModule,
-    MatMenuModule, MatBadgeModule, AsyncPipe, NotificationBellComponent,MatDividerModule
+    MatMenuModule, MatBadgeModule, AsyncPipe, NotificationBellComponent, MatDividerModule
   ],
   template: `
     <mat-toolbar class="toolbar">
+      @if (showMenuButton) {
+        <button mat-icon-button class="menu-btn" (click)="menuClick.emit()">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
       <span class="toolbar-title">StockFlow</span>
       <span class="spacer"></span>
 
@@ -47,6 +52,7 @@ import { MatDividerModule } from '@angular/material/divider';
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       height: 64px; padding: 0 24px;
     }
+    .menu-btn { color: #1a1a2e; margin-right: 8px; }
     .toolbar-title { font-weight: 600; font-size: 18px; }
     .spacer { flex: 1; }
     .user-btn { color: #1a1a2e; }
@@ -55,4 +61,6 @@ import { MatDividerModule } from '@angular/material/divider';
 })
 export class ToolbarComponent {
   protected auth = inject(AuthService);
+  @Input() showMenuButton = false;
+  @Output() menuClick = new EventEmitter<void>();
 }

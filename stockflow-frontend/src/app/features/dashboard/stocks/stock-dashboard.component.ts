@@ -8,21 +8,52 @@ import { DashboardStockResponse } from '../../../core/models/domain.models';
 import { StockStatus } from '../../../core/models/enums';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { StockStatusIndicatorComponent } from '../../../shared/components/stock-status-indicator/stock-status-indicator.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-stock-dashboard',
   standalone: true,
-  imports: [RouterModule, MatCardModule, MatIconModule, LoadingSpinnerComponent, StockStatusIndicatorComponent],
+  imports: [RouterModule, MatCardModule, MatIconModule, LoadingSpinnerComponent, StockStatusIndicatorComponent, PageHeaderComponent],
   template: `
-    <h2>Dashboard de Estoque</h2>
+    <app-page-header title="Dashboard de Estoque" subtitle="Visão geral dos níveis de inventário" />
     @if (loading()) { <app-loading-spinner /> }
     @else if (data()) {
       <div class="kpi-grid">
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OUT_OF_STOCK" /><div class="val">{{ data()?.statusCounts?.outOfStock }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.LOW" /><div class="val">{{ data()?.statusCounts?.lowStock }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.REORDER_POINT" /><div class="val">{{ data()?.statusCounts?.reorderPoint }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.NORMAL" /><div class="val">{{ data()?.statusCounts?.normal }}</div></mat-card-content></mat-card>
-        <mat-card><mat-card-content><app-stock-status-indicator [status]="status.OVER_STOCKED" /><div class="val">{{ data()?.statusCounts?.overStocked }}</div></mat-card-content></mat-card>
+        <mat-card class="kpi-card">
+          <mat-card-content>
+            <app-stock-status-indicator [status]="status.OUT_OF_STOCK" />
+            <div class="val">{{ data()?.statusCounts?.outOfStock }}</div>
+            <div class="kpi-label">Sem Estoque</div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-card-content>
+            <app-stock-status-indicator [status]="status.LOW" />
+            <div class="val">{{ data()?.statusCounts?.lowStock }}</div>
+            <div class="kpi-label">Estoque Baixo</div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-card-content>
+            <app-stock-status-indicator [status]="status.REORDER_POINT" />
+            <div class="val">{{ data()?.statusCounts?.reorderPoint }}</div>
+            <div class="kpi-label">Ponto de Reposição</div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-card-content>
+            <app-stock-status-indicator [status]="status.NORMAL" />
+            <div class="val">{{ data()?.statusCounts?.normal }}</div>
+            <div class="kpi-label">Normal</div>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-card-content>
+            <app-stock-status-indicator [status]="status.OVER_STOCKED" />
+            <div class="val">{{ data()?.statusCounts?.overStocked }}</div>
+            <div class="kpi-label">Excesso</div>
+          </mat-card-content>
+        </mat-card>
       </div>
 
       <div class="lists">
@@ -64,9 +95,11 @@ import { StockStatusIndicatorComponent } from '../../../shared/components/stock-
   `,
   styles: [`
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .val { font-size: 32px; font-weight: 700; margin-top: 8px; }
+    .kpi-card mat-card-content { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 16px 8px; }
+    .val { font-size: 32px; font-weight: 700; margin-top: 8px; color: #1a1a2e; }
+    .kpi-label { font-size: 13px; color: #666; margin-top: 4px; }
     .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media(max-width:768px){ .lists { grid-template-columns: 1fr; } }
+    @media(max-width:768px){ .kpi-grid { grid-template-columns: repeat(2, 1fr); } .lists { grid-template-columns: 1fr; } }
     .stock-list { display: flex; flex-direction: column; gap: 12px; }
     .stock-item {
       display: flex; align-items: center; gap: 12px;

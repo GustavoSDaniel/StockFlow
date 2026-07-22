@@ -74,7 +74,11 @@ export class ProductService {
     return this.http.patch<void>(`${this.api}/${id}/discontinue`, {});
   }
 
-  downloadPdfReport(): Observable<Blob> {
-    return this.http.get(`${this.api}/report/pdf`, { responseType: 'blob' });
+  downloadPdfReport(status?: string): Observable<Blob> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get(`${this.api}/report/pdf`, { params, responseType: 'blob' });
   }
 }

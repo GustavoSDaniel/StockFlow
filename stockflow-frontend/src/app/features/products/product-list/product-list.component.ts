@@ -37,10 +37,24 @@ import { NgTemplateOutlet } from '@angular/common';
       title="Produtos" subtitle="Gerencie o catálogo de produtos"
       createLabel="Novo Produto" createRoute="/products/new" requiredRole="MANAGER"
     >
-      <button mat-stroked-button (click)="exportReportToPdf()" [disabled]="isExportingPdf()">
+      <button mat-stroked-button [matMenuTriggerFor]="pdfMenu" [disabled]="isExportingPdf()">
         <mat-icon>{{ isExportingPdf() ? 'hourglass_empty' : 'picture_as_pdf' }}</mat-icon>
         {{ isExportingPdf() ? 'Exportando...' : 'Exportar PDF' }}
       </button>
+      <mat-menu #pdfMenu="matMenu">
+        <button mat-menu-item (click)="exportReportToPdf()">
+          <mat-icon>picture_as_pdf</mat-icon> Baixar Relatório Completo
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('ACTIVE')">
+          <mat-icon>check_circle</mat-icon> Baixar Produtos Ativos
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('INACTIVE')">
+          <mat-icon>toggle_off</mat-icon> Baixar Produtos Inativos
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('DISCONTINUED')">
+          <mat-icon>block</mat-icon> Baixar Descontinuados
+        </button>
+      </mat-menu>
     </app-page-header>
 
     <app-filter-bar
@@ -223,9 +237,9 @@ export class ProductListComponent implements OnInit {
     });
   }
 
-  exportReportToPdf(): void {
+  exportReportToPdf(status?: string): void {
     this.isExportingPdf.set(true);
-    this.productService.downloadPdfReport()
+    this.productService.downloadPdfReport(status)
       .pipe(
         catchError(() => {
           this.snackBar.open('Erro ao exportar relatório PDF. Tente novamente.', 'OK', { duration: 5000 });
@@ -237,7 +251,9 @@ export class ProductListComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = 'relatorio_produtos.pdf';
+        anchor.download = status
+          ? `relatorio_produtos_${status.toLowerCase()}.pdf`
+          : 'relatorio_produtos.pdf';
         anchor.click();
         window.URL.revokeObjectURL(url);
         this.snackBar.open('Relatório exportado com sucesso!', 'OK', { duration: 3000 });

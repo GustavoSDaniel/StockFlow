@@ -8,6 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Page } from '../../../core/models/page.model';
+import { EmptyStateComponent } from '../empty-state/empty-state.component';
 
 export interface ColumnDef {
   key: string;
@@ -25,6 +26,7 @@ export interface ColumnDef {
     MatTableModule, MatPaginatorModule, MatSortModule,
     MatIconModule, MatButtonModule, MatMenuModule,
     MatProgressSpinnerModule, DatePipe, NgTemplateOutlet,
+    EmptyStateComponent,
   ],
   template: `
     <div class="table-container">
@@ -67,7 +69,11 @@ export interface ColumnDef {
         @if (!data?.content?.length && !loading) {
           <tr class="mat-row">
             <td class="mat-cell empty-cell" [attr.colspan]="displayedColumns.length">
-              Nenhum registro encontrado.
+              <app-empty-state
+                [icon]="emptyIcon"
+                [title]="emptyTitle"
+                [description]="emptyDescription"
+              />
             </td>
           </tr>
         }
@@ -84,11 +90,12 @@ export interface ColumnDef {
     </div>
   `,
   styles: [`
-    .table-container { position: relative; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .table-container { position: relative; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e8eaed; }
     .loading-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.7); z-index: 2; }
     table { width: 100%; }
+    .mat-mdc-row { transition: background-color 0.15s ease; }
     .mat-mdc-row:hover { background: #f8f9fa; }
-    .empty-cell { text-align: center; padding: 48px 16px; color: #999; }
+    .empty-cell { text-align: center; padding: 0; }
   `]
 })
 export class DataTableComponent {
@@ -96,6 +103,9 @@ export class DataTableComponent {
   @Input() columns: ColumnDef[] = [];
   @Input() actionsTemplate: any = null;
   @Input() loading = false;
+  @Input() emptyIcon = 'inbox';
+  @Input() emptyTitle = 'Nenhum registro encontrado';
+  @Input() emptyDescription = '';
 
   @Output() onPage = new EventEmitter<PageEvent>();
   @Output() onSort = new EventEmitter<Sort>();

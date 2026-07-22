@@ -71,4 +71,12 @@ export class StockService {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Page<StockSummaryResponse>>(`${this.api}/over-stock`, { params });
   }
+
+  downloadPdfReport(status?: string): Observable<Blob> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get(`${this.api}/report/pdf`, { params, responseType: 'blob' });
+  }
 }

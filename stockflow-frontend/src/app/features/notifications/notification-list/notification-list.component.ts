@@ -24,7 +24,7 @@ import { finalize } from 'rxjs';
   imports: [MatButtonModule, MatIconModule, MatMenuModule, MatSelectModule, MatFormFieldModule, MatTabsModule, FormsModule, PageHeaderComponent, DataTableComponent, StatusBadgeComponent, EnumLabelPipe, DatePipe, NgTemplateOutlet],
   template: `
     <app-page-header title="Notificações" subtitle="Alertas e notificações do sistema" />
-    <mat-tab-group (selectedIndexChange)="onTabChange($event)">
+    <mat-tab-group (selectedIndexChange)="onTabChange($event)" class="tabs">
       <mat-tab label="Todas">
         <app-data-table [data]="data()" [columns]="columns" [loading]="loading()" (onPage)="onPage($event)" [actionsTemplate]="actions" />
       </mat-tab>
@@ -48,6 +48,7 @@ import { finalize } from 'rxjs';
       </mat-menu>
     </ng-template>
   `,
+  styles: [`.tabs { background: #fff; border-radius: 8px; }`],
 })
 export class NotificationListComponent implements OnInit {
   private notificationService = inject(NotificationService);

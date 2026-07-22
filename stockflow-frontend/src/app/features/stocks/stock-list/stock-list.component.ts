@@ -5,8 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTabsModule } from '@angular/material/tabs';
 import { PageEvent } from '@angular/material/paginator';
-import { Sort } from '@angular/material/sort';
-import { NgTemplateOutlet } from '@angular/common';
 import { StockService } from '../../../core/services/stock.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { UserRole } from '../../../core/models/enums';
@@ -15,17 +13,37 @@ import { Page } from '../../../core/models/page.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { DataTableComponent, ColumnDef } from '../../../shared/components/data-table/data-table.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
-import { finalize } from 'rxjs';
+import { catchError, EMPTY, finalize } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-stock-list',
   standalone: true,
   imports: [
     RouterModule, MatButtonModule, MatIconModule, MatMenuModule, MatTabsModule,
-    PageHeaderComponent, DataTableComponent, StatusBadgeComponent, NgTemplateOutlet,
+    PageHeaderComponent, DataTableComponent, StatusBadgeComponent,
   ],
   template: `
-    <app-page-header title="Estoque" subtitle="Gerencie o inventário por galpão" />
+    <app-page-header title="Estoque" subtitle="Gerencie o inventário por galpão">
+      <button mat-stroked-button [matMenuTriggerFor]="pdfMenu" [disabled]="isExportingPdf()">
+        <mat-icon>{{ isExportingPdf() ? 'hourglass_empty' : 'picture_as_pdf' }}</mat-icon>
+        {{ isExportingPdf() ? 'Exportando...' : 'Exportar PDF' }}
+      </button>
+      <mat-menu #pdfMenu="matMenu">
+        <button mat-menu-item (click)="exportReportToPdf()">
+          <mat-icon>picture_as_pdf</mat-icon> Baixar Relatório Completo
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('OUT_OF_STOCK')">
+          <mat-icon>inventory_2</mat-icon> Baixar Itens Sem Estoque
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('LOW')">
+          <mat-icon>warning</mat-icon> Baixar Estoque Baixo
+        </button>
+        <button mat-menu-item (click)="exportReportToPdf('OVER_STOCKED')">
+          <mat-icon>warehouse</mat-icon> Baixar Excesso de Estoque
+        </button>
+      </mat-menu>
+    </app-page-header>
 
     <mat-tab-group (selectedIndexChange)="onTabChange($event)" class="tabs">
       <mat-tab label="Todos">
@@ -77,6 +95,7 @@ import { finalize } from 'rxjs';
 })
 export class StockListComponent implements OnInit {
   private stockService = inject(StockService);
+  private snackBar = inject(MatSnackBar);
   protected auth = inject(AuthService);
   protected UserRole = UserRole;
 
@@ -84,6 +103,7 @@ export class StockListComponent implements OnInit {
 
   data = signal<Page<StockSummaryResponse> | null>(null);
   loading = signal(false);
+  isExportingPdf = signal(false);
   private currentTab = 0;
   private currentPage = 0;
   private currentSize = 10;
@@ -119,5 +139,28 @@ export class StockListComponent implements OnInit {
   }
 
   onPageChange(event: PageEvent): void { this.currentPage = event.pageIndex; this.currentSize = event.pageSize; this.loadData(); }
-  onSortChange(sort: Sort): void { this.loadData(); }
+  onSortChange(sort: any): void { this.loadData(); }
+
+  exportReportToPdf(status?: string): void {
+    this.isExportingPdf.set(true);
+    this.stockService.downloadPdfReport(status)
+      .pipe(
+        catchError(() => {
+          this.snackBar.open('Erro ao exportar relatório PDF. Tente novamente.', 'OK', { duration: 5000 });
+          return EMPTY;
+        }),
+        finalize(() => this.isExportingPdf.set(false)),
+      )
+      .subscribe(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = status
+          ? `relatorio_estoque_${status.toLowerCase()}.pdf`
+          : 'relatorio_estoque.pdf';
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+        this.snackBar.open('Relatório exportado com sucesso!', 'OK', { duration: 3000 });
+      });
+  }
 }

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,7 +27,7 @@ interface NavItem {
     <mat-divider />
     <mat-nav-list class="nav-list">
       @for (item of visibleItems$ | async; track item.route) {
-        <a mat-list-item [routerLink]="item.route" routerLinkActive="active-link" class="nav-item">
+        <a mat-list-item [routerLink]="item.route" routerLinkActive="active-link" class="nav-item" (click)="navClick.emit()">
           <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
           <span matListItemTitle>{{ item.label }}</span>
         </a>
@@ -81,6 +81,7 @@ interface NavItem {
   `]
 })
 export class SidebarComponent {
+  @Output() navClick = new EventEmitter<void>();
   private auth = inject(AuthService);
 
   private allItems: NavItem[] = [

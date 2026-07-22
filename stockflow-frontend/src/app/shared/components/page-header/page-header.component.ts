@@ -26,12 +26,13 @@ import { AuthService } from '../../../core/auth/auth.service';
   `,
   styles: [`
     .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+      gap: 12px; margin-bottom: 24px;
     }
+    .header-left { min-width: 0; }
     .page-title { font-size: 24px; font-weight: 600; margin: 0; color: #1a1a2e; }
     .page-subtitle { margin: 4px 0 0; color: #666; font-size: 14px; }
-    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   `]
 })
 export class PageHeaderComponent {

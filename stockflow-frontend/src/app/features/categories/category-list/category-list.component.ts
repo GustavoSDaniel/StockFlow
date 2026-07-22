@@ -26,6 +26,7 @@ import { finalize } from 'rxjs';
     <app-page-header title="Categorias" subtitle="Gerencie a hierarquia de categorias" createLabel="Nova Categoria" createRoute="/categories/new" requiredRole="MANAGER" />
     @if (loading()) { <app-loading-spinner /> }
     @else {
+      <div class="category-container">
       <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="category-tree">
         <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle>
           <mat-icon class="tree-icon">folder</mat-icon>
@@ -68,12 +69,16 @@ import { finalize } from 'rxjs';
           </div>
         </mat-nested-tree-node>
       </mat-tree>
+      </div>
     }
   `,
   styles: [`
+    .category-container { background: #fff; border-radius: 8px; padding: 8px 16px; border: 1px solid #e8eaed; }
     .category-tree { background: transparent; }
     .mat-tree-node { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; margin: 2px 0; }
     .mat-tree-node:hover { background: #f0f0f0; }
+    .mat-nested-tree-node > div > .mat-tree-node { margin-left: 0; }
+    .mat-nested-tree-node .mat-nested-tree-node .mat-tree-node { padding-left: 24px; }
     .tree-icon { color: #7c3aed; font-size: 20px; width: 20px; height: 20px; }
     .tree-name { font-weight: 500; }
     .spacer { flex: 1; }

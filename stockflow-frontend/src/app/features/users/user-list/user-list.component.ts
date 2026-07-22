@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, TemplateRef, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -28,6 +28,11 @@ import { finalize } from 'rxjs';
   template: `
     <app-page-header title="Usuários" subtitle="Gerencie os usuários do sistema" />
     <app-data-table [data]="data()" [columns]="columns" [loading]="loading()" (onPage)="onPageChange($event)" [actionsTemplate]="actionsTemplate" />
+
+    <ng-template #statusCell let-row>
+      <app-status-badge [label]="row.active ? 'ACTIVE' : 'INACTIVE'" />
+    </ng-template>
+
     <ng-template #actionsTemplate let-row>
       <button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
       <mat-menu #menu="matMenu">
@@ -50,18 +55,23 @@ export class UserListComponent implements OnInit {
   private snackBar = inject(MatSnackBar);
   protected auth = inject(AuthService);
   protected UserRole = UserRole;
+  @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
+
   data = signal<Page<UserResponse> | null>(null);
   loading = signal(false);
   private page = 0;
 
-  columns: ColumnDef[] = [
-    { key: 'userName', header: 'Usuário', sortable: true },
-    { key: 'role', header: 'Role', cell: (r: any) => new EnumLabelPipe().transform(r.role, 'userRole') as string },
-    { key: 'active', header: 'Status', cell: (r: any) => r.active ? 'Ativo' : 'Inativo' },
-    { key: 'createdAt', header: 'Criado em', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'shortDate') as string },
-  ];
+  columns: ColumnDef[] = [];
 
-  ngOnInit(): void { this.loadData(); }
+  ngOnInit(): void {
+    this.columns = [
+      { key: 'userName', header: 'Usuário', sortable: true },
+      { key: 'role', header: 'Role', cell: (r: any) => new EnumLabelPipe().transform(r.role, 'userRole') as string },
+      { key: 'active', header: 'Status', cellTemplate: this.statusCellTemplate },
+      { key: 'createdAt', header: 'Criado em', cell: (r: any) => new DatePipe('pt-BR').transform(r.createdAt, 'shortDate') as string },
+    ];
+    this.loadData();
+  }
 
   private loadData(): void {
     this.loading.set(true);
