@@ -1,14 +1,15 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('firstName','lastName','email','username','password','password-confirm'); section>
     <#if section = "header">
+    <#elseif section = "form">
         <div class="stockflow-brand">
             <div class="stockflow-logo">
                 <span class="material-icons-round">inventory_2</span>
             </div>
             <h1 class="stockflow-title">StockFlow</h1>
+            <p class="stockflow-subtitle">Gestão de inventário inteligente</p>
             <p class="stockflow-tagline">Crie sua conta para começar</p>
         </div>
-    <#elseif section = "form">
         <form id="kc-register-form" action="${url.registrationAction}" method="post" novalidate="novalidate">
             <div class="form-group ${messagesPerField.printIfExists('firstName','has-error')}">
                 <label for="firstName">Nome</label>

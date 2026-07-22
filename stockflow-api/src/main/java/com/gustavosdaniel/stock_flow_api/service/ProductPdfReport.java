@@ -14,9 +14,6 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus.DISCONTINUED;
-import static com.gustavosdaniel.stock_flow_api.domain.enums.ProductStatus.INACTIVE;
-
 @Service
 public class ProductPdfReport {
 

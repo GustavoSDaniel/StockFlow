@@ -1,14 +1,15 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password && realm.registrationAllowed && !registrationRequired??; section>
     <#if section = "header">
+    <#elseif section = "form">
         <div class="stockflow-brand">
             <div class="stockflow-logo">
                 <span class="material-icons-round">inventory_2</span>
             </div>
             <h1 class="stockflow-title">StockFlow</h1>
+            <p class="stockflow-subtitle">Gestão de inventário inteligente</p>
             <p class="stockflow-tagline">Acesse sua conta para continuar</p>
         </div>
-    <#elseif section = "form">
         <div id="kc-form">
             <div id="kc-form-wrapper">
                 <#if realm.password>
