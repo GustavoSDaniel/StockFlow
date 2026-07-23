@@ -17,8 +17,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+          cache-dependency-path: stockflow-api/pom.xml
 
       - name: Rodar testes
+        working-directory: ./stockflow-api
         run: mvn clean test
 
   build-and-push:
@@ -40,8 +42,8 @@ jobs:
       - name: Construir e Enviar Imagem para o Docker Hub
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./stockflow-api
+          file: ./stockflow-api/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
