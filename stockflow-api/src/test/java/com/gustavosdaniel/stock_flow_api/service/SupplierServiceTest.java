@@ -88,7 +88,7 @@ class SupplierServiceTest {
         LocalDateTime createdAt = LocalDateTime.of(2026, 7, 20, 14, 2);
 
         SupplierContactRequest contactRequest = new SupplierContactRequest(
-               contactName, email, phoneNumber
+                contactName, email, phoneNumber
         );
 
         List<SupplierContactRequest> contactRequests = List.of(contactRequest);
@@ -135,9 +135,6 @@ class SupplierServiceTest {
 
         List<SupplierContactResponse> supplierContactResponses = List.of(contactResponse);
 
-        ViaCepResponse viaCepResponse = new ViaCepResponse(zipCode, street, complement, neighborhood,
-                city, "SP", false);
-
         SupplierResponse response = new SupplierResponse(
                 supplierId, name, cnpj, tradeName, supplierContactResponses,
                 null, minOrderValue, null, addressResponseList, createdAt
@@ -146,14 +143,17 @@ class SupplierServiceTest {
         when(suppliersRepository.existsByCnpj(cnpj)).thenReturn(Mono.just(false));
         when(supplierMapper.toSupplier(request)).thenReturn(newSupplier);
         when(suppliersRepository.save(any(Supplier.class))).thenReturn(Mono.just(newSupplier));
-        when(supplierMapper.toSupplierContact(supplierId, contactRequest)).thenReturn(contact);
-        when(supplierContactRepository.saveAll(anyIterable()))
-                .thenReturn(Flux.fromIterable(contacts));
-        when(viaCepClient.findByAddressByZipCode(addressRequest.zipCode()))
-                .thenReturn(Mono.just(viaCepResponse));
-        when(supplierMapper.toAddress(supplierId, addressRequest, viaCepResponse)).thenReturn(newAddress);
+
+        when(supplierMapper.toSupplierContact(eq(supplierId), any(SupplierContactRequest.class)))
+                .thenReturn(contact);
+        when(supplierContactRepository.saveAll(anyIterable())).thenReturn(Flux.fromIterable(contacts));
+
+        when(supplierMapper.toManualAddress(eq(supplierId), any(AddressRequest.class)))
+                .thenReturn(newAddress);
         when(addressRepository.saveAll(anyIterable())).thenReturn(Flux.fromIterable(addressList));
-        when(supplierMapper.toSupplierResponse(newSupplier, contacts, addressList)).thenReturn(response);
+
+        when(supplierMapper.toSupplierResponse(any(Supplier.class), anyList(), anyList()))
+                .thenReturn(response);
 
         Mono<SupplierResponse> output = supplierService.createSupplier(request);
 
@@ -170,7 +170,6 @@ class SupplierServiceTest {
         verify(suppliersRepository).existsByCnpj(cnpj);
         verify(suppliersRepository).save(any(Supplier.class));
         verify(supplierContactRepository).saveAll(anyIterable());
-        verify(viaCepClient).findByAddressByZipCode(zipCode);
         verify(addressRepository).saveAll(anyIterable());
     }
 

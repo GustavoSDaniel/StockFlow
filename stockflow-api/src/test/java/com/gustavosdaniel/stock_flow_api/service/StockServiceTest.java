@@ -198,6 +198,8 @@ class StockServiceTest {
         BigDecimal salePrice = BigDecimal.valueOf(3000.00);
         UnitMeasure unitMeasure = UnitMeasure.UN;
 
+        Pageable pageable = PageRequest.of(0,10);
+
         Product product = new Product(productName, null, sku, categoryId, supplierId,
                 costPrice, salePrice, unitMeasure, null);
         ReflectionTestUtils.setField(product, "id", productId);
@@ -226,7 +228,6 @@ class StockServiceTest {
         when(stockRepository.countByProductId(productId)).thenReturn(Mono.just(1L));
         when(stockMapper.toStockResponse(stock, product)).thenReturn(response);
 
-        Pageable pageable = Pageable.unpaged();
         Mono<Page<StockResponse>> output = stockService.getStockByProductId(productId, pageable);
 
         StepVerifier.create(output)
@@ -411,8 +412,7 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
-        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
-                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
+        when(stockEventPublisher.writeToOutbox(any(), any(), any())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.registerEntry(stockId, request);
 
@@ -485,8 +485,7 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
-        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
-                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
+        when(stockEventPublisher.writeToOutbox(any(), any(), any())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.registerExit(stockId, request);
 
@@ -559,8 +558,7 @@ class StockServiceTest {
         when(stockMapper.toInventoryMovement(eq(request), eq(stock), anyInt(), anyInt()))
                 .thenReturn(movement);
         when(inventoryMovementRepository.save(any(InventoryMovement.class))).thenReturn(Mono.just(movement));
-        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
-                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
+        when(stockEventPublisher.writeToOutbox(any(), any(), any())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.adjustStock(stockId, request);
 
@@ -642,8 +640,7 @@ class StockServiceTest {
 
         when(inventoryMovementRepository.saveAll(anyIterable()))
                 .thenReturn(Flux.just(sourceMovement, targetMovement));
-        when(stockEventPublisher.writeToOutbox(any(InventoryMovement.class),
-                eq(outboxEventRepository), anyString())).thenReturn(Flux.empty());
+        when(stockEventPublisher.writeToOutbox(any(), any(), any())).thenReturn(Flux.empty());
 
         Mono<Void> output = stockService.transferStock(productId, request);
 
