@@ -9,15 +9,24 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootTest(properties = {
-    "keycloak.client-secret=test-secret",
-    "keycloak.client.id=test-client",
-    "keycloak.auth-server-url=http://localhost:5052",
-    "keycloak.realm=test-realm"
+        "spring.main.allow-bean-definition-overriding=true",
+        "keycloak.client-secret=test-secret",
+        "keycloak.client.id=test-client",
+        "keycloak.auth-server-url=http://localhost:6062",
+        "keycloak.realm=test-realm",
+        "spring.flyway.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration"
 })
 class StockFlowApiApplicationTests {
 
     @MockitoBean
     private Keycloak keycloak;
+
+    @MockitoBean
+    private com.gustavosdaniel.stock_flow_api.messaging.outbox.OutboxScheduler outboxScheduler;
+
+    @MockitoBean
+    private com.gustavosdaniel.stock_flow_api.messaging.consumer.NotificationConsumer notificationConsumer;
 
     @Test
     void contextLoads() {
