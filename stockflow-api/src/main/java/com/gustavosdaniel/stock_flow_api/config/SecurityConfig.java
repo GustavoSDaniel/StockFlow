@@ -25,8 +25,11 @@ import java.util.Map;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Value("${api.cors.allowed-origins:http://localhost:4200}")
-    private String[] allowedOrigins;
+    @Value("${api.cors.allowed-origins:http://localhost:4200,https://stockflow.gustavosdaniel.com}")
+    private String allowedOriginsString;
+
+    @Value("${api.cors.max-age:3600}")
+    private Long corsMaxAge;
 
     public static final String[] PUBLIC_URLS = {
 
@@ -178,11 +181,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        List<String> origins = Arrays.stream(allowedOriginsString.split(","))
+                .map(String::trim)
+                .toList();
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(origins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(corsMaxAge);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

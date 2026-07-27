@@ -55,7 +55,8 @@ spring:
 
   api:
     cors:
-      allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200}
+      allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,https://stockflow.gustavosdaniel.com}
+      max-age: ${CORS_MAX_AGE:3600}
 
 inventory:
   kafka:
