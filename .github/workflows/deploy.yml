@@ -2,7 +2,7 @@ name: CI/CD Pipeline - StockFlow API
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "dev", "main" ]
 
 jobs:
   test:
@@ -51,3 +51,62 @@ jobs:
             gustavosdaniel/stockflow-api:${{ github.sha }}
           cache-from: type=registry,ref=gustavosdaniel/stockflow-api:buildcache
           cache-to: type=registry,ref=gustavosdaniel/stockflow-api:buildcache,mode=max
+
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'      # 🔐 Garante que só vai para produção se for a main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar credenciais AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Executar Deploy e Aguardar via SSM
+        run: |
+          # 1. Envia o comando e captura o ID diretamente, sem chance de erro
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "StockFlow API deploy - ${{ github.sha }}" \
+            --parameters '{
+              "commands": [
+                "cd /home/ubuntu/infra && git pull origin main",
+                "cd /home/ubuntu/infra/ec2 && docker compose -f docker-compose.prod.yml pull stockflow-api",
+                "cd /home/ubuntu/infra/ec2 && docker compose -f docker-compose.prod.yml up -d --force-recreate stockflow-api nginx",
+                "docker image prune -f"
+              ]
+            }' \
+            --output text \
+            --query "Command.CommandId")
+          
+          echo "Aguardando comando SSM $COMMAND_ID..."
+          
+          # 2. Espera a execução daquele ID específico
+          aws ssm wait command-executed \
+            --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
+            --command-id "$COMMAND_ID"
+          
+          # 3. Pega o status daquele ID específico
+          STATUS=$(aws ssm list-command-invocations \
+            --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
+            --command-id "$COMMAND_ID" \
+            --details \
+            --query "CommandInvocations[0].Status" \
+            --output text)
+          
+          echo "Status do deploy: $STATUS"
+          
+          if [ "$STATUS" != "Success" ]; then
+            echo "❌ Deploy falhou!"
+            aws ssm list-command-invocations \
+              --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].CommandPlugins[0].Output" \
+              --output text
+            exit 1
+          fi
+          
+          echo "✅ Deploy concluído com sucesso!"
