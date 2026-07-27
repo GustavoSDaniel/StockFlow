@@ -1,9 +1,9 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.stockflow.gustavosdaniel.com', 
+  apiUrl: 'https://api.stockflow.gustavosdaniel.com',
   keycloak: {
-    url: 'http://34.201.172.14:6062', 
+    url: 'https://api.stockflow.gustavosdaniel.com/auth', 
     realm: 'stock-flow-realm',
-    clientId: 'stock-flow-app' 
+    clientId: 'stock-flow-app'
   }
 };
