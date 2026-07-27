@@ -154,6 +154,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ALLOWED_ORIGINS=https://stockflow.gustavosdaniel.com
       - JAVA_OPTS=-Xmx350m -Xms200m
       - LOKI_URL=http://desativado
     networks:
