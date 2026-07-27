@@ -25,8 +25,8 @@ import java.util.Map;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Value("${api.cors.allowed-origins:http://localhost:4200}")
-    private List<String> allowedOrigins;
+    @Value("${api.cors.allowed-origins}")
+    private String[] allowedOrigins;
 
     public static final String[] PUBLIC_URLS = {
 
@@ -178,7 +178,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
