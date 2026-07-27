@@ -25,6 +25,7 @@ jobs:
 
   build-and-push:
     needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do Código
@@ -54,8 +55,13 @@ jobs:
 
   deploy:
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'      # 🔐 Garante que só vai para produção se for a main
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Configurar credenciais AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -65,7 +71,6 @@ jobs:
 
       - name: Executar Deploy e Aguardar via SSM
         run: |
-          # 1. Envia o comando e captura o ID diretamente, sem chance de erro
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
@@ -83,12 +88,10 @@ jobs:
           
           echo "Aguardando comando SSM $COMMAND_ID..."
           
-          # 2. Espera a execução daquele ID específico
           aws ssm wait command-executed \
             --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
             --command-id "$COMMAND_ID"
           
-          # 3. Pega o status daquele ID específico
           STATUS=$(aws ssm list-command-invocations \
             --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
             --command-id "$COMMAND_ID" \
