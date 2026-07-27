@@ -2,7 +2,7 @@ name: CI/CD Pipeline - StockFlow API
 
 on:
   push:
-    branches: [ "dev", "main" ]
+    branches: [ "dev" ]
 
 jobs:
   test:
@@ -25,7 +25,6 @@ jobs:
 
   build-and-push:
     needs: test
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do Código
@@ -52,46 +51,3 @@ jobs:
             gustavosdaniel/stockflow-api:${{ github.sha }}
           cache-from: type=registry,ref=gustavosdaniel/stockflow-api:buildcache
           cache-to: type=registry,ref=gustavosdaniel/stockflow-api:buildcache,mode=max
-
-  deploy:
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configurar credenciais da AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Executar Deploy via AWS Systems Manager (SSM)
-        run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --targets "Key=InstanceIds,Values=i-01562082ba1d6d3dc" \
-            --parameters 'commands=["cd /home/ubuntu/infra/ec2", "docker compose pull stockflow-api", "docker compose up -d --no-deps stockflow-api", "sleep 15", "docker compose ps stockflow-api", "docker image prune -f"]' \
-            --comment "Deploy Stockflow API via GitHub Actions" \
-            --query "Command.CommandId" \
-            --output text)
-
-          echo "Aguardando execução do comando $COMMAND_ID..."
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID" \
-            --instance-id "i-01562082ba1d6d3dc"
-
-          STATUS=$(aws ssm get-command-invocation \
-            --command-id "$COMMAND_ID" \
-            --instance-id "i-01562082ba1d6d3dc" \
-            --query "Status" --output text)
-
-          echo "Status do deploy: $STATUS"
-
-          if [ "$STATUS" != "Success" ]; then
-            echo "Deploy falhou! Saída de erro:"
-            aws ssm get-command-invocation \
-              --command-id "$COMMAND_ID" \
-              --instance-id "i-01562082ba1d6d3dc" \
-              --query "StandardErrorContent" --output text
-            exit 1
-          fi

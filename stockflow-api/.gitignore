@@ -18,7 +18,6 @@ target/
 *.iws
 *.iml
 *.ipr
-.env.prod
 
 ### NetBeans ###
 /nbproject/private/
@@ -34,4 +33,3 @@ build/
 .vscode/
 
 .env
-.env.prod!/infra/ec2/.env.prod
