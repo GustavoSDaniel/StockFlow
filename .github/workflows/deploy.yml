@@ -56,14 +56,17 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy na EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configurar credenciais da AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/infra/ec2
-            docker compose pull stockflow-api
-            docker compose up -d --no-deps stockflow-api
-            docker image prune -f
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Executar Deploy via AWS Systems Manager (SSM)
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=InstanceIds,Values=i-01562082ba1d6d3dc" \
+            --parameters 'commands=["cd /home/ubuntu/infra/ec2", "docker compose pull stockflow-api", "docker compose up -d --no-deps stockflow-api", "docker image prune -f"]' \
+            --comment "Deploy Stockflow API via GitHub Actions"
