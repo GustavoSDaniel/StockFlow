@@ -13,6 +13,7 @@
 ![Docker](https://img.shields.io/badge/Docker-14_Containers-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-LGTM-F46800?style=for-the-badge&logo=grafana&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?style=for-the-badge&logo=nginx&logoColor=white)
+![AWS EC2](https://img.shields.io/badge/AWS-EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache_2.0-D22128?style=for-the-badge)
 
 **~1.000 req/s • p99 < 150ms • Stack Reativa • Observabilidade Completa • RBAC Empresarial**
@@ -29,9 +30,9 @@ Diferente de planilhas ou ERPs genéricos, o StockFlow oferece:
 
 - 🎯 **Rastreabilidade total** do ciclo de vida de cada produto no estoque — cada entrada, saída, ajuste ou transferência é registrada com razão documentada e auditável
 - 📊 **Dashboards analíticos** que transformam dados brutos em inteligência de negócio: ruptura de estoque, produtos parados, giro de mercadorias e performance por fornecedor
-- 🔐 **Controle de acesso empresarial** com RBAC de três níveis (Admin, Gerente, Funcionário), integrado a um servidor IAM dedicado (Keycloak) via OAuth2/OpenID Connect
-- ⚡ **Alta performance** com stack 100% reativa (Spring WebFlux + R2DBC), suportando mais de **1.000 requisições/segundo** com latência p99 abaixo de 150ms em endpoints que batem no banco de dados
-- 🔭 **Observabilidade de classe mundial** com métricas, logs estruturados e tracing distribuído — tudo centralizado em dashboards no Grafana com alertas configurados
+- 🔐 **Controle de acesso empresarial** com RBAC de três níveis (`EMPLOYEE`, `MANAGER`, `ADMIN`), integrado a um servidor IAM dedicado (Keycloak) via OAuth2/OpenID Connect
+- ⚡ **Alta performance** com stack 100% reativa (Spring WebFlux + R2DBC), suportando mais de **1.000 requisições/segundo** com latência p99 abaixo de 150ms em endpoints com joins no banco
+- 🔭 **Observabilidade de classe mundial** com métricas, logs estruturados e tracing distribuído — centralizados em dashboards no Grafana com alertas configurados
 - 📄 **Relatórios em PDF** gerados sob demanda para auditoria e conformidade
 - 🔔 **Notificações em tempo real** via SSE (Server-Sent Events) para alertas de estoque crítico
 - 🌐 **Arquitetura em contêineres** com 14 serviços orquestrados via Docker Compose, isolados em rede interna, prontos para deploy em cloud
@@ -40,11 +41,146 @@ Diferente de planilhas ou ERPs genéricos, o StockFlow oferece:
 
 ---
 
-## 🏗️ Arquitetura do Ecossistema
+## 🏗️ Arquitetura da Solução
 
-O StockFlow é composto por **14 contêineres Docker** que se comunicam em uma rede interna isolada (`stockflow-network`), orquestrados via Docker Compose. A aplicação frontend Angular é servida em desenvolvimento local ou empacotada e distribuída via Nginx em produção.
+O StockFlow segue uma arquitetura de **três camadas lógicas** com comunicação segura via OAuth2/OIDC e deploy em contêineres:
 
-### 🔷 Visão Geral dos Contêineres
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        CAMADA DE APRESENTAÇÃO                        │
+│                                                                      │
+│  ┌──────────────────────────────┐    ┌────────────────────────────┐  │
+│  │   Angular 21 SPA             │    │   Nginx (produção)         │  │
+│  │   • Lazy Loading (8 módulos) │    │   • Proxy reverso          │  │
+│  │   • Angular Material UI      │    │   • SSL/TLS (Let's Encrypt)│  │
+│  │   • Route Guards (auth+role) │    │   • Rate limiting          │  │
+│  │   • HTTP Interceptors (JWT)  │    │   • Serve arquivos staticos│  │
+│  └──────────────┬───────────────┘    └─────────────┬──────────────┘  │
+│                 │                                  │                 │
+└─────────────────┼──────────────────────────────────┼─────────────────┘
+                  │                                  │
+          dev: localhost:4200              prod: api.stockflow...
+                  │                                  │
+┌─────────────────┼──────────────────────────────────┼─────────────────┐
+│                 │        CAMADA DE SERVIÇOS        │                 │
+│                 ▼                                  ▼                 │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │                    StockFlow API (Spring Boot 4.0)           │    │
+│  │                    WebFlux · R2DBC · Reactor Kafka · SSE    │    │
+│  │                                                              │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐  │    │
+│  │  │ Users    │ │ Products │ │ Stocks   │ │ Suppliers     │  │    │
+│  │  │ Service  │ │ Service  │ │ Service  │ │ Service       │  │    │
+│  │  └──────────┘ └──────────┘ └──────────┘ └───────────────┘  │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐  │    │
+│  │  │Category  │ │Movement  │ │Dashboard │ │Notification   │  │    │
+│  │  │ Service  │ │ Service  │ │ Service  │ │ Service       │  │    │
+│  │  └──────────┘ └──────────┘ └──────────┘ └───────────────┘  │    │
+│  │                                                              │    │
+│  │  ┌──────────────────────────────────────────────────────┐    │    │
+│  │  │  KeycloakService (Admin Client)                       │    │    │
+│  │  │  • Client Credentials Grant → Service Account         │    │    │
+│  │  │  • Gerencia roles de usuários no Keycloak            │    │    │
+│  │  │  • Isolado em Schedulers.boundedElastic()            │    │    │
+│  │  └──────────────────────────────────────────────────────┘    │    │
+│  └──────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   │
+┌──────────────────────────────────┼──────────────────────────────────┐
+│                    CAMADA DE INFRAESTRUTURA                          │
+│                                                                      │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │ Keycloak │ │ Postgres │ │  Kafka   │ │Dragonfly │ │  Nginx   │  │
+│  │  :6062   │ │  :6061   │ │  :6063   │ │  :6070   │ │ :80/:443 │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Prometheus│ │  Loki    │ │  Zipkin  │ │ Grafana  │ │AlertMgr  │  │
+│  │  :6065   │ │  :6067   │ │  :6068   │ │  :6066   │ │  :6069   │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+│                                                                      │
+│  Todos isolados na rede Docker interna: stockflow-network            │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔷 Como as três peças se comunicam
+
+O StockFlow é uma aplicação **OAuth2-native**. Toda comunicação entre o frontend, o backend e os serviços de infraestrutura passa pelo Keycloak como autoridade central de identidade.
+
+#### 1. Frontend (Angular) ↔ Keycloak
+
+O frontend **nunca manipula credenciais**. Todo o fluxo de autenticação é delegado:
+
+```
+Usuário → Angular SPA → redireciona para Keycloak → tela de login
+                                                         │
+                                    ┌────────────────────┘
+                                    ▼
+                        Keycloak valida credenciais
+                        Emite JWT (Access + Refresh Token)
+                                    │
+                                    ▼
+                        Angular armazena tokens em memória
+                        (keycloak-angular + keycloak-js)
+```
+
+- **Biblioteca**: `keycloak-angular` — encapsula o fluxo OAuth2 Authorization Code com PKCE
+- **Route Guards**: `AuthGuard` (exige autenticação) → `RoleGuard` (exige role mínima)
+- **HTTP Interceptor**: anexa automaticamente `Authorization: Bearer <jwt>` em todas as requisições
+- **Roles no JWT**: claims `realm_access.roles` (ex: `["employee", "manager"]`) + `resource_access.stock-flow-app.roles`
+
+#### 2. Backend (Spring Boot) ↔ Keycloak
+
+O backend usa **duas formas distintas** de interagir com o Keycloak:
+
+| Modo | Tipo de Token | Propósito |
+|---|---|---|
+| **Resource Server** | Valida JWT do usuário final | Autorizar requisições HTTP (Spring Security) |
+| **Admin Client** | Client Credentials (Service Account) | Gerenciar roles de usuários (server-to-server) |
+
+**Resource Server** — A cada requisição, o Spring Security:
+1. Extrai o JWT do header `Authorization`
+2. Valida a assinatura RS256 contra o JWKS endpoint do Keycloak
+3. Extrai roles do claim `realm_access` + `resource_access`
+4. Converte para `GrantedAuthority` com prefixo `ROLE_` (ex: `ROLE_MANAGER`)
+5. Aplica as regras do `SecurityWebFilterChain` (`.hasRole("MANAGER")`, etc.)
+
+**Admin Client** — Quando um Manager promove um usuário:
+1. `KeycloakService` autentica com `client_id` + `client_secret` (Client Credentials)
+2. Obtém um token de acesso administrativo
+3. Chama a Admin REST API do Keycloak para atribuir/remover realm roles
+4. Tudo roda em `Schedulers.boundedElastic()` para não bloquear o event loop
+
+#### 3. Frontend ↔ Backend
+
+Toda comunicação é via **REST/JSON sobre HTTPS**, autenticada com JWT:
+
+```
+Angular (HttpClient + Interceptor)
+    │
+    │  GET/POST/PUT/PATCH/DELETE
+    │  Authorization: Bearer <jwt>
+    │  Content-Type: application/json
+    │
+    ▼
+Spring Boot (WebFlux Controllers)
+    │
+    │  Spring Security valida JWT → extrai roles
+    │  Controller delega para Service
+    │  Service executa lógica de negócio
+    │  Repository (R2DBC) persiste no PostgreSQL
+    │
+    ▼
+Resposta JSON (Mono<T> ou Flux<T>)
+```
+
+**Canais especiais:**
+- **SSE (Server-Sent Events)**: `GET /api/v1/notifications/stream` — stream unidirecional de notificações em tempo real. O Nginx é configurado com `proxy_buffering off` para essa rota.
+- **PDF**: `GET /api/v1/products/report` e `GET /api/v1/stocks/report` — geração server-side com OpenPDF, retorna `application/pdf`.
+
+---
+
+### 🔷 Diagrama de Contêineres (Mermaid)
 
 ```mermaid
 graph TB
@@ -180,13 +316,13 @@ Instância dedicada e isolada para os dados de identidade do Keycloak (realms, c
 |----------|-------|
 | **Imagem** | `quay.io/keycloak/keycloak:26.0` |
 | **Porta** | `6062` |
-| **Tema Customizado** | `themes/stockflow` (branding próprio) |
+| **Tema Customizado** | `infra/keycloak/themes/stockflow` (branding próprio) |
 
 Servidor IAM completo com:
 - **Realm dedicado:** `stock-flow-realm`
-- **Client OAuth2:** `stock-flow-app` (frontend) e `stock-flow-api` (backend)
-- **RBAC:** Roles `USER`, `MANAGER`, `ADMIN` mapeadas nos claims JWT
-- **Fluxo:** Authorization Code (frontend) + Client Credentials (backend admin)
+- **Clients OAuth2:** `stock-flow-app` (frontend, público) e `stock-flow-api` (backend, confidencial com Service Account)
+- **RBAC:** Roles `employee`, `manager`, `admin` mapeadas nos claims JWT
+- **Fluxo:** Authorization Code + PKCE (frontend) + Client Credentials (backend admin)
 - **Integração:** Frontend autentica via `keycloak-angular`, backend valida JWTs via Spring Security OAuth2 Resource Server (JWKS)
 
 #### 🚌 Apache Kafka — Mensageria
@@ -208,7 +344,7 @@ Substituto drop-in do Redis com performance superior. Armazena:
 - **Cache de dashboards** com TTL de 30 minutos (métricas de estoque, movimentações e fornecedores)
 - **Serialização JSON** via `GenericJacksonJsonRedisSerializer` com ObjectMapper customizado
 
-#### 🔭 Stack de Observabilidade — LGTM (Loki, Grafana, Tempo/Mimir, Prometheus)
+#### 🔭 Stack de Observabilidade — LGTM + Zipkin
 
 | Contêiner | Porta | Função |
 |-----------|-------|--------|
@@ -231,7 +367,172 @@ Proxy reverso com:
 - **Rate limiting** (`limit_req`) com burst de 20 requisições
 - **Gzip** habilitado para JSON, CSS e JavaScript
 - **Headers de segurança:** `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`
-- **Timeouts** configurados: 60s para connect, send e read
+- **Roteamento especializado**: `/auth/` → Keycloak, `/api/v1/notifications/stream` → SSE sem buffering, demais rotas → API
+
+---
+
+## ☁️ Infraestrutura e Deploy
+
+> O StockFlow é implantado em uma instância **AWS EC2 t3.medium** (2 vCPU, 4 GB RAM) rodando **Ubuntu 24.04 LTS**, utilizando **Docker Compose** como orquestrador de contêineres em produção.
+
+### 🔷 Arquitetura de Produção
+
+```
+                              Internet
+                                  │
+                                  ▼
+                         ┌────────────────┐
+                         │   Cloudflare   │
+                         │  (DNS + Proxy) │
+                         └───────┬────────┘
+                                 │
+                                 ▼
+                   ┌─────────────────────────────────┐
+                   │  AWS EC2 — t3.medium (4 GB RAM) │
+                   │  Ubuntu 24.04 LTS               │
+                   │                                 │
+                   │  ┌───────────────────────────┐  │
+                   │  │  Nginx :80 / :443         │  │
+                   │  │  • Proxy reverso          │  │
+                   │  │  • SSL via Certbot        │  │
+                   │  │  • Rate limiting (10 r/s) │  │
+                   │  │  • SSE pass-through       │  │
+                   │  └──────────┬────────────────┘  │
+                   │             │                   │
+                   │  ┌──────────▼────────────────┐  │
+                   │  │  stockflow-api :6060       │  │
+                   │  │  • Imagem Docker Hub       │  │
+                   │  │  • -Xmx350m (JVM)          │  │
+                   │  │  • Profile: docker          │  │
+                   │  └──────────┬────────────────┘  │
+                   │             │                   │
+                   │  ┌──────────▼────────────────┐  │
+                   │  │  Docker Compose Network    │  │
+                   │  │  ┌───────┐ ┌───────────┐  │  │
+                   │  │  │  PG   │ │ Keycloak  │  │  │
+                   │  │  │ 200MB │ │  400MB    │  │  │
+                   │  │  └───────┘ └───────────┘  │  │
+                   │  │  ┌───────┐ ┌───────────┐  │  │
+                   │  │  │ Kafka │ │DragonflyDB│  │  │
+                   │  │  │ 400MB │ │  700MB    │  │  │
+                   │  │  └───────┘ └───────────┘  │  │
+                   │  └───────────────────────────┘  │
+                   └─────────────────────────────────┘
+```
+
+### 🔷 Por que Docker Compose em produção?
+
+A escolha por Docker Compose (em vez de Kubernetes ou ECS) é deliberada:
+
+| Critério | Motivo |
+|---|---|
+| **Escala do projeto** | Aplicação monolítica com serviços de suporte — não requer orquestração de múltiplas réplicas |
+| **Simplicidade operacional** | `docker compose up -d` vs. dezenas de manifests YAML ou configurações de cloud |
+| **Custo** | Uma única EC2 t3.medium (~$30/mês reservada) vs. ECS/EKS que exigiriam load balancers, NAT gateways e múltiplas AZs |
+| **Portabilidade** | Mesmo `docker-compose.yml` (com overrides) roda localmente e em produção — sem vendor lock-in |
+| **Resource limits** | O Compose v2 suporta `deploy.resources.limits.memory` para controle preciso por contêiner |
+
+### 🔷 Limites de Recursos (EC2 t3.medium — 4 GB RAM)
+
+Cada contêiner tem limites de memória definidos no `docker-compose.prod.yml`:
+
+| Serviço | Limite de Memória | JVM / Runtime | Justificativa |
+|---|---|---|---|
+| **stockflow-api** | 450 MB | `-Xmx350m` + overhead Netty | Heap de 350 MB + metaspace + threads Netty |
+| **PostgreSQL (app)** | 200 MB | `shared_buffers` padrão | Apenas uma aplicação conectada |
+| **PostgreSQL (Keycloak)** | 150 MB | `shared_buffers` padrão | Uso leve: users, roles, sessions |
+| **Keycloak** | 400 MB | Quarkus JVM | Overhead do Quarkus + cache de sessões |
+| **Kafka** | 400 MB | `-Xmx256m` | Broker único em modo KRaft |
+| **DragonflyDB** | 700 MB | `--maxmemory=600mb` | Cache 100% em memória |
+| **Nginx** | 50 MB | — | Proxy reverso leve, sem caching de arquivos |
+
+> **Total alocado:** ~2.35 GB para contêineres, restando ~1.65 GB para o sistema operacional, buffers de I/O e folga para picos.
+
+### 🔷 Estrutura de Diretórios na EC2
+
+```
+/home/ubuntu/stockflow/
+├── docker-compose.prod.yml         # Compose de produção com resource limits
+├── .env                             # Variáveis sensíveis (não versionado)
+├── infra/
+│   ├── nginx/
+│   │   └── conf.d/
+│   │       ├── stockflow.conf       # Virtual host + proxy reverso + SSL
+│   │       └── nginx.conf           # Configuração global do Nginx
+│   └── keycloak/
+│       └── themes/
+│           └── stockflow/           # Tema customizado do login
+└── certbot/
+    └── www/                         # Desafios HTTP do Let's Encrypt
+```
+
+### 🔷 Configuração do Nginx em Produção
+
+O Nginx atua como **ponto único de entrada**, roteando tráfego por path:
+
+```
+                    ┌──────────────────────────────┐
+                    │  Nginx (api.stockflow...)     │
+                    │                              │
+  /auth/* ──────────┤  proxy_pass → keycloak:8080  │
+  /api/v1/notifi    │                              │
+    cations/stream ─┤  proxy_pass → api:6060       │
+                    │  (proxy_buffering off)        │
+  /* ───────────────┤  proxy_pass → api:6060       │
+                    │  (rate limit: 10 r/s)         │
+                    └──────────────────────────────┘
+```
+
+**Destaques da configuração:**
+- **SSL/TLS**: Certificados Let's Encrypt renovados automaticamente via Certbot
+- **SSE pass-through**: Rota `/api/v1/notifications/stream` com `proxy_buffering off` para streaming em tempo real
+- **Rate limiting**: 10 requisições/segundo com burst de 20 — proteção contra brute-force sem impactar usuários legítimos
+- **Resolver interno**: Usa o DNS do Docker (`127.0.0.11`) para resolver hostnames dos contêineres
+
+### 🔷 docker-compose.prod.yml — Diferenças do Ambiente Local
+
+| Recurso | Local (dev) | Produção (EC2) |
+|---|---|---|
+| **stockflow-api** | `build: .` (build local) | `image: gustavosdaniel/stockflow-api:latest` (Docker Hub) |
+| **Keycloak** | `start-dev` | `start --proxy-headers forwarded` com `KC_HOSTNAME` |
+| **Keycloak path** | `/` | `/auth` (HTTP relative path) |
+| **Nginx** | Sem SSL (dev local) | Com SSL (Certbot + Let's Encrypt) |
+| **Resource limits** | Não configurados | `deploy.resources.limits.memory` em todos os serviços |
+| **Kafka UI** | Presente (`:6064`) | Removido (não exposto em produção) |
+| **Grafana / Prometheus** | Presente | Removido (stack de observabilidade separada) |
+| **Loki / Promtail** | Presente | Desativado (`LOKI_URL=http://desativado`) |
+| **Zipkin** | Presente | Removido (tracing desativado em produção) |
+| **JVM da API** | Sem limites | `JAVA_OPTS=-Xmx350m -Xms200m` |
+| **CORS** | `localhost:4200` | `stockflow.gustavosdaniel.com` |
+
+### 🔷 Fluxo de Deploy
+
+```bash
+# 1. Build local da imagem (no diretório stockflow-api/)
+./mvnw clean package -DskipTests
+docker build -t gustavosdaniel/stockflow-api:latest .
+
+# 2. Push para o Docker Hub
+docker push gustavosdaniel/stockflow-api:latest
+
+# 3. Na EC2: pull da nova imagem e restart
+ssh ubuntu@api.stockflow.gustavosdaniel.com
+cd /home/ubuntu/stockflow
+docker compose -f docker-compose.prod.yml pull stockflow-api
+docker compose -f docker-compose.prod.yml up -d stockflow-api
+
+# 4. Verificar health
+curl -s https://api.stockflow.gustavosdaniel.com/actuator/health | jq .
+```
+
+### 🔷 Domínios e Rotas em Produção
+
+| URL | Serviço | Acesso |
+|---|---|---|
+| `https://stockflow.gustavosdaniel.com` | Frontend Angular (SPA) | Público |
+| `https://api.stockflow.gustavosdaniel.com/*` | StockFlow API REST | Público (autenticado) |
+| `https://api.stockflow.gustavosdaniel.com/auth/*` | Keycloak (login e admin) | Público |
+| `https://api.stockflow.gustavosdaniel.com/swagger-ui.html` | Swagger UI | Público |
 
 ---
 
@@ -276,6 +577,7 @@ Rede externa (host)              Rede interna (stockflow-network)
 
 - **Docker** `24+` e **Docker Compose** `2.20+`
 - **Node.js** `20+` e **npm** `10+` (apenas para desenvolvimento do frontend)
+- **Java 21** e **Maven** (apenas para desenvolvimento do backend)
 - **Git**
 
 ### 1. Clone o repositório
@@ -285,12 +587,35 @@ git clone git@github.com:GustavoSDaniel/StockFlow.git
 cd StockFlow
 ```
 
-### 2. Configure o ambiente
+### 2. Configure as variáveis de ambiente
 
 ```bash
 cd stockflow-api
 cp variaveis-de-ambiente.example.env .env
 # Edite o .env com suas credenciais (as padrão já funcionam para dev local)
+```
+
+Variáveis essenciais no `.env`:
+
+```bash
+# Banco de Dados da Aplicação
+POSTGRES_DB=db_stockflow
+POSTGRES_USER=gustavo
+POSTGRES_PASSWORD=uma_senha_forte
+
+# Banco de Dados do Keycloak
+KEYCLOAK_DB=keycloak
+KEYCLOAK_DB_USER=keycloak
+KEYCLOAK_DB_PASSWORD=uma_senha_forte
+
+# Admin do Keycloak
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin
+
+# Realm e Service Account (Client Credentials)
+KEYCLOAK_REALM=stock-flow-realm
+KEYCLOAK_CLIENT_ID=stock-flow-api
+KEYCLOAK_CLIENT_SECRET=seu_client_secret_aqui
 ```
 
 ### 3. Suba toda a stack backend + infra
@@ -319,13 +644,38 @@ docker compose up -d
 ✔ Container nginx               Started
 ```
 
-### 4. (Opcional) Inicie o frontend Angular
+### 4. Configure o Keycloak (primeira execução)
+
+Após subir a stack pela primeira vez:
+
+1. Acesse **http://localhost:6062** com `admin` / `admin`
+2. Crie o realm **`stock-flow-realm`**
+3. Crie o client **`stock-flow-app`** (público, Standard Flow + Direct Access Grants)
+4. Crie o client **`stock-flow-api`** (confidencial, Service Account + Authorization)
+5. Atribua as Service Account Roles: `realm-management` → `manage-users`, `view-users`, `view-realm`
+6. Em **Realm Roles**, crie: `employee`, `manager`, `admin`
+7. Copie o **Client Secret** do `stock-flow-api` para o `.env` e reinicie a API
+
+### 5. (Opcional) Inicie o frontend Angular
 
 ```bash
 cd ../stockflow-frontend
 npm install
 npm start
 # Acesse: http://localhost:4200
+```
+
+### 6. Verifique os serviços
+
+```bash
+# Health check da API
+curl http://localhost:6060/actuator/health
+
+# Métricas Prometheus
+curl http://localhost:6060/actuator/prometheus | head -20
+
+# Status de todos os contêineres
+docker compose ps
 ```
 
 ---
@@ -345,19 +695,6 @@ npm start
 | **Zipkin** | `6068` | http://localhost:6068 | — |
 | **AlertManager** | `6069` | http://localhost:6069 | — |
 | **PostgreSQL (app)** | `6061` | `localhost:6061` | Definido no `.env` |
-
-### Verificação rápida
-
-```bash
-# Health check da API
-curl http://localhost:6060/actuator/health
-
-# Métricas Prometheus
-curl http://localhost:6060/actuator/prometheus | head -20
-
-# Status Docker
-docker compose ps
-```
 
 ---
 
@@ -423,80 +760,86 @@ sequenceDiagram
 
 ---
 
-## 📸 Screenshots
-
-### 🎨 Painel Administrativo
-
-<div align="center">
-
-![Página Principal do StockFlow](screenshots/pagina_principal.jpeg)
-
-*Tela principal do sistema StockFlow — gestão completa de estoque, produtos, fornecedores e dashboards analíticos.*
-
-</div>
-
-### 📊 Observabilidade & Testes de Carga
-
-> *Espaço reservado para capturas dos dashboards Grafana, tracing no Zipkin e resultados de teste de carga com k6.*
-
-| | |
-|---|---|
-| **Métricas da API (Prometheus)** | **Logs Estruturados (Loki)** |
-| *Área reservada para screenshot* | *Área reservada para screenshot* |
-| **Tracing Distribuído (Zipkin)** | **Grafana durante teste de estresse** |
-| *Área reservada para screenshot* | *Área reservada para screenshot* |
-
----
-
 ## 🧱 Estrutura do Repositório
 
 ```
-StockFlow/                           # 🏭 Raiz do monorepo
-├── README.md                        # 👈 Você está aqui
-├── LICENSE                          # Apache 2.0
+StockFlow/                                  # 🏭 Raiz do monorepo
+├── README.md                               # 👈 Documentação arquitetural central
+├── LICENSE                                 # Apache 2.0
+├── .github/                                # Templates de PR e CI
+├── screenshots/                            # Capturas de tela do sistema
 │
-├── stockflow-api/                   # ⚡ Backend Java (Spring Boot)
-│   ├── pom.xml                      # Maven — 25+ dependências
-│   ├── docker-compose.yml           # 14 contêineres orquestrados
-│   ├── dockerfile                   # Build multi-stage (Maven → JRE)
-│   ├── teste-carga.js               # Script k6 para estresse
-│   ├── docker/                      # Configs da stack de observabilidade
-│   │   ├── prometheus/              # prometheus.yml + alerts.yml
-│   │   ├── promtail/                # promtail.yml
-│   │   ├── grafana/provisioning/    # Dashboards e datasources
-│   │   └── alertmanager/            # alertmanager.yml
-│   ├── nginx/                       # Reverse proxy (SSL, rate limit)
-│   ├── themes/stockflow/            # Tema customizado Keycloak
-│   └── src/main/java/.../           # Código-fonte (35+ classes)
-│       ├── config/                  # Security, R2DBC, Kafka, Cache, etc.
-│       ├── controller/              # 8 Controllers REST reativos
-│       ├── service/                 # 12 Services de negócio
-│       ├── repository/              # 10 Repositories R2DBC
-│       └── messaging/               # Kafka (producer, consumer, outbox)
+├── stockflow-api/                          # ⚡ Backend Java (Spring Boot 4.0)
+│   ├── pom.xml                             # Maven — 25+ dependências
+│   ├── docker-compose.yml                  # 14 contêineres orquestrados (dev)
+│   ├── dockerfile                          # Build multi-stage (Maven → JRE 21)
+│   ├── teste-carga.js                      # Script k6 para estresse
+│   ├── .env.example                        # Template de variáveis de ambiente
+│   ├── README.md                           # 📘 Documentação detalhada da API
+│   ├── nginx/
+│   │   └── conf.d/                         # Configurações do Nginx (dev)
+│   ├── docker/
+│   │   ├── prometheus/                     # prometheus.yml + alerts.yml
+│   │   ├── promtail/                       # promtail.yml
+│   │   ├── grafana/provisioning/           # Dashboards e datasources
+│   │   └── alertmanager/                   # alertmanager.yml
+│   ├── themes/stockflow/                   # Tema customizado Keycloak (dev)
+│   ├── infra/                              # 🏗️ Infraestrutura de produção
+│   │   ├── ec2/
+│   │   │   └── docker-compose.prod.yml     # Compose de produção com resource limits
+│   │   ├── nginx/
+│   │   │   └── conf.d/
+│   │   │       ├── stockflow.conf          # Virtual host + SSL + rate limit
+│   │   │       └── nginx.conf              # Configuração global (sem SSL, dev remoto)
+│   │   └── keycloak/
+│   │       └── themes/
+│   │           └── stockflow/              # Tema customizado (produção)
+│   │               ├── theme.properties
+│   │               └── login/
+│   │                   ├── login.ftl       # Página de login customizada
+│   │                   ├── register.ftl    # Página de registro customizada
+│   │                   ├── theme.properties
+│   │                   └── resources/
+│   │                       └── css/
+│   └── src/main/java/.../stock_flow_api/  # Código-fonte (35+ classes)
+│       ├── config/                         # Security, R2DBC, Kafka, Cache, etc.
+│       ├── controller/                     # 8 Controllers REST reativos
+│       ├── service/                        # 12 Services de negócio
+│       ├── repository/                     # 10 Repositories R2DBC
+│       ├── domain/                         # DTOs, entidades, enums, mappers
+│       ├── exception/                      # Exceções de domínio + Global Handler
+│       ├── messaging/                      # Kafka (producer, consumer, outbox)
+│       ├── client/                         # ViaCEP HTTP client (WebClient)
+│       └── util/                           # SKU generator, PDF, cache keys
 │
-└── stockflow-frontend/              # 🎨 Frontend SPA (Angular 21)
-    ├── package.json                 # Angular 21, Material, Keycloak
-    ├── angular.json                 # Angular CLI config
+└── stockflow-frontend/                     # 🎨 Frontend SPA (Angular 21)
+    ├── package.json                        # Angular 21, Material, Keycloak, Vitest
+    ├── angular.json                        # Angular CLI config
+    ├── README.md                           # 📘 Documentação detalhada do frontend
     └── src/app/
-        ├── core/                    # Auth, HTTP interceptors, models, services
-        ├── features/                # 8 módulos com Lazy Loading
-        │   ├── dashboard/           # 4 dashboards analíticos
-        │   ├── products/            # CRUD completo de produtos
-        │   ├── stocks/              # Gestão de estoque e movimentações
-        │   ├── suppliers/           # Fornecedores e contatos
-        │   ├── categories/          # Categorias hierárquicas
-        │   ├── users/               # Administração de usuários
-        │   ├── notifications/       # Central de notificações
-        │   └── landing/             # Landing page pública
-        └── shared/                  # Componentes reutilizáveis (DataTable, etc.)
+        ├── core/                           # Auth, HTTP interceptors, models, services
+        ├── features/                       # 8 módulos com Lazy Loading
+        │   ├── dashboard/                  # 4 dashboards analíticos
+        │   ├── products/                   # CRUD completo de produtos
+        │   ├── stocks/                     # Gestão de estoque e movimentações
+        │   ├── suppliers/                  # Fornecedores e contatos
+        │   ├── categories/                 # Categorias hierárquicas
+        │   ├── users/                      # Administração de usuários
+        │   ├── notifications/              # Central de notificações
+        │   └── landing/                    # Landing page pública
+        └── shared/                         # Componentes reutilizáveis (DataTable, etc.)
 ```
 
 ---
 
 ## 📚 Leitura Complementar
 
-- [📦 StockFlow API — Documentação completa do backend](stockflow-api/README.md)
-- [🎨 StockFlow Frontend — Documentação do painel administrativo](stockflow-frontend/README.md)
+Cada componente do ecossistema possui seu próprio README com documentação aprofundada:
+
+| Documento | Conteúdo |
+|---|---|
+| [📦 **StockFlow API — README**](stockflow-api/README.md) | Arquitetura do backend, segurança (OAuth2, JWT, Service Account), stack reativa, observabilidade, endpoints da API, deploy e configuração do Keycloak |
+| [🎨 **StockFlow Frontend — README**](stockflow-frontend/README.md) | Arquitetura Angular, lazy loading, guards e interceptors, componentes compartilhados, testes com Vitest e guia de desenvolvimento |
 
 ---
 
@@ -510,7 +853,7 @@ Este projeto está licenciado sob a **Apache License 2.0**. Consulte o arquivo [
 
 **StockFlow** — Do estoque ao insight, em tempo real.
 
-Feito com por **[Gustavo Silva Daniel](mailto:gustavosdaniel@hotmail.com)**
+Feito por **[Gustavo Silva Daniel](mailto:gustavosdaniel@hotmail.com)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-GustavoSDaniel-181717?style=flat-square&logo=github)](https://github.com/GustavoSDaniel)
 
