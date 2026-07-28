@@ -381,15 +381,9 @@ Proxy reverso com:
                               Internet
                                   │
                                   ▼
-                         ┌────────────────┐
-                         │   Cloudflare   │
-                         │  (DNS + Proxy) │
-                         └───────┬────────┘
-                                 │
-                                 ▼
                    ┌─────────────────────────────────┐
-                   │  AWS EC2 — t3.medium (4 GB RAM) │
-                   │  Ubuntu 24.04 LTS               │
+                   │  AWS EC2 — t3.micro (1 GB RAM) │
+                   │  Ubuntu 26.00 LTS               │
                    │                                 │
                    │  ┌───────────────────────────┐  │
                    │  │  Nginx :80 / :443         │  │
@@ -420,19 +414,8 @@ Proxy reverso com:
                    └─────────────────────────────────┘
 ```
 
-### 🔷 Por que Docker Compose em produção?
 
-A escolha por Docker Compose (em vez de Kubernetes ou ECS) é deliberada:
-
-| Critério | Motivo |
-|---|---|
-| **Escala do projeto** | Aplicação monolítica com serviços de suporte — não requer orquestração de múltiplas réplicas |
-| **Simplicidade operacional** | `docker compose up -d` vs. dezenas de manifests YAML ou configurações de cloud |
-| **Custo** | Uma única EC2 t3.medium (~$30/mês reservada) vs. ECS/EKS que exigiriam load balancers, NAT gateways e múltiplas AZs |
-| **Portabilidade** | Mesmo `docker-compose.yml` (com overrides) roda localmente e em produção — sem vendor lock-in |
-| **Resource limits** | O Compose v2 suporta `deploy.resources.limits.memory` para controle preciso por contêiner |
-
-### 🔷 Limites de Recursos (EC2 t3.medium — 4 GB RAM)
+### 🔷 Limites de Recursos (EC2 t3.micro — 1 GB RAM)
 
 Cada contêiner tem limites de memória definidos no `docker-compose.prod.yml`:
 

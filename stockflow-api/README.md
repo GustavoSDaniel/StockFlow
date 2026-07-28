@@ -452,12 +452,6 @@ open http://localhost:6062
                               Internet
                                   │
                                   ▼
-                         ┌────────────────┐
-                         │   Cloudflare   │
-                         │  (DNS + Proxy) │
-                         └───────┬────────┘
-                                 │
-                                 ▼
                    ┌─────────────────────────┐
                    │  AWS EC2 (t3.medium)    │
                    │  Ubuntu 24.04 LTS       │
@@ -500,8 +494,6 @@ open http://localhost:6062
 │       └── stockflow/          # Tema customizado do login
 ├── certbot/
 │   └── www/                    # Desafios HTTP do Let's Encrypt
-└── backup/
-    └── postgres/               # Scripts de backup do banco
 ```
 
 ### docker-compose.prod.yml (principais diferenças do ambiente local)
@@ -516,7 +508,7 @@ open http://localhost:6062
 | **Grafana/Prometheus** | Presente | Removido (stack de observabilidade separada) |
 | **Loki/Promtail** | Presente | Desativado (logs vão para o CloudWatch) |
 
-### Limites de Recursos (EC2 t3.medium — 4 GB RAM)
+### Limites de Recursos (EC2 t3.micro — 1 GB RAM)
 
 | Serviço | Limite de Memória | Justificativa |
 |---|---|---|
