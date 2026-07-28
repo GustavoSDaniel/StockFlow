@@ -83,29 +83,29 @@ jobs:
             --parameters '{
               "commands": [
                 "cd /home/ubuntu/infra && git pull origin main",
-                "cd /home/ubuntu/infra/ec2 && docker compose -f docker-compose.prod.yml pull stockflow-api",
-                "cd /home/ubuntu/infra/ec2 && docker compose -f docker-compose.prod.yml up -d --force-recreate stockflow-api nginx",
+                "cd /home/ubuntu/infra/stockflow-api/infra/ec2 && docker compose -f docker-compose.prod.yml pull stockflow-api",
+                "cd /home/ubuntu/infra/stockflow-api/infra/ec2 && docker compose -f docker-compose.prod.yml up -d --force-recreate stockflow-api nginx",
                 "docker image prune -f"
               ]
             }' \
             --output text \
             --query "Command.CommandId")
-          
+
           echo "Aguardando comando SSM $COMMAND_ID..."
-          
+
           aws ssm wait command-executed \
             --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
             --command-id "$COMMAND_ID"
-          
+
           STATUS=$(aws ssm list-command-invocations \
             --instance-id "${{ secrets.AWS_SSM_INSTANCE_ID }}" \
             --command-id "$COMMAND_ID" \
             --details \
             --query "CommandInvocations[0].Status" \
             --output text)
-          
+
           echo "Status do deploy: $STATUS"
-          
+
           if [ "$STATUS" != "Success" ]; then
             echo "❌ Deploy falhou!"
             aws ssm list-command-invocations \
@@ -116,5 +116,5 @@ jobs:
               --output text
             exit 1
           fi
-          
+
           echo "✅ Deploy concluído com sucesso!"
