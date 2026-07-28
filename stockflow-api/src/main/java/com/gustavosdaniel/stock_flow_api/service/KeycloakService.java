@@ -71,8 +71,12 @@ public class KeycloakService {
             }
 
 
-            RoleRepresentation roleToAdd = new RoleRepresentation();
-            roleToAdd.setName(newRole.name());
+            RoleRepresentation roleToAdd = realmResource.roles().list().stream()
+                    .filter(r -> r.getName().equalsIgnoreCase(newRole.name()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Role '" + newRole.name() + "' não encontrada no realm Keycloak. "
+                                    + "Certifique-se de que a role existe no painel do Keycloak (Realm Roles)."));
 
             userResource.roles().realmLevel().add(Collections.singletonList(roleToAdd));
 
