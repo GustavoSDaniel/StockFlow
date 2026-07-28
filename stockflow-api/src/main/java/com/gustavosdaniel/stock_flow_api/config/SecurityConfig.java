@@ -1,6 +1,5 @@
 package com.gustavosdaniel.stock_flow_api.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -21,7 +20,6 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -29,11 +27,11 @@ import java.util.Map;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Value("${api.cors.allowed-origins:http://localhost:4200,https://stockflow.gustavosdaniel.com}")
-    private String allowedOriginsString;
+    private final CorsProperties corsProperties;
 
-    @Value("${api.cors.max-age:3600}")
-    private Long corsMaxAge;
+    public SecurityConfig(CorsProperties corsProperties) {
+        this.corsProperties = corsProperties;
+    }
 
     public static final String[] PUBLIC_URLS = {
 
@@ -191,11 +189,7 @@ public class SecurityConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> origins = Arrays.stream(allowedOriginsString.split(","))
-                .map(String::trim)
-                .toList();
-
-        configuration.setAllowedOriginPatterns(origins);
+        configuration.setAllowedOriginPatterns(corsProperties.getAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of(
@@ -203,7 +197,7 @@ public class SecurityConfig {
                 HttpHeaders.CONTENT_TYPE,
                 HttpHeaders.CONTENT_DISPOSITION));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(corsMaxAge);
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -219,15 +213,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> origins = Arrays.stream(allowedOriginsString.split(","))
-                .map(String::trim)
-                .toList();
-
-        configuration.setAllowedOriginPatterns(origins);
+        configuration.setAllowedOriginPatterns(corsProperties.getAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(corsMaxAge);
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
