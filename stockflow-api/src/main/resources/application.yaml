@@ -53,10 +53,12 @@ spring:
       properties:
         spring.json.trusted.packages: "com.gustavosdaniel.stock_flow_api.messaging.event"
 
-  api:
-    cors:
-      allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200,https://stockflow.gustavosdaniel.com}
-      max-age: ${CORS_MAX_AGE:3600}
+api:
+  cors:
+    allowed-origins:
+      - http://localhost:4200
+      - https://stockflow.gustavosdaniel.com
+    max-age: ${CORS_MAX_AGE:3600}
 
 inventory:
   kafka:
@@ -113,4 +115,3 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-
