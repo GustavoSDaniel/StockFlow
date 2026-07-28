@@ -15,6 +15,9 @@ import reactor.core.scheduler.Schedulers;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Service for communicating with the Keycloak Admin API to manage user realm roles.
+ */
 @Service
 public class KeycloakService {
 
@@ -28,6 +31,14 @@ public class KeycloakService {
         this.realm = realm;
     }
 
+    /**
+     * Replaces the current realm roles of a Keycloak user with the given role.
+     * Existing roles that match a {@link UserRole} enum value are removed first.
+     *
+     * @param keycloakUserId the Keycloak user ID
+     * @param newRole        the role to assign
+     * @return a Mono that completes when the role update is persisted in Keycloak
+     */
     public Mono<Void> updateUserRoleInKeycloak(String keycloakUserId, UserRole newRole){
 
         return Mono.fromRunnable(() -> {

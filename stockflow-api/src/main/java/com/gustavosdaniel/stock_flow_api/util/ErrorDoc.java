@@ -8,6 +8,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * In-memory catalog of error documentation entries used by the API's
+ * error response format.
+ * <p>
+ * Each entry maps an error key (e.g. {@code "validacao"}, {@code "nao-autorizado"})
+ * to an {@link ErrorDocResponse} containing a title, description, example, hint,
+ * and HTTP status code. Consumers can look up an error by key to enrich
+ * error responses with human-readable details.
+ * </p>
+ */
 @Component
 public class ErrorDoc {
 
@@ -124,11 +134,22 @@ public class ErrorDoc {
         ));
     }
 
-    public  Map<String, ErrorDocResponse> findAll(){
+    /**
+     * Returns an unmodifiable view of all error documentation entries.
+     *
+     * @return a map of error keys to {@link ErrorDocResponse} entries
+     */
+    public Map<String, ErrorDocResponse> findAll(){
         return Collections.unmodifiableMap(docs);
     }
 
-    public  Mono<ErrorDocResponse> find(String erroKey){
+    /**
+     * Looks up an error documentation entry by its key.
+     *
+     * @param erroKey the error key (e.g. {@code "validacao"})
+     * @return a {@link Mono} emitting the {@link ErrorDocResponse}, or empty if not found
+     */
+    public Mono<ErrorDocResponse> find(String erroKey){
 
         return Mono.justOrEmpty(docs.get(erroKey));
     }

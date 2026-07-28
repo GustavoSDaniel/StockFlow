@@ -19,6 +19,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * Service for querying and managing notifications, including filtering and read/resolved status updates.
+ */
 @Service
 public class NotificationService {
 
@@ -31,6 +34,13 @@ public class NotificationService {
         this.notificationRepository = notificationRepository;
     }
 
+    /**
+     * Retrieves notifications matching the given filter criteria (date range, type, priority, read/resolved status).
+     *
+     * @param filter   the filter parameters
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findWithFilter(NotificationFilter filter, Pageable pageable){
 
@@ -56,6 +66,12 @@ public class NotificationService {
                         log.info("Total de notificações encontradas: {}", page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of all notifications.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findAllNotifications(Pageable pageable){
 
@@ -69,6 +85,12 @@ public class NotificationService {
                         log.info("Quantidade de notificações encontradas {}",page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of unread notifications.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of unread notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findUnreadNotifications(Pageable pageable){
 
@@ -82,6 +104,13 @@ public class NotificationService {
                         log.info("Todas as notificações não lidas {} notificações", page.getTotalElements()));
     }
 
+    /**
+     * Retrieves notifications filtered by a specific priority level.
+     *
+     * @param priority the notification priority to filter by
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findByPriorityNotification(NotificationPriority priority, Pageable pageable){
 
@@ -96,6 +125,13 @@ public class NotificationService {
                                 page.getTotalElements(), priority));
     }
 
+    /**
+     * Retrieves notifications filtered by a specific type.
+     *
+     * @param type     the notification type to filter by
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findByTypeNotification(NotificationType type, Pageable pageable){
 
@@ -110,6 +146,13 @@ public class NotificationService {
                                 type));
     }
 
+    /**
+     * Retrieves notifications associated with a specific product.
+     *
+     * @param productId the product ID
+     * @param pageable  pagination information
+     * @return a Mono emitting a page of matching notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findByProductNotification(UUID productId, Pageable pageable){
 
@@ -125,6 +168,12 @@ public class NotificationService {
                                 page.getTotalElements(), productId));
     }
 
+    /**
+     * Retrieves a paginated list of resolved notifications.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of resolved notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findResolvedNotification(Pageable pageable){
 
@@ -140,6 +189,12 @@ public class NotificationService {
                 );
     }
 
+    /**
+     * Retrieves a paginated list of unresolved notifications.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of unresolved notification responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<NotificationResponse>> findUnresolvedNotifications(Pageable pageable){
 
@@ -156,6 +211,14 @@ public class NotificationService {
                 );
     }
 
+    /**
+     * Marks a notification as read.
+     *
+     * @param id the notification ID
+     * @return a Mono that completes when the operation is done
+     * @throws NotificationNotFoundException if the notification does not exist
+     * @throws BusinessRuleException if the notification is already marked as read
+     */
     @Transactional
     public Mono<Void> markAsRead(UUID id){
 
@@ -176,6 +239,14 @@ public class NotificationService {
                 .then();
     }
 
+    /**
+     * Marks a notification as resolved.
+     *
+     * @param id the notification ID
+     * @return a Mono that completes when the operation is done
+     * @throws NotificationNotFoundException if the notification does not exist
+     * @throws BusinessRuleException if the notification is already marked as resolved
+     */
     @Transactional
     public Mono<Void> markAsResolved(UUID id){
 

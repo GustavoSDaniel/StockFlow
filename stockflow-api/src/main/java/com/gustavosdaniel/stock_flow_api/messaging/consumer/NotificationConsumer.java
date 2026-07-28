@@ -21,6 +21,16 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 
+/**
+ * Kafka consumer that listens for {@link InventoryAlertEvent} messages and
+ * persists them as {@link Notification} entities.
+ * <p>
+ * Consuming starts automatically after the application is ready. Each incoming
+ * event is processed, mapped to a notification, saved to the database, and
+ * emitted via a {@code Sinks.Many} sink for SSE delivery. The consumer includes
+ * automatic retry with exponential backoff on critical errors.
+ * </p>
+ */
 @Component
 public class NotificationConsumer {
 
@@ -43,6 +53,14 @@ public class NotificationConsumer {
         this.notificationMapper = notificationMapper;
     }
 
+    /**
+     * Starts consuming Kafka records after the application context is ready.
+     * <p>
+     * On record processing failure, the offset is acknowledged to avoid poison
+     * pill blocking. In case of critical consumer errors, the subscription retries
+     * up to 10 times with exponential backoff (5-60 seconds).
+     * </p>
+     */
     @EventListener(ApplicationReadyEvent.class)
     public void startListening(){
 

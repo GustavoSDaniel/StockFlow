@@ -19,6 +19,10 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 
+/**
+ * REST controller for user management at {@code /api/v1/users}.
+ * Handles profile retrieval, listing, search, role promotion, activation/deactivation, and deletion of users.
+ */
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController implements UserOpenApi {

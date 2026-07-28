@@ -14,6 +14,10 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Generates a PDF report listing all products with name, SKU, cost/sale price, unit, and status,
+ * including a summary count by status.
+ */
 @Service
 public class ProductPdfReport {
 
@@ -37,6 +41,13 @@ public class ProductPdfReport {
 
     private static final Color HEADER_BG_COLOR = new Color(235, 235, 235);
 
+    /**
+     * Generates a PDF byte array from the given list of products.
+     *
+     * @param products the list of product responses to include in the report
+     * @return a byte array containing the rendered PDF
+     * @throws RuntimeException if an error occurs during PDF generation
+     */
     public byte[] generateReport(List<ProductResponse> products) {
 
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()){

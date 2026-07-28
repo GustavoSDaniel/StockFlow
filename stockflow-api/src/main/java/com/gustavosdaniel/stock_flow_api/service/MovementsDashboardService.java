@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service that assembles aggregated data for the Inventory Movements dashboard,
+ * with results cached for performance.
+ */
 @Service
 public class MovementsDashboardService {
 
@@ -21,6 +25,12 @@ public class MovementsDashboardService {
         this.cacheManager = cacheManager;
     }
 
+    /**
+     * Builds the movements dashboard response containing movement summaries,
+     * type/reason breakdowns, daily history, and most-moved products.
+     *
+     * @return a Mono emitting the cached or freshly computed dashboard response
+     */
     public Mono<DashboardMovementsResponse> getMovementsDashboard(){
 
         return cacheManager.getOrCompute(

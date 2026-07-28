@@ -23,6 +23,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Spring Security configuration for WebFlux.
+ * <p>
+ * Sets up:
+ * <ul>
+ *   <li>A global {@link CorsWebFilter} that intercepts preflight (OPTIONS) requests
+ *       before the OAuth2 authentication filter chain.</li>
+ *   <li>A {@link SecurityWebFilterChain} securing API endpoints with role-based
+ *       authorization and JWT-based resource-server authentication via Keycloak.</li>
+ *   <li>A {@link ReactiveJwtAuthenticationConverter} that maps Keycloak realm and
+ *       client roles to Spring Security {@code GrantedAuthority} instances.</li>
+ * </ul>
+ * </p>
+ */
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
@@ -45,6 +59,17 @@ public class SecurityConfig {
             "/actuator/prometheus"
     };
 
+    /**
+     * Configures the reactive security filter chain.
+     * <p>
+     * Disables CSRF, enables CORS, defines role-based authorization rules for all
+     * API endpoints, and wires OAuth2 JWT resource-server authentication so that
+     * Keycloak-issued tokens are automatically validated.
+     * </p>
+     *
+     * @param http the server HTTP security builder
+     * @return the built {@link SecurityWebFilterChain}
+     */
     @Bean
     public SecurityWebFilterChain filterChain(ServerHttpSecurity http){
 
@@ -130,6 +155,16 @@ public class SecurityConfig {
         .build();
     }
 
+    /**
+     * Builds a JWT authentication converter that extracts roles from Keycloak tokens.
+     * <p>
+     * Reads roles from both {@code realm_access.roles} and
+     * {@code resource_access.stock-flow-app.roles} claims, prefixing each with
+     * {@code ROLE_} to comply with Spring Security's authority naming convention.
+     * </p>
+     *
+     * @return a reactive converter that produces {@link GrantedAuthority} instances from JWT claims
+     */
     @Bean
     public ReactiveJwtAuthenticationConverter jwtAuthenticationConverter(){
 

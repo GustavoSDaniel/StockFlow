@@ -12,6 +12,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+/**
+ * Service that aggregates high-level KPIs (products, stock value, active suppliers,
+ * categories, critical alerts) for the overview dashboard, with caching support.
+ */
 @Service
 public class OverviewDashboardService {
 
@@ -33,6 +37,12 @@ public class OverviewDashboardService {
         this.cacheManager = cacheManager;
     }
 
+    /**
+     * Builds the overview dashboard response with product stats, financial totals,
+     * and counts of suppliers, categories, and critical/high-priority unresolved alerts.
+     *
+     * @return a Mono emitting the cached or freshly computed dashboard response
+     */
     public Mono<DashboardOverviewResponse> getOverviewDashboard(){
 
         return cacheManager.getOrCompute(

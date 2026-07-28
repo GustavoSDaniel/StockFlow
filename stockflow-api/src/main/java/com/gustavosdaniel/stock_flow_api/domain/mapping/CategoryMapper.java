@@ -6,6 +6,14 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.CategoryResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Category;
 import org.springframework.stereotype.Component;
 
+/**
+ * Handles manual mapping between {@link Category} persistence objects
+ * and their corresponding request/response DTOs.
+ * <p>
+ * Since this project uses manual mapping (not MapStruct), each conversion
+ * method is implemented explicitly.
+ * </p>
+ */
 @Component
 public class CategoryMapper {
 

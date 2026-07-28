@@ -146,7 +146,7 @@ services:
         condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_URL=http://keycloak:8080/auth
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}

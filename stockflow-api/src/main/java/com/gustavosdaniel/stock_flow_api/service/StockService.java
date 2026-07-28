@@ -37,6 +37,10 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Service for stock lifecycle management: creation, inventory movements (entry, exit, adjust, transfer),
+ * movement history, and stock-level queries (out-of-stock, low, overstocked).
+ */
 @Service
 public class StockService {
 
@@ -64,6 +68,15 @@ public class StockService {
         this.outboxEventRepository = outboxEventRepository;
     }
 
+    /**
+     * Creates a new stock entry for a product in a given warehouse.
+     *
+     * @param productId the product ID
+     * @param request   the stock creation payload containing warehouse and quantity limits
+     * @return a Mono emitting the created stock response
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if a stock already exists for this product in the same warehouse
+     */
     @Transactional
     public Mono<StockResponse> createStock(UUID productId, StockRequest request){
 
@@ -97,6 +110,13 @@ public class StockService {
                         productId, request.warehouseId()));
     }
 
+    /**
+     * Retrieves a single stock entry by its ID, including product details.
+     *
+     * @param id the stock ID
+     * @return a Mono emitting the stock response
+     * @throws StockNotFoundException if the stock does not exist
+     */
     @Transactional(readOnly = true)
     public Mono<StockResponse> getStockById(UUID id){
 
@@ -110,6 +130,14 @@ public class StockService {
                 .doOnNext(response -> log.info("Estoque encontrado pelo ID: {}", id));
     }
 
+    /**
+     * Retrieves a paginated list of stock entries for a given product across all warehouses.
+     *
+     * @param productId the product ID
+     * @param pageable  pagination information
+     * @return a Mono emitting a page of stock responses
+     * @throws ProductNotFoundException if the product does not exist
+     */
     @Transactional(readOnly = true)
     public Mono<Page<StockResponse>> getStockByProductId(UUID productId, Pageable pageable){
 
@@ -131,6 +159,12 @@ public class StockService {
                         page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of all stock entries with product summary information.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of stock summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findAllStocks(Pageable pageable){
 
@@ -144,6 +178,12 @@ public class StockService {
                         log.info("Total de estoques: {}", page.getTotalElements()));
     }
 
+    /**
+     * Streams all stock entries filtered by a given status for report generation.
+     *
+     * @param status the stock status to filter by
+     * @return a Flux emitting matching stock responses
+     */
     @Transactional(readOnly = true)
     public Flux<StockResponse> allStocksForReportByStatus(StockStatus status) {
         return allStocksForReport()
@@ -151,6 +191,11 @@ public class StockService {
                 .doFirst(() -> log.info("Filtrando relatório de estoque pelo status: {}", status));
     }
 
+    /**
+     * Streams all stock entries with product details for report generation (no pagination).
+     *
+     * @return a Flux emitting all stock responses with product data
+     */
     @Transactional(readOnly = true)
     public Flux<StockResponse> allStocksForReport(){
 
@@ -160,6 +205,13 @@ public class StockService {
                                 .map(product -> stockMapper.toStockResponse(stock, product)));
     }
 
+    /**
+     * Retrieves the movement history (entries, exits, adjustments, transfers) for a given stock entry.
+     *
+     * @param stockId  the stock ID
+     * @param pageable pagination information
+     * @return a Mono emitting a page of inventory movement responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<InventoryMovementResponse>> getMovementHistory(UUID stockId, Pageable pageable){
 
@@ -175,6 +227,17 @@ public class StockService {
                         page.getTotalElements()));
     }
 
+    /**
+     * Registers an inventory entry (increase quantity). Validates movement type and reason,
+     * records the movement, evaluates alerts, and publishes to the outbox.
+     *
+     * @param id      the stock ID
+     * @param request the movement payload with quantity, type, and reason
+     * @return a Mono that completes when the entry is persisted
+     * @throws StockNotFoundException if the stock does not exist
+     * @throws BusinessRuleException if the type/reason combination is invalid for an entry,
+     *                               or if the associated product is inactive
+     */
     @Transactional
     public Mono<Void> registerEntry(UUID id, InventoryMovementRequest request){
 
@@ -209,6 +272,17 @@ public class StockService {
                 .then();
     }
 
+    /**
+     * Registers an inventory exit (decrease quantity). Validates movement type and reason,
+     * records the movement, evaluates alerts, and publishes to the outbox.
+     *
+     * @param id      the stock ID
+     * @param request the movement payload with quantity, type, and reason
+     * @return a Mono that completes when the exit is persisted
+     * @throws StockNotFoundException if the stock does not exist
+     * @throws BusinessRuleException if the type/reason combination is invalid for an exit,
+     *                               or if the associated product is inactive
+     */
     @Transactional
     public Mono<Void> registerExit(UUID id, InventoryMovementRequest request){
 
@@ -242,6 +316,17 @@ public class StockService {
                 .then();
     }
 
+    /**
+     * Overwrites the current quantity of a stock entry (adjustment). Validates type and reason,
+     * records the movement, evaluates alerts, and publishes to the outbox.
+     *
+     * @param id      the stock ID
+     * @param request the movement payload with the new absolute quantity
+     * @return a Mono that completes when the adjustment is persisted
+     * @throws StockNotFoundException if the stock does not exist
+     * @throws BusinessRuleException if the movement type is not ADJUSTMENT,
+     *                               or if the associated product is inactive
+     */
     @Transactional
     public Mono<Void> adjustStock(UUID id, InventoryMovementRequest request){
 
@@ -274,6 +359,15 @@ public class StockService {
                 .then();
     }
 
+    /**
+     * Transfers a quantity of a product from a source warehouse to a target warehouse.
+     * Creates two movements (exit at source, entry at target) with the same reference number.
+     *
+     * @param productId the product ID
+     * @param request   the transfer payload with source/target warehouses and quantity
+     * @return a Mono that completes when both sides of the transfer are persisted
+     * @throws StockNotFoundException if either source or target stock entry does not exist
+     */
     @Transactional
     public Mono<Void> transferStock(UUID productId, TransferRequest request){
 
@@ -347,6 +441,12 @@ public class StockService {
                         request.quantity()));
     }
 
+    /**
+     * Retrieves a paginated list of stock entries that are out of stock (zero quantity).
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of out-of-stock summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findOutOfStock(Pageable pageable){
 
@@ -360,6 +460,12 @@ public class StockService {
                         log.info("Foram encontrados {} estoques zerados", page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of stock entries that are below the minimum quantity threshold.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of low-stock summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findLowStockProducts(Pageable pageable){
 
@@ -373,6 +479,12 @@ public class StockService {
                         log.info("Encontrados {} produtos com estoque baixo", page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of stock entries that exceed the maximum quantity threshold.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of overstocked summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<StockSummaryResponse>> findOverStock(Pageable pageable){
 
@@ -387,6 +499,14 @@ public class StockService {
                                 page.getTotalElements()));
     }
 
+    /**
+     * Updates stock configuration (minimum/maximum quantities, location, warehouse).
+     *
+     * @param id      the stock ID
+     * @param request the update payload
+     * @return a Mono emitting the updated stock response
+     * @throws StockNotFoundException if the stock does not exist
+     */
     @Transactional
     public Mono<StockResponse> updateStock(UUID id, StockUpdate request){
 

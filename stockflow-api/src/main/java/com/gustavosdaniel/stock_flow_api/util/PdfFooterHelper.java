@@ -8,6 +8,14 @@ import org.openpdf.text.pdf.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * OpenPDF page event helper that renders a footer on every page of a PDF.
+ * <p>
+ * The footer displays "StockFlow - Generated on: dd/MM/yyyy HH:mm" on the left
+ * and "Page X of Y" on the right. The total page count is filled in when the
+ * document is closed.
+ * </p>
+ */
 public class PdfFooterHelper extends PdfPageEventHelper {
 
     private static final float FOOTER_FONT_SIZE = 9f;
@@ -23,6 +31,13 @@ public class PdfFooterHelper extends PdfPageEventHelper {
     private BaseFont baseFont;
     private String dataGeracao;
 
+    /**
+     * Initializes the footer resources when the PDF document is opened:
+     * base font, total-pages template, and the generation timestamp.
+     *
+     * @param writer   the PDF writer
+     * @param document the PDF document
+     */
     @Override
     public void onOpenDocument(PdfWriter writer, Document document) {
         try {
@@ -39,6 +54,12 @@ public class PdfFooterHelper extends PdfPageEventHelper {
         }
     }
 
+    /**
+     * Draws the footer on the current page with generation date and page number.
+     *
+     * @param writer   the PDF writer
+     * @param document the PDF document
+     */
     @Override
     public void onEndPage(PdfWriter writer, Document document) {
 
@@ -66,6 +87,13 @@ public class PdfFooterHelper extends PdfPageEventHelper {
         cb.addTemplate(totalPagesTemplate, document.right() - TEMPLATE_RIGHT_MARGIN, textBase);
     }
 
+    /**
+     * Fills the total-pages template with the final page count when the
+     * document is closed.
+     *
+     * @param writer   the PDF writer
+     * @param document the PDF document
+     */
     @Override
     public void onCloseDocument(PdfWriter writer, Document document) {
 

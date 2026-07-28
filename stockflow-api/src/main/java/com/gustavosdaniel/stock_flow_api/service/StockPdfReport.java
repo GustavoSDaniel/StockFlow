@@ -14,6 +14,10 @@ import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
+/**
+ * Generates a PDF report listing stock entries with product info, warehouse, quantities,
+ * and status. Rows are color-coded by stock status (out of stock, low, overstocked).
+ */
 @Service
 public class StockPdfReport {
 
@@ -41,6 +45,13 @@ public class StockPdfReport {
     private static final Color COLOR_LOW_STOCK    = new Color(255, 236, 179);
     private static final Color COLOR_OVER_STOCK   = new Color(187, 222, 251);
 
+    /**
+     * Generates a PDF byte array from the given list of stock entries.
+     *
+     * @param stocks the list of stock responses to include in the report
+     * @return a byte array containing the rendered PDF
+     * @throws RuntimeException if an error occurs during PDF generation
+     */
     public byte[] generateReport(List<StockResponse> stocks) {
 
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()){

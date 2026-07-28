@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service that aggregates supplier-level statistics for the Supplier dashboard,
+ * with caching support.
+ */
 @Service
 public class SupplierDashboardService {
 
@@ -22,6 +26,11 @@ public class SupplierDashboardService {
         this.dashboardCacheManager = dashboardCacheManager;
     }
 
+    /**
+     * Builds the supplier dashboard response with per-supplier aggregate statistics.
+     *
+     * @return a Mono emitting the cached or freshly computed dashboard response
+     */
     public Mono<DashboardSupplierResponse> getSupplierDashboard(){
 
         return dashboardCacheManager.getOrCompute(

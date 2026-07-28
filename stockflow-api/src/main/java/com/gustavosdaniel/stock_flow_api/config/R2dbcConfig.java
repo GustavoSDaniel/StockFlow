@@ -20,12 +20,31 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Spring configuration for R2DBC database interaction.
+ * <p>
+ * Enables reactive auditing (automatic population of {@code createdBy} / {@code updatedBy}
+ * fields from the JWT subject) and registers custom read/write converters that map
+ * Java {@code enum} constants to PostgreSQL string columns, avoiding the need for
+ * an enum type in the database schema.
+ * </p>
+ */
 @Configuration
 @EnableR2dbcAuditing(auditorAwareRef = "auditorAware")
 public class R2dbcConfig {
 
     private final Logger log = LoggerFactory.getLogger(R2dbcConfig.class);
 
+    /**
+     * Provides the current authenticated user's UUID for auditing purposes.
+     * <p>
+     * Extracts the subject claim from the reactive security context and converts it
+     * to a {@link UUID}. Returns an empty {@link Mono} when no authenticated user
+     * is present or the subject is not a valid UUID.
+     * </p>
+     *
+     * @return a reactive auditor-aware bean that resolves the current user's UUID
+     */
     @Bean
     public ReactiveAuditorAware<UUID> auditorAware() {
         return () -> ReactiveSecurityContextHolder.getContext()
@@ -42,6 +61,17 @@ public class R2dbcConfig {
                 .switchIfEmpty(Mono.empty());
     }
 
+    /**
+     * Registers custom type converters that map Java enums to/from PostgreSQL string columns.
+     * <p>
+     * This eliminates the need for native PostgreSQL enum types and simplifies
+     * schema evolution. Converters are wired for: {@code StateUF}, {@code UnitMeasure},
+     * {@code ProductStatus}, {@code MovementType}, {@code MovementReason},
+     * {@code NotificationPriority}, {@code NotificationType}, and {@code UserRole}.
+     * </p>
+     *
+     * @return an {@link R2dbcCustomConversions} instance registered against the PostgreSQL dialect
+     */
     @Bean
     public R2dbcCustomConversions r2dbcCustomConversions(){
 

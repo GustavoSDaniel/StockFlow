@@ -9,21 +9,21 @@ import reactor.core.publisher.Flux;
 import java.util.UUID;
 
 /**
- * Repositório reativo para a tabela de outbox.
+ * Reactive repository for the {@code outbox_events} table.
  * <p>
- * Fornece consultas para o {@code OutboxScheduler} buscar eventos pendentes
- * e atualizar seu status de processamento.
+ * Provides queries for the {@code OutboxScheduler} to fetch pending events
+ * and update their processing status.
  * </p>
  */
 @Repository
 public interface OutboxEventRepository extends ReactiveCrudRepository<OutboxEvent, UUID> {
 
     /**
-     * Busca até {@code limit} eventos não processados, ordenados por data de
-     * criação (FIFO).
+     * Finds up to {@code limit} unprocessed events ordered by creation date
+     * ascending (FIFO).
      *
-     * @param limit número máximo de eventos a retornar
-     * @return fluxo de eventos pendentes
+     * @param limit maximum number of events to return
+     * @return a {@link Flux} of pending {@link OutboxEvent} entities
      */
     @Query("SELECT * FROM outbox_events WHERE processed = FALSE ORDER BY created_at ASC LIMIT :limit")
     Flux<OutboxEvent> findPendingEvents(int limit);

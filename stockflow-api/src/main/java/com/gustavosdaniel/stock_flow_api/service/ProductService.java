@@ -29,6 +29,10 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Service for product lifecycle management including creation, search, status transitions,
+ * update, and deletion, with SKU generation and price validation.
+ */
 @Service
 public class ProductService {
 
@@ -45,6 +49,17 @@ public class ProductService {
         this.suppliersRepository = suppliersRepository;
     }
 
+    /**
+     * Creates a new product after validating category, supplier, name uniqueness, and price consistency.
+     * A unique SKU is auto-generated.
+     *
+     * @param request the product creation payload
+     * @return a Mono emitting the created product response
+     * @throws CategoryNotFoundException if the referenced category does not exist
+     * @throws SupplierNotFoundException if the referenced supplier does not exist
+     * @throws BusinessRuleException if an active product with the same name already exists,
+     *                               or if the sale price is lower than the cost price
+     */
     @Transactional
     public Mono<ProductResponse> createProduct(ProductRequest request){
 
@@ -91,6 +106,12 @@ public class ProductService {
                         log.info("Produto: {} criado com SKU: {}", response.name(), response.sku()));
     }
 
+    /**
+     * Retrieves a paginated list of all products.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of product responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> allProducts(Pageable pageable){
 
@@ -105,6 +126,11 @@ public class ProductService {
                         log.info("Quantidade de produtos encontrados com sucesso : {}", page.getTotalElements()));
     }
 
+    /**
+     * Streams all products as a Flux for report generation (no pagination).
+     *
+     * @return a Flux emitting all product responses
+     */
     @Transactional(readOnly = true)
     public Flux<ProductResponse> allProductsForReport(){
 
@@ -114,6 +140,13 @@ public class ProductService {
                 .doOnComplete(() -> log.info("Busca de produtos para relatório finalizada com sucesso."));
     }
 
+    /**
+     * Retrieves a paginated list of products filtered by a given status.
+     *
+     * @param status   the product status to filter by
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching product responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> findAllProductsByStatus(ProductStatus status, Pageable pageable){
 
@@ -129,6 +162,14 @@ public class ProductService {
                                 page.getTotalElements(), status));
     }
 
+    /**
+     * Retrieves a paginated list of products belonging to a specific category.
+     *
+     * @param categoryId the category ID
+     * @param pageable   pagination information
+     * @return a Mono emitting a page of matching product responses
+     * @throws CategoryNotFoundException if the category does not exist
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> findProductByCategory(UUID categoryId, Pageable pageable){
 
@@ -150,6 +191,14 @@ public class ProductService {
                                 page.getTotalElements(), categoryId));
     }
 
+    /**
+     * Retrieves a paginated list of products supplied by a specific supplier.
+     *
+     * @param supplierId the supplier ID
+     * @param pageable   pagination information
+     * @return a Mono emitting a page of matching product responses
+     * @throws SupplierNotFoundException if the supplier does not exist
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> findProductBySupplier(UUID supplierId, Pageable pageable){
 
@@ -171,6 +220,13 @@ public class ProductService {
                                 page.getTotalElements(), supplierId));
     }
 
+    /**
+     * Retrieves a single product by its ID.
+     *
+     * @param id the product ID
+     * @return a Mono emitting the product response
+     * @throws ProductNotFoundException if the product does not exist
+     */
     @Transactional(readOnly = true)
     public Mono<ProductResponse> getProductById(UUID id){
 
@@ -183,6 +239,13 @@ public class ProductService {
                                 response.name(), response.sku()));
     }
 
+    /**
+     * Retrieves a single product by its SKU.
+     *
+     * @param sku the product SKU
+     * @return a Mono emitting the product response
+     * @throws ProductNotFoundException if no product matches the SKU
+     */
     @Transactional(readOnly = true)
     public Mono<ProductResponse> getProductSku(String sku){
 
@@ -196,6 +259,13 @@ public class ProductService {
 
     }
 
+    /**
+     * Searches products by name (case-insensitive partial match).
+     *
+     * @param name     the search term
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching product responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> searchName(String name, Pageable pageable){
 
@@ -210,6 +280,14 @@ public class ProductService {
                         log.info("Produtos com o nome: {} encontrados com sucesso", name));
     }
 
+    /**
+     * Searches products by name and status simultaneously.
+     *
+     * @param name     the search term
+     * @param status   the product status to filter by
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching product responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<ProductResponse>> searchNameByStatus(String name, ProductStatus status, Pageable pageable){
 
@@ -225,6 +303,14 @@ public class ProductService {
                                 page.getTotalElements(), name, status));
     }
 
+    /**
+     * Activates an inactive or discontinued product.
+     *
+     * @param id the product ID
+     * @return a Mono that completes when the operation is done
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if the product is already active
+     */
     @Transactional
     public Mono<Void> activeProduct(UUID id){
 
@@ -244,6 +330,14 @@ public class ProductService {
                 .then();
     }
 
+    /**
+     * Marks a product as discontinued.
+     *
+     * @param id the product ID
+     * @return a Mono that completes when the operation is done
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if the product is already discontinued
+     */
     @Transactional
     public Mono<Void> discontinueProduct(UUID id){
 
@@ -263,6 +357,14 @@ public class ProductService {
                 .then();
     }
 
+    /**
+     * Marks a product as inactive.
+     *
+     * @param id the product ID
+     * @return a Mono that completes when the operation is done
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if the product is already inactive
+     */
     @Transactional
     public Mono<Void> inactiveProduct(UUID id){
 
@@ -282,6 +384,16 @@ public class ProductService {
                 .then();
     }
 
+    /**
+     * Updates an existing product's fields. Validates name uniqueness and price consistency.
+     *
+     * @param id      the product ID
+     * @param request the update payload
+     * @return a Mono emitting the updated product response
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if an active product with the new name already exists,
+     *                               or if the sale price is lower than the cost price
+     */
     @Transactional
     public Mono<ProductResponse> updateProduct(UUID id, ProductUpdateRequest request){
 
@@ -314,6 +426,14 @@ public class ProductService {
                         log.info("Produto: '{}' atualizado com sucesso", response.name()));
     }
 
+    /**
+     * Permanently deletes a product. Only inactive or discontinued products can be deleted.
+     *
+     * @param id the product ID
+     * @return a Mono that completes when the operation is done
+     * @throws ProductNotFoundException if the product does not exist
+     * @throws BusinessRuleException if the product is still active
+     */
     @Transactional
     public Mono<Void> deleteProduct(UUID id){
 

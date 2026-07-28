@@ -20,6 +20,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * REST controller for supplier management at {@code /api/v1/suppliers}.
+ * Handles CRUD, address and contact management, and supplier search operations.
+ */
 @RestController
 @RequestMapping("/api/v1/suppliers")
 public class SupplierController implements SupplierOpenApi {

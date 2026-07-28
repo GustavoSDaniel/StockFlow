@@ -1,5 +1,12 @@
 package com.gustavosdaniel.stock_flow_api.domain.enums;
 
+/**
+ * Enumerates supported units of measure for products.
+ * <p>
+ * Each constant holds a human-readable name and the static factory method
+ * {@link #fromName(String)} allows case-insensitive lookup from a string value.
+ * </p>
+ */
 public enum UnitMeasure {
 
     UN("UNIDADE"),

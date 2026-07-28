@@ -4,12 +4,36 @@ import java.text.Normalizer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Generates unique, human-readable SKU (Stock Keeping Unit) codes for products.
+ * <p>
+ * The SKU format is:
+ * {@code CCCC-SSSS-PPPP-RRRR-NNNN}, where:
+ * <ul>
+ *   <li>{@code CCCC} — first 4 sanitized characters of the category name</li>
+ *   <li>{@code SSSS} — first 4 sanitized characters of the supplier name</li>
+ *   <li>{@code PPPP} — first 4 sanitized characters of the product name</li>
+ *   <li>{@code RRRR} — 4 random alphanumeric characters</li>
+ *   <li>{@code NNNN} — sequential counter (0-9999, wraps around)</li>
+ * </ul>
+ * Sanitization removes accents and non-alphanumeric characters, converting
+ * to uppercase.
+ * </p>
+ */
 public class SkuGenerator {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private SkuGenerator(){}
 
+    /**
+     * Generates a SKU based on category, supplier, and product names.
+     *
+     * @param categoryName the product's category name
+     * @param supplierName the product's supplier name
+     * @param productName  the product name
+     * @return a formatted SKU string (e.g. {@code ELET-SAMS-TVSM-A7K2-0042})
+     */
     public static String generate(
             String categoryName,
             String supplierName,

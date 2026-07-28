@@ -4,6 +4,14 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.UserResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.User;
 import org.springframework.stereotype.Component;
 
+/**
+ * Handles manual mapping between {@link User} persistence objects
+ * and their corresponding response DTOs.
+ * <p>
+ * Provides methods to create a {@link User} from Keycloak identifiers
+ * and to convert a persisted user into a {@link UserResponse} DTO.
+ * </p>
+ */
 @Component
 public class UserMapper {
 

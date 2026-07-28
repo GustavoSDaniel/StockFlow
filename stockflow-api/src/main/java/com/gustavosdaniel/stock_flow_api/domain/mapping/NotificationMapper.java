@@ -4,6 +4,13 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.NotificationRespons
 import com.gustavosdaniel.stock_flow_api.domain.po.Notification;
 import org.springframework.stereotype.Component;
 
+/**
+ * Handles manual mapping between {@link Notification} persistence objects
+ * and their corresponding response DTOs.
+ * <p>
+ * This mapper uses explicit conversion logic rather than MapStruct.
+ * </p>
+ */
 @Component
 public class NotificationMapper {
 

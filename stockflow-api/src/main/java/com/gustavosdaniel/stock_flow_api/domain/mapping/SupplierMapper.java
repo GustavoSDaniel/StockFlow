@@ -15,6 +15,15 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Handles manual mapping between {@link Supplier}, {@link SupplierContact},
+ * and {@link Address} persistence objects and their corresponding request/response DTOs.
+ * <p>
+ * Supports building supplier entities from request DTOs, converting to summary/response
+ * DTOs, creating contacts and addresses (both via ViaCEP auto-fill and manual entry),
+ * and applying partial updates from {@link SupplierUpdateRequest}.
+ * </p>
+ */
 @Component
 public class SupplierMapper {
 

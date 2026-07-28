@@ -1,5 +1,13 @@
 package com.gustavosdaniel.stock_flow_api.domain.enums;
 
+/**
+ * Enumeration of Brazilian states (Unidades Federativas) with their full names.
+ * <p>
+ * Includes an {@code EX (Exterior)} entry for addresses outside Brazil.
+ * The static method {@link #fromName(String)} converts a string to its
+ * corresponding enum constant in a case-insensitive manner.
+ * </p>
+ */
 public enum StateUF {
 
     AC("Acre"),

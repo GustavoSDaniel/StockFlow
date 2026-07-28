@@ -23,9 +23,19 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * OpenAPI contract for the {@code /api/v1/users} endpoints.
+ * Documents user profile retrieval, listing, search, role promotion, and account status management.
+ */
 @Tag(name = "Users", description = "Gerenciamento de usuários")
 public interface UserOpenApi {
 
+    /**
+     * Returns the currently authenticated user's data based on the JWT token.
+     *
+     * @param jwt the JWT authentication principal (injected by Spring Security)
+     * @return the current user's profile
+     */
     @Operation(summary = "Obter usuário autenticado",
             description = "Retorna os dados do usuário atual baseado no token JWT")
     @ApiResponses(value = {
@@ -38,6 +48,12 @@ public interface UserOpenApi {
     Mono<ResponseEntity<UserResponse>> getUSer(
             @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt);
 
+    /**
+     * Returns a paginated list of all users with sorting support.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=userName ASC)
+     * @return a page of users
+     */
     @Operation(summary = "Listar todos os usuários",
             description = "Retorna uma página de usuários com suporte a paginação e ordenação")
     @ApiResponses(value = {
@@ -50,6 +66,13 @@ public interface UserOpenApi {
             @PageableDefault(size = 20, sort = "userName", direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Searches users by name (partial match) with pagination.
+     *
+     * @param name     the search term (partial name match)
+     * @param pageable pagination and sorting parameters (default: sort=userName ASC)
+     * @return a page of matching users
+     */
     @Operation(summary = "Pesquisar usuários por nome",
             description = "Busca usuários cujo nome contenha o termo informado, com paginação")
     @ApiResponses(value = {
@@ -64,6 +87,13 @@ public interface UserOpenApi {
             @PageableDefault(sort = "userName", direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Changes the role of a specific user.
+     *
+     * @param targetUserId the ID of the target user
+     * @param newRole      the new role to assign (e.g., ADMIN)
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Promover usuário",
             description = "Altera a role de um usuário específico")
     @ApiResponses(value = {
@@ -80,6 +110,12 @@ public interface UserOpenApi {
             @Parameter(description = "Nova role a ser atribuída", required = true, example = "ADMIN")
             @RequestParam UserRole newRole);
 
+    /**
+     * Disables a user, revoking their access.
+     *
+     * @param targetUserId the ID of the user to disable
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Desabilitar usuário",
             description = "Desabilita um usuário, impedindo seu acesso")
     @ApiResponses(value = {
@@ -93,6 +129,12 @@ public interface UserOpenApi {
                     example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID targetUserId);
 
+    /**
+     * Activates a previously inactive user, restoring their access.
+     *
+     * @param targetUserId the ID of the user to activate
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Ativar usuário",
             description = "Ativa um usuário que estava inativo, permitindo seu acesso ao sistema")
     @ApiResponses(value = {
@@ -107,6 +149,12 @@ public interface UserOpenApi {
                     example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID targetUserId);
 
+    /**
+     * Permanently deletes a user.
+     *
+     * @param targetUserId the ID of the user to delete
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Excluir usuário",
             description = "Remove permanentemente um usuário")
     @ApiResponses(value = {

@@ -12,6 +12,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
+/**
+ * REST controller for error documentation lookup at {@code /api/v1/errors}.
+ * Provides endpoints to retrieve documented error codes and their descriptions.
+ */
 @RestController
 @RequestMapping("/api/v1/errors")
 public class ErrorController implements ErrorOpenApi {

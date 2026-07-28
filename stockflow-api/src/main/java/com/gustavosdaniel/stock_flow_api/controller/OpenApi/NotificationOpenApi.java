@@ -28,9 +28,25 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import reactor.core.publisher.Mono;
 
+/**
+ * OpenAPI contract for the {@code /api/v1/notifications} endpoints.
+ * Documents notification filtering, paging, and status management (read/resolved).
+ */
 @Tag(name = "Notifications", description = "Alertas e notificações")
 public interface NotificationOpenApi {
 
+    /**
+     * Returns a filtered page of notifications based on optional criteria (date range, type, priority, read status, resolved status).
+     *
+     * @param from      start of date range (ISO 8601), optional
+     * @param to        end of date range (ISO 8601), optional
+     * @param type      notification type, optional
+     * @param priority  notification priority, optional
+     * @param read      read status filter, optional
+     * @param resolved  resolved status filter, optional
+     * @param pageable  pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a filtered page of notifications
+     */
     @Operation(
             summary = "Filtrar notificações",
             description = "Retorna uma página de notificações aplicando múltiplos filtros opcionais (período, tipo, prioridade, lida, resolvida)"
@@ -62,6 +78,12 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Returns all notifications, ordered by creation date (most recent first).
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of notifications
+     */
     @Operation(summary = "Listar todas as notificações",
             description = "Retorna uma página com todas as notificações, ordenadas pela data de criação (mais recentes primeiro)")
     @ApiResponses(value = {
@@ -73,6 +95,12 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Returns only unread notifications.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of unread notifications
+     */
     @Operation(summary = "Notificações não lidas",
             description = "Retorna apenas notificações que ainda não foram marcadas como lidas")
     @ApiResponses(value = {
@@ -84,6 +112,13 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Filters notifications by the given priority level.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @param priority the priority level to filter by (e.g., HIGH)
+     * @return a page of notifications with the specified priority
+     */
     @Operation(summary = "Notificações por prioridade",
             description = "Filtra notificações pela prioridade informada")
     @ApiResponses(value = {
@@ -97,6 +132,13 @@ public interface NotificationOpenApi {
             @Parameter(description = "Prioridade", required = true, example = "HIGH")
             @RequestParam NotificationPriority priority);
 
+    /**
+     * Filters notifications by the given type.
+     *
+     * @param type     the notification type to filter by (e.g., LOW_STOCK)
+     * @param pageable pagination and sorting parameters
+     * @return a page of notifications with the specified type
+     */
     @Operation(summary = "Notificações por tipo",
             description = "Filtra notificações pelo tipo informado")
     @ApiResponses(value = {
@@ -110,6 +152,13 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Returns notifications associated with a specific product.
+     *
+     * @param productId the ID of the product
+     * @param pageable  pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of notifications for the specified product
+     */
     @Operation(summary = "Notificações por produto",
             description = "Retorna notificações associadas a um produto específico")
     @ApiResponses(value = {
@@ -124,6 +173,12 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Returns only resolved notifications.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of resolved notifications
+     */
     @Operation(summary = "Notificações resolvidas",
             description = "Retorna notificações que já foram marcadas como resolvidas")
     @ApiResponses(value = {
@@ -135,6 +190,12 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Returns only unresolved (pending) notifications.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of unresolved notifications
+     */
     @Operation(summary = "Notificações não resolvidas",
             description = "Retorna notificações pendentes de resolução")
     @ApiResponses(value = {
@@ -146,6 +207,12 @@ public interface NotificationOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable);
 
+    /**
+     * Marks a notification as read.
+     *
+     * @param id the ID of the notification
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Marcar notificação como lida",
             description = "Altera o status de leitura da notificação para 'lida'")
     @ApiResponses(value = {
@@ -158,6 +225,12 @@ public interface NotificationOpenApi {
             @Parameter(description = "ID da notificação", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID id);
 
+    /**
+     * Marks a notification as resolved.
+     *
+     * @param id the ID of the notification
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Marcar notificação como resolvida",
             description = "Altera o status de resolução da notificação para 'resolvida'")
     @ApiResponses(value = {

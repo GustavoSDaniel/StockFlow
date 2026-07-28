@@ -28,9 +28,19 @@ import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
 
+/**
+ * OpenAPI contract for the {@code /api/v1/suppliers} endpoints.
+ * Documents supplier CRUD, address and contact management, and search operations.
+ */
 @Tag(name = "Suppliers", description = "Gerenciamento de fornecedores")
 public interface SupplierOpenApi {
 
+    /**
+     * Creates a new supplier and returns the registered data.
+     *
+     * @param request the supplier creation payload
+     * @return the created supplier with HTTP 201
+     */
     @Operation(
             summary = "Criar fornecedor",
             description = "Cria um novo fornecedor e retorna os dados cadastrados",
@@ -51,6 +61,12 @@ public interface SupplierOpenApi {
     Mono<ResponseEntity<SupplierResponse>> createSupplier(
             @Valid @org.springframework.web.bind.annotation.RequestBody SupplierRequest request);   // ← Spring
 
+    /**
+     * Returns a paginated list of all suppliers with sorting support.
+     *
+     * @param pageable pagination and sorting parameters (default: size=20, sort=tradeName ASC)
+     * @return a page of supplier summaries
+     */
     @Operation(summary = "Listar todos os fornecedores",
             description = "Retorna uma página de fornecedores com suporte a paginação e ordenação")
     @ApiResponses(value = {
@@ -62,6 +78,12 @@ public interface SupplierOpenApi {
             @PageableDefault(size = 20, sort = "tradeName", direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Returns the supplier matching the given CNPJ.
+     *
+     * @param cnpj the CNPJ number (digits only, e.g., "12345678000199")
+     * @return the supplier, or HTTP 404 if not found
+     */
     @Operation(summary = "Buscar fornecedor por CNPJ",
             description = "Retorna o fornecedor correspondente ao CNPJ informado")
     @ApiResponses(value = {
@@ -75,6 +97,13 @@ public interface SupplierOpenApi {
             @Parameter(description = "CNPJ (apenas números)", required = true, example = "12345678000199")
             @RequestParam String cnpj);
 
+    /**
+     * Searches suppliers by name (partial match) with pagination.
+     *
+     * @param name     the search term (partial name match)
+     * @param pageable pagination and sorting parameters (default: size=20, sort=name ASC)
+     * @return a page of matching suppliers
+     */
     @Operation(summary = "Pesquisar fornecedores por nome",
             description = "Busca fornecedores cujo nome contenha o termo informado, com paginação")
     @ApiResponses(value = {
@@ -88,6 +117,13 @@ public interface SupplierOpenApi {
             @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Searches suppliers by trade name (partial match) with pagination.
+     *
+     * @param tradeName the search term (partial trade name match)
+     * @param pageable  pagination and sorting parameters (default: size=20, sort=tradeName ASC)
+     * @return a page of matching suppliers
+     */
     @Operation(summary = "Pesquisar fornecedores por nome fantasia",
             description = "Busca fornecedores cujo nome fantasia contenha o termo informado, com paginação")
     @ApiResponses(value = {
@@ -101,6 +137,13 @@ public interface SupplierOpenApi {
             @PageableDefault(size = 20, sort = "tradeName", direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Adds a new address to the specified supplier.
+     *
+     * @param supplierId the supplier ID
+     * @param request    the address data
+     * @return the created address with HTTP 201
+     */
     @Operation(
             summary = "Adicionar endereço ao fornecedor",
             description = "Vincula um novo endereço ao fornecedor especificado",
@@ -124,6 +167,12 @@ public interface SupplierOpenApi {
             @PathVariable UUID supplierId,
             @Valid @org.springframework.web.bind.annotation.RequestBody AddressRequest request);   // ← Spring
 
+    /**
+     * Deletes a supplier's address.
+     *
+     * @param addressId the address ID
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Remover endereço",
             description = "Exclui um endereço do fornecedor")
     @ApiResponses(value = {
@@ -136,6 +185,13 @@ public interface SupplierOpenApi {
             @Parameter(description = "ID do endereço", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID addressId);
 
+    /**
+     * Adds a new contact to the specified supplier.
+     *
+     * @param supplierId the supplier ID
+     * @param request    the contact data
+     * @return the created contact with HTTP 201
+     */
     @Operation(
             summary = "Adicionar contato ao fornecedor",
             description = "Vincula um novo contato ao fornecedor especificado",
@@ -159,6 +215,12 @@ public interface SupplierOpenApi {
             @PathVariable UUID supplierId,
             @Valid @org.springframework.web.bind.annotation.RequestBody SupplierContactRequest request);   // ← Spring
 
+    /**
+     * Deletes a supplier's contact.
+     *
+     * @param contactId the contact ID
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Remover contato",
             description = "Exclui um contato do fornecedor")
     @ApiResponses(value = {
@@ -171,6 +233,13 @@ public interface SupplierOpenApi {
             @Parameter(description = "ID do contato", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID contactId);
 
+    /**
+     * Updates an existing supplier's data.
+     *
+     * @param supplierId the supplier ID
+     * @param request    the update payload
+     * @return the updated supplier
+     */
     @Operation(
             summary = "Atualizar fornecedor",
             description = "Atualiza os dados de um fornecedor existente",
@@ -194,6 +263,12 @@ public interface SupplierOpenApi {
             @PathVariable UUID supplierId,
             @Valid @org.springframework.web.bind.annotation.RequestBody SupplierUpdateRequest request);   // ← Spring
 
+    /**
+     * Permanently deletes a supplier.
+     *
+     * @param supplierId the supplier ID
+     * @return HTTP 204 on success
+     */
     @Operation(summary = "Excluir fornecedor",
             description = "Remove permanentemente um fornecedor")
     @ApiResponses(value = {

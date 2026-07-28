@@ -30,6 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Service for supplier lifecycle management including creation with contact/address resolution,
+ * search, update, deletion, and address/contact sub-resource management.
+ */
 @Service
 public class SupplierService {
 
@@ -50,6 +54,14 @@ public class SupplierService {
         this.viaCepClient = viaCepClient;
     }
 
+    /**
+     * Creates a new supplier along with its contacts and addresses.
+     * Addresses are resolved via ViaCEP unless manual entry is specified.
+     *
+     * @param supplierRequest the supplier creation payload
+     * @return a Mono emitting the created supplier response with contacts and addresses
+     * @throws BusinessRuleException if the CNPJ is already registered
+     */
     @Transactional
     public Mono<SupplierResponse> createSupplier(SupplierRequest supplierRequest){
 
@@ -112,6 +124,12 @@ public class SupplierService {
                 );
     }
 
+    /**
+     * Retrieves a paginated list of all suppliers (summary view only).
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of supplier summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> getAllSupplier(Pageable pageable){
 
@@ -127,6 +145,13 @@ public class SupplierService {
                         log.info("Total de fornecedores encontrados {}", response.getTotalElements()));
     }
 
+    /**
+     * Retrieves a single supplier by its CNPJ, including full contact and address details.
+     *
+     * @param cnpj the CNPJ number
+     * @return a Mono emitting the supplier response
+     * @throws SupplierNotFoundException if no supplier matches the CNPJ
+     */
     @Transactional(readOnly = true)
     public Mono<SupplierResponse> findSupplierByCnpj(String cnpj){
 
@@ -156,6 +181,13 @@ public class SupplierService {
                         log.info("Fornecedor encontrado com sucesso: '{}'", suppler.name()));
     }
 
+    /**
+     * Searches suppliers by legal name (case-insensitive partial match).
+     *
+     * @param name     the search term
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching supplier summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> searchSupplierByName(String name, Pageable pageable){
 
@@ -174,6 +206,13 @@ public class SupplierService {
                 );
     }
 
+    /**
+     * Searches suppliers by trade/fantasy name (case-insensitive partial match).
+     *
+     * @param tradeName the search term
+     * @param pageable  pagination information
+     * @return a Mono emitting a page of matching supplier summary responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<SupplierSummaryResponse>> searchSupplierByTradeName(String tradeName, Pageable pageable){
 
@@ -194,6 +233,14 @@ public class SupplierService {
                 });
     }
 
+    /**
+     * Adds a new address to an existing supplier. Resolves via ViaCEP unless manual entry is specified.
+     *
+     * @param supplierId the supplier ID
+     * @param request    the address payload
+     * @return a Mono emitting the created address response
+     * @throws SupplierNotFoundException if the supplier does not exist
+     */
     @Transactional
     public Mono<AddressResponse> addAddress(UUID supplierId,AddressRequest request){
 
@@ -222,6 +269,13 @@ public class SupplierService {
                                 resultado.street(), supplierId));
     }
 
+    /**
+     * Permanently deletes an address by its ID.
+     *
+     * @param addressId the address ID
+     * @return a Mono that completes when the address is deleted
+     * @throws BusinessRuleException if the address does not exist
+     */
     @Transactional
     public Mono<Void> removeAddress(UUID addressId){
 
@@ -233,6 +287,14 @@ public class SupplierService {
                 .doOnSuccess(v -> log.info("Endereço deletado com sucesso"));
     }
 
+    /**
+     * Adds a new contact to an existing supplier.
+     *
+     * @param supplierId the supplier ID
+     * @param request    the contact payload
+     * @return a Mono emitting the created contact response
+     * @throws SupplierNotFoundException if the supplier does not exist
+     */
     @Transactional
     public Mono<SupplierContactResponse> addSupplierContact(
             UUID supplierId, SupplierContactRequest request){
@@ -254,6 +316,13 @@ public class SupplierService {
                                 resultado.id(), supplierId));
     }
 
+    /**
+     * Permanently deletes a supplier contact by its ID.
+     *
+     * @param contactId the contact ID
+     * @return a Mono that completes when the contact is deleted
+     * @throws BusinessRuleException if the contact does not exist
+     */
     @Transactional
     public Mono<Void> removeContact(UUID contactId){
 
@@ -264,6 +333,14 @@ public class SupplierService {
                 .doOnSuccess(v -> log.info("Contato deletado com sucesso"));
     }
 
+    /**
+     * Updates the core fields of an existing supplier (name, CNPJ, trade name).
+     *
+     * @param supplierId the supplier ID
+     * @param request    the update payload
+     * @return a Mono emitting the updated supplier response
+     * @throws SupplierNotFoundException if the supplier does not exist
+     */
     @Transactional
     public Mono<SupplierUpdateResponse> updateSupplier(UUID supplierId, SupplierUpdateRequest request){
 
@@ -280,6 +357,13 @@ public class SupplierService {
                         log.info("Fornecedor: {} atualizado com sucesso", response.name()));
     }
 
+    /**
+     * Permanently deletes a supplier along with all its contacts and addresses.
+     *
+     * @param supplierId the supplier ID
+     * @return a Mono that completes when the supplier and its dependencies are deleted
+     * @throws SupplierNotFoundException if the supplier does not exist
+     */
     @Transactional
     public Mono<Void> deleteSupplier(UUID supplierId){
 

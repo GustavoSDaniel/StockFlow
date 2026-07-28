@@ -12,9 +12,24 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Utility component for extracting security-related information from the
+ * reactive security context.
+ * <p>
+ * Provides methods to retrieve the authenticated user's Keycloak ID
+ * (subject) and their highest assigned role from the JWT's realm access
+ * claims.
+ * </p>
+ */
 @Component
 public class SecurityUtils {
 
+    /**
+     * Retrieves the currently authenticated user's Keycloak ID (JWT subject).
+     *
+     * @return a {@link Mono} emitting the Keycloak ID, or an
+     *         {@link AccessDeniedException} if the user is not authenticated
+     */
     public Mono<String> getCurrentKeycloakId(){
 
         return ReactiveSecurityContextHolder.getContext()
@@ -26,6 +41,18 @@ public class SecurityUtils {
                 .switchIfEmpty(Mono.error(new AccessDeniedException("Usuário não autenticado.")));
     }
 
+    /**
+     * Retrieves the highest {@link UserRole} of the currently authenticated user
+     * from the JWT's {@code realm_access.roles} claim.
+     * <p>
+     * Roles are sorted by their level (as defined in {@link UserRole#getLevel()})
+     * and the highest is returned. If no valid role is found, {@link UserRole#EMPLOYEE}
+     * is the default.
+     * </p>
+     *
+     * @return a {@link Mono} emitting the highest {@link UserRole}, defaulting
+     *         to {@code EMPLOYEE} if unauthenticated or no roles match
+     */
     public Mono<UserRole> getCurrentUserRole(){
 
         return ReactiveSecurityContextHolder.getContext()

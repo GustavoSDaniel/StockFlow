@@ -13,15 +13,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Publicador de eventos de domínio gerados por {@link InventoryMovement}.
+ * Publishes domain events raised by {@link InventoryMovement} entities.
  * <p>
- * Suporta dois modos de publicação:
+ * Supports two publication modes:
  * <ul>
- *   <li><strong>Outbox (recomendado)</strong>: persiste o evento na tabela
- *       {@code outbox_events} na mesma transação do banco, delegando a
- *       publicação ao {@code OutboxScheduler}.</li>
- *   <li><strong>Direto</strong>: publica via Kafka imediatamente usando
- *       {@link StockEventProducer} (mantido para o scheduler de outbox).</li>
+ *   <li><strong>Outbox (recommended)</strong>: persists the event into the
+ *       {@code outbox_events} table within the same database transaction,
+ *       delegating the actual Kafka publication to the
+ *       {@code OutboxScheduler}.</li>
+ *   <li><strong>Direct</strong>: publishes to Kafka immediately via
+ *       {@link StockEventProducer} (used by the outbox scheduler itself).</li>
  * </ul>
  * </p>
  */
@@ -38,15 +39,15 @@ public class StockEventPublisher {
     }
 
     /**
-     * Publica eventos de domínio diretamente no Kafka (modo síncrono).
+     * Publishes domain events directly to Kafka (synchronous mode).
      * <p>
-     * <strong>Atenção:</strong> este método não deve ser chamado dentro de
-     * transações de banco. Prefira {@link #writeToOutbox} para garantir
-     * consistência entre banco e mensageria.
+     * <strong>Warning:</strong> this method must not be called inside database
+     * transactions. Prefer {@link #writeToOutbox} to guarantee consistency
+     * between the database and the messaging layer.
      * </p>
      *
-     * @param movement movimentação de estoque com eventos de domínio
-     * @return Mono vazio ao concluir
+     * @param movement the inventory movement carrying domain events
+     * @return empty {@link Mono} on completion
      */
     public Mono<Void> publish(InventoryMovement movement) {
 
@@ -71,18 +72,18 @@ public class StockEventPublisher {
     }
 
     /**
-     * Persiste os eventos de domínio na tabela de outbox para publicação
-     * assíncrona pelo {@code OutboxScheduler}.
+     * Persists domain events into the outbox table for asynchronous
+     * publication by the {@code OutboxScheduler}.
      * <p>
-     * Este método deve ser chamado dentro de um {@code @Transactional} para
-     * garantir que os eventos sejam persistidos na mesma transação que a
-     * operação de negócio.
+     * This method should be called inside a {@code @Transactional} scope to
+     * ensure events are persisted in the same transaction as the business
+     * operation.
      * </p>
      *
-     * @param movement             movimentação de estoque com eventos de domínio
-     * @param outboxEventRepository repositório da tabela de outbox
-     * @param topic                tópico Kafka de destino
-     * @return Flux dos eventos de outbox salvos
+     * @param movement              the inventory movement carrying domain events
+     * @param outboxEventRepository the outbox event repository
+     * @param topic                 the target Kafka topic
+     * @return a {@link Flux} of saved {@link OutboxEvent} entities
      */
     public Flux<OutboxEvent> writeToOutbox(InventoryMovement movement,
                                            OutboxEventRepository outboxEventRepository,

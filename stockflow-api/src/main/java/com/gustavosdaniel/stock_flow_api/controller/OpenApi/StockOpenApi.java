@@ -32,9 +32,20 @@ import reactor.core.publisher.Mono;
 
 import jakarta.validation.Valid;
 
+/**
+ * OpenAPI contract for the {@code /api/v1/stocks} endpoints.
+ * Documents stock CRUD, inventory movements (entry/exit/adjust/transfer), status queries, and PDF report generation.
+ */
 @Tag(name = "Stocks", description = "Controle de estoque")
 public interface StockOpenApi {
 
+    /**
+     * Creates a stock record for the specified product.
+     *
+     * @param productId the product ID
+     * @param request   the initial stock data
+     * @return the created stock record with HTTP 201
+     */
     @Operation(
             summary = "Criar estoque para um produto",
             description = "Cria um registro de estoque para o produto especificado",
@@ -58,6 +69,12 @@ public interface StockOpenApi {
             @PathVariable UUID productId,
             @Valid @org.springframework.web.bind.annotation.RequestBody StockRequest request);
 
+    /**
+     * Returns a specific stock record by its ID.
+     *
+     * @param id the stock record ID
+     * @return the stock record, or HTTP 404 if not found
+     */
     @Operation(summary = "Buscar estoque por ID",
             description = "Retorna um registro de estoque específico pelo seu ID")
     @ApiResponses(value = {
@@ -71,6 +88,13 @@ public interface StockOpenApi {
             @Parameter(description = "ID do estoque", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID id);
 
+    /**
+     * Returns all stock records associated with a specific product.
+     *
+     * @param productId the product ID
+     * @param pageable  pagination parameters (default: size=20)
+     * @return a page of stock records for the product
+     */
     @Operation(summary = "Buscar estoques por produto",
             description = "Retorna uma página com todos os estoques associados a um determinado produto")
     @ApiResponses(value = {
@@ -83,6 +107,12 @@ public interface StockOpenApi {
                                                                    @PathVariable UUID productId,
                                                                    @ParameterObject @PageableDefault(size = 20) Pageable pageable);  // ← adicionado Pageable
 
+    /**
+     * Returns a paginated list of all stock records.
+     *
+     * @param pageable pagination parameters (default: size=20)
+     * @return a page of stock summaries
+     */
     @Operation(summary = "Listar todos os estoques",
             description = "Retorna uma página com todos os registros de estoque, com paginação")
     @ApiResponses(value = {
@@ -94,6 +124,13 @@ public interface StockOpenApi {
             @PageableDefault(size = 20)
             Pageable pageable);
 
+    /**
+     * Returns the paginated movement history (entries, exits, adjustments) of a stock record.
+     *
+     * @param stockId  the stock record ID
+     * @param pageable pagination and sorting parameters (default: size=20, sort=createdAt DESC)
+     * @return a page of inventory movements
+     */
     @Operation(summary = "Histórico de movimentações de um estoque",
             description = "Retorna o histórico paginado de entradas, saídas e ajustes de um estoque")
     @ApiResponses(value = {
@@ -108,6 +145,13 @@ public interface StockOpenApi {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) // ← "productName" → "createdAt"
             Pageable pageable);
 
+    /**
+     * Registers an inventory entry movement (stock increase).
+     *
+     * @param id      the stock record ID
+     * @param request the entry movement data
+     * @return HTTP 204 on success
+     */
     @Operation(
             summary = "Registrar entrada no estoque",
             description = "Adiciona uma movimentação de entrada ao estoque especificado",
@@ -129,6 +173,13 @@ public interface StockOpenApi {
             @PathVariable UUID id,
             @Valid @org.springframework.web.bind.annotation.RequestBody InventoryMovementRequest request);
 
+    /**
+     * Registers an inventory exit movement (stock decrease).
+     *
+     * @param id      the stock record ID
+     * @param request the exit movement data
+     * @return HTTP 204 on success
+     */
     @Operation(
             summary = "Registrar saída do estoque",
             description = "Adiciona uma movimentação de saída ao estoque especificado",
@@ -150,6 +201,13 @@ public interface StockOpenApi {
             @PathVariable UUID id,
             @Valid @org.springframework.web.bind.annotation.RequestBody InventoryMovementRequest request);
 
+    /**
+     * Registers a manual stock adjustment (positive or negative quantity change).
+     *
+     * @param id      the stock record ID
+     * @param request the adjustment movement data
+     * @return HTTP 204 on success
+     */
     @Operation(
             summary = "Ajustar estoque",
             description = "Realiza um ajuste manual na quantidade do estoque (positivo ou negativo)",
@@ -171,6 +229,13 @@ public interface StockOpenApi {
             @PathVariable UUID id,
             @Valid @org.springframework.web.bind.annotation.RequestBody InventoryMovementRequest request);
 
+    /**
+     * Transfers a stock quantity from one product to another.
+     *
+     * @param productId the source product ID
+     * @param request   the transfer details (target product, quantity, reason)
+     * @return HTTP 204 on success
+     */
     @Operation(
             summary = "Transferir estoque entre produtos",
             description = "Transfere uma quantidade de estoque de um produto para outro",
@@ -192,6 +257,12 @@ public interface StockOpenApi {
             @PathVariable UUID productId,
             @Valid @org.springframework.web.bind.annotation.RequestBody TransferRequest request);
 
+    /**
+     * Returns products whose stock is zero (out of stock).
+     *
+     * @param pageable pagination parameters (default: size=20, sort ASC)
+     * @return a page of out-of-stock products
+     */
     @Operation(summary = "Produtos sem estoque",
             description = "Retorna produtos cujo estoque está zerado (out of stock)")
     @ApiResponses(value = {
@@ -203,6 +274,12 @@ public interface StockOpenApi {
             @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Returns products whose stock is below the defined minimum level.
+     *
+     * @param pageable pagination parameters (default: size=20, sort ASC)
+     * @return a page of low-stock products
+     */
     @Operation(summary = "Produtos com estoque baixo",
             description = "Retorna produtos cujo estoque está abaixo do nível mínimo definido")
     @ApiResponses(value = {
@@ -214,6 +291,12 @@ public interface StockOpenApi {
             @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Returns products whose stock is above the defined maximum level.
+     *
+     * @param pageable pagination parameters (default: size=20, sort ASC)
+     * @return a page of over-stock products
+     */
     @Operation(summary = "Produtos com excesso de estoque",
             description = "Retorna produtos cujo estoque está acima do nível máximo definido")
     @ApiResponses(value = {
@@ -225,6 +308,13 @@ public interface StockOpenApi {
             @PageableDefault(size = 20, direction = Sort.Direction.ASC)
             Pageable pageable);
 
+    /**
+     * Updates a stock record's data (e.g., minimum/maximum quantity).
+     *
+     * @param id      the stock record ID
+     * @param request the stock update payload
+     * @return the updated stock record
+     */
     @Operation(
             summary = "Atualizar estoque",
             description = "Atualiza os dados de um registro de estoque (ex.: quantidade mínima, máxima, etc.)",
@@ -248,6 +338,12 @@ public interface StockOpenApi {
             @PathVariable UUID id,
             @Valid @org.springframework.web.bind.annotation.RequestBody StockUpdate request);
 
+    /**
+     * Generates and downloads a PDF report of stock records, optionally filtered by product status.
+     *
+     * @param status optional product status filter for the report
+     * @return the PDF report as a byte array
+     */
     @Operation(summary = "Exportar relatório de estoque em PDF",
             description = "Gera e faz o download de um relatório PDF com os estoques cadastrados. "
                     + "Opcionalmente, é possível filtrar por status do produto.")

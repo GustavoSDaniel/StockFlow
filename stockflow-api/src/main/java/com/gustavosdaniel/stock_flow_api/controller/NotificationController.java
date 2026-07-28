@@ -20,6 +20,10 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * REST controller for notification management at {@code /api/v1/notifications}.
+ * Handles filtering, paging, and status updates (read/resolved) of system notifications.
+ */
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class NotificationController implements NotificationOpenApi {

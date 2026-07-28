@@ -18,6 +18,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * REST controller for category management at {@code /api/v1/categories}.
+ * Handles CRUD, subcategory association, and activation/deactivation of categories.
+ */
 @RestController
 @RequestMapping("/api/v1/categories")
 public class CategoryController implements  CategoryOpenApi{

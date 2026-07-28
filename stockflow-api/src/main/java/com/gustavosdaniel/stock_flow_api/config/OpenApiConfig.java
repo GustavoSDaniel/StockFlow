@@ -15,9 +15,22 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/**
+ * Spring configuration for OpenAPI 3 (Swagger) documentation.
+ * <p>
+ * Defines API metadata (title, version, contact, license), server environments
+ * (local and production), resource tags for each domain aggregate, and the
+ * Bearer JWT security scheme used by the Keycloak-secured endpoints.
+ * </p>
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * Builds the OpenAPI specification for the StockFlow API.
+     *
+     * @return a fully configured {@link OpenAPI} instance
+     */
     @Bean
     public OpenAPI customOpenAPI(){
 

@@ -6,6 +6,15 @@ import com.gustavosdaniel.stock_flow_api.domain.dto.response.ProductResponse;
 import com.gustavosdaniel.stock_flow_api.domain.po.Product;
 import org.springframework.stereotype.Component;
 
+/**
+ * Handles manual mapping between {@link Product} persistence objects
+ * and their corresponding request/response DTOs.
+ * <p>
+ * Conversions include creating a new {@link Product} from a {@link ProductRequest}
+ * (with a generated SKU), building detailed {@link ProductResponse} DTOs including
+ * the calculated margin, and applying partial updates from a {@link ProductUpdateRequest}.
+ * </p>
+ */
 @Component
 public class ProductMapper {
 

@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+/**
+ * REST controller for dashboard metrics at {@code /api/v1/dashboards}.
+ * Exposes endpoints for overview, stock, movements, and supplier dashboards.
+ */
 @RestController
 @RequestMapping("/api/v1/dashboards")
 public class DashboardController implements DashboardOpenApi {

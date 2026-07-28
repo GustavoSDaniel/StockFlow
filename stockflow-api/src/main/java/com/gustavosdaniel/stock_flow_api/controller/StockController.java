@@ -28,6 +28,10 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.UUID;
 
+/**
+ * REST controller for stock management at {@code /api/v1/stocks}.
+ * Handles CRUD, inventory movements (entry/exit/adjust/transfer), status queries, and PDF report generation.
+ */
 @RestController
 @RequestMapping("/api/v1/stocks")
 public class StockController implements StockOpenApi {

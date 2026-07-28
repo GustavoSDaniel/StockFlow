@@ -19,12 +19,32 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Spring configuration for Redis-based caching.
+ * <p>
+ * Provides a reactive Redis template with JSON serialization for cache operations,
+ * a configurable default TTL for cache entries, and a system-default clock for
+ * time-sensitive cache eviction.
+ * </p>
+ */
 @Configuration
 public class CacheConfig {
 
     @Value("${cache.ttl.default}")
     private long defaultTtl;
 
+    /**
+     * Creates a reactive Redis template configured with JSON serialization.
+     * <p>
+     * Keys are serialized as plain strings; values and hash entries use
+     * {@link GenericJacksonJsonRedisSerializer} to preserve type information
+     * across cache read/write cycles.
+     * </p>
+     *
+     * @param factory      the reactive Redis connection factory
+     * @param objectMapper the Jackson ObjectMapper used for value serialization
+     * @return a fully configured {@link ReactiveRedisTemplate}
+     */
     @Bean
     public ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
             ReactiveRedisConnectionFactory factory,
@@ -45,12 +65,22 @@ public class CacheConfig {
 
     }
 
+    /**
+     * Exposes the cache TTL from application properties as a {@link Duration} bean.
+     *
+     * @return the default cache entry time-to-live
+     */
     @Bean
     public Duration defaultCacheTtl(){
 
         return Duration.ofSeconds(defaultTtl);
     }
 
+    /**
+     * Provides a system-default clock bean for time-dependent cache eviction logic.
+     *
+     * @return a {@link Clock} set to the JVM's default time zone
+     */
     @Bean
     public Clock clock(){
 

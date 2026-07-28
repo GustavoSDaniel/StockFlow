@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service that assembles aggregated stock-level data (status counts, top 10 lowest/highest)
+ * for the Stock dashboard, with caching support.
+ */
 @Service
 public class StockDashboardService {
 
@@ -22,6 +26,12 @@ public class StockDashboardService {
         this.cacheManager = cacheManager;
     }
 
+    /**
+     * Builds the stock dashboard response containing stock status distribution
+     * and the top 10 lowest and highest stock entries.
+     *
+     * @return a Mono emitting the cached or freshly computed dashboard response
+     */
     public Mono<DashboardStockResponse> getStockDashboard(){
 
         return cacheManager.getOrCompute(

@@ -24,6 +24,10 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.UUID;
 
+/**
+ * REST controller for product management at {@code /api/v1/products}.
+ * Handles CRUD, status transitions, search, and PDF report generation for products.
+ */
 @RestController
 @RequestMapping("/api/v1/products")
 public class ProductController implements ProductOpenApi {

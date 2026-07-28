@@ -22,6 +22,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 
+/**
+ * Service for user identity management: JWT-based user resolution/sync, role promotion,
+ * activation/deactivation, deletion, and search. Delegates Keycloak role updates on promotion.
+ */
 @Service
 public class UserService {
 
@@ -38,6 +42,14 @@ public class UserService {
         this.keycloakService = keycloakService;
     }
 
+    /**
+     * Resolves the current user from a JWT. If the user does not exist locally, a new record
+     * is created. If the role differs from the token, the local role is synchronized.
+     *
+     * @param jwt the JWT from the request context
+     * @return a Mono emitting the resolved local user entity
+     * @throws UnauthorizedException if the JWT is null
+     */
     @Transactional
     public Mono<User> getCurrentUser(Jwt jwt) {
 
@@ -67,6 +79,12 @@ public class UserService {
 
     }
 
+    /**
+     * Retrieves a paginated list of all users.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of user responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> findAllUsers(Pageable pageable) {
 
@@ -84,6 +102,13 @@ public class UserService {
                 });
     }
 
+    /**
+     * Searches users by username (case-insensitive partial match).
+     *
+     * @param userName the search term
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching user responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<UserResponse>> searchUsersByName(String userName, Pageable pageable) {
 
@@ -102,6 +127,17 @@ public class UserService {
                 });
     }
 
+    /**
+     * Promotes a target user to a new role. The current user must have sufficient privileges
+     * to manage the target's role. Also updates the role in Keycloak; reverts on failure.
+     *
+     * @param targetUserId the ID of the user to promote
+     * @param newRole      the new role to assign
+     * @return a Mono that completes when the promotion is persisted locally and in Keycloak
+     * @throws UserNotFoundException if the target user does not exist
+     * @throws BusinessRuleException if the current user tries to modify their own account
+     * @throws AccessDeniedException if the current user's role level is insufficient
+     */
     @Transactional
     public Mono<Void> promoteUser(UUID targetUserId, UserRole newRole) {
         return Mono.zip(
@@ -142,6 +178,17 @@ public class UserService {
         }).then();
     }
 
+    /**
+     * Activates a previously deactivated user. The current user must have sufficient privileges
+     * and cannot activate their own account.
+     *
+     * @param targetUserId the ID of the user to activate
+     * @return a Mono that completes when the activation is persisted
+     * @throws UserNotFoundException if the target user does not exist
+     * @throws BusinessRuleException if the user is already active or if the current user
+     *                               tries to activate their own account
+     * @throws AccessDeniedException if the current user's role level is insufficient
+     */
     @Transactional
     public Mono<Void> activeUser(UUID targetUserId){
 
@@ -171,6 +218,17 @@ public class UserService {
     }
 
 
+    /**
+     * Deactivates a user. The current user must have sufficient privileges
+     * and cannot deactivate their own account.
+     *
+     * @param targetUserId the ID of the user to deactivate
+     * @return a Mono that completes when the deactivation is persisted
+     * @throws UserNotFoundException if the target user does not exist
+     * @throws BusinessRuleException if the user is already inactive or if the current user
+     *                               tries to deactivate their own account
+     * @throws AccessDeniedException if the current user's role level is insufficient
+     */
     @Transactional
     public Mono<Void> disabledUser(UUID targetUserId) {
 
@@ -201,6 +259,16 @@ public class UserService {
         });
     }
 
+    /**
+     * Permanently deletes a user. The current user must have sufficient privileges
+     * and cannot delete their own account.
+     *
+     * @param targetUserId the ID of the user to delete
+     * @return a Mono that completes when the deletion is persisted
+     * @throws UserNotFoundException if the target user does not exist
+     * @throws BusinessRuleException if the current user tries to delete their own account
+     * @throws AccessDeniedException if the current user's role level is insufficient
+     */
     @Transactional
     public Mono<Void> deleteUser(UUID targetUserId) {
 

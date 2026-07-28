@@ -13,6 +13,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Handles manual mapping between {@link Stock} and {@link InventoryMovement}
+ * persistence objects and their corresponding request/response DTOs.
+ * <p>
+ * Includes build methods for creating {@link Stock} from a {@link StockRequest},
+ * creating {@link InventoryMovement} from an {@link InventoryMovementRequest},
+ * and assembling detailed response DTOs such as {@link StockResponse},
+ * {@link StockSummaryResponse}, and {@link InventoryMovementResponse}.
+ * </p>
+ */
 @Component
 public class StockMapper {
 

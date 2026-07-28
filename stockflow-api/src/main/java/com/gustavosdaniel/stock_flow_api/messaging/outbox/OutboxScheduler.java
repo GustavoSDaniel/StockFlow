@@ -18,12 +18,12 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * Processo agendado que publica eventos da tabela de outbox para o Kafka.
+ * Scheduled process that publishes events from the outbox table to Kafka.
  * <p>
- * Executa a cada {@code outbox.poll-interval-ms} (padrão: 5000 ms) e processa
- * até 100 eventos pendentes por ciclo. Eventos que falham têm seu contador de
- * tentativas incrementado; após 10 falhas consecutivas são abandonados com log
- * de erro.
+ * Runs every {@code outbox.poll-interval-ms} (default: 5000 ms) and processes
+ * up to 100 pending events per cycle. Failed events have their retry counter
+ * incremented; after 10 consecutive failures they are abandoned with an error
+ * log entry.
  * </p>
  */
 @Component
@@ -48,6 +48,12 @@ public class OutboxScheduler {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Scheduled method that fetches pending outbox events and publishes them
+     * to Kafka with controlled concurrency (4 parallel publications).
+     *
+     * @return a {@link Mono} that completes when the cycle finishes
+     */
     @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:5000}")
     @Transactional
     public Mono<Void> processOutbox() {
@@ -60,10 +66,16 @@ public class OutboxScheduler {
     }
 
     /**
-     * Publica um único evento de outbox no Kafka e atualiza seu status.
+     * Publishes a single outbox event to Kafka and updates its status.
+     * <p>
+     * Deserializes the stored JSON payload back into an
+     * {@link InventoryAlertEvent}, sends it via
+     * {@link StockEventProducer#sendInventoryAlert}, and marks the outbox
+     * entry as processed or failed accordingly.
+     * </p>
      *
-     * @param outboxEvent evento pendente de publicação
-     * @return Mono vazio ao concluir (sucesso ou falha)
+     * @param outboxEvent the pending outbox event
+     * @return a {@link Mono} that completes when the event is processed
      */
     private Mono<Void> publishEvent(OutboxEvent outboxEvent) {
 

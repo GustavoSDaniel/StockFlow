@@ -14,9 +14,18 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
+/**
+ * OpenAPI contract for the {@code /api/v1/errors} endpoints.
+ * Provides error code lookups to document application-level error responses.
+ */
 @Tag(name = "Errors", description = "Consulta da documentação de erros da aplicação")
 public interface ErrorOpenApi {
 
+    /**
+     * Returns a map of all documented errors, keyed by error code.
+     *
+     * @return a map of error keys to their documentation
+     */
     @Operation(summary = "Listar todos os erros documentados",
             description = "Retorna um mapa onde a chave é o código do erro e o valor é o objeto de documentação correspondente.")
     @ApiResponses(value = {
@@ -28,6 +37,12 @@ public interface ErrorOpenApi {
     })
     Mono<ResponseEntity<Map<String, ErrorDocResponse>>> getAllErrorDoc();
 
+    /**
+     * Returns the documentation for a specific error identified by its key.
+     *
+     * @param errorKey the unique error identifier (e.g., "VALIDATION_ERROR")
+     * @return the error documentation, or HTTP 404 if not found
+     */
     @Operation(summary = "Buscar erro por chave",
             description = "Retorna a documentação de um erro específico identificado pela chave (errorKey).")
     @ApiResponses(value = {

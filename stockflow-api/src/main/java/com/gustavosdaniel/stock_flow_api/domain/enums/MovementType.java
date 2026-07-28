@@ -5,6 +5,17 @@ import com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException;
 import java.util.Collections;
 import java.util.Set;
 
+/**
+ * Enumerates the types of inventory movements and their valid reasons.
+ * <p>
+ * Each type defines a set of allowed {@link MovementReason} values. The
+ * {@link #validateReason(MovementReason)} method enforces business rules by
+ * throwing a {@link BusinessRuleException} if a reason is incompatible with
+ * the movement type.
+ * </p>
+ *
+ * @see MovementReason
+ */
 public enum MovementType {
 
     ENTRY(Set.of(

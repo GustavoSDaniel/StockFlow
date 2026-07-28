@@ -13,6 +13,14 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
+/**
+ * Reactive HTTP client for the ViaCEP REST API.
+ * <p>
+ * Calls {@code https://viacep.com.br/ws/{zipCode}/json} to retrieve
+ * Brazilian address details (street, neighborhood, city, state) from a
+ * given ZIP code. Includes a circuit breaker (Resilience4j) and a 5-second timeout.
+ * </p>
+ */
 @Component
 public class ViaCepClient {
 
@@ -27,6 +35,14 @@ public class ViaCepClient {
         this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("viacep");
     }
 
+    /**
+     * Looks up address information for the given Brazilian ZIP code.
+     *
+     * @param zipCode the 8-digit CEP (e.g., "01001000")
+     * @return a {@link Mono} emitting the address if found, or an error signal
+     *         (via {@link com.gustavosdaniel.stock_flow_api.exception.BusinessRuleException})
+     *         if the CEP is not found or the API call fails
+     */
     public Mono<ViaCepResponse> findByAddressByZipCode(String zipCode){
 
         return webClient.get()

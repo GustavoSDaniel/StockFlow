@@ -20,6 +20,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+/**
+ * Service responsible for category CRUD operations, subcategory management,
+ * and activation/deactivation lifecycle.
+ */
 @Service
 public class CategoryService {
 
@@ -32,6 +36,13 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
+    /**
+     * Creates a new category if its name does not already exist.
+     *
+     * @param request the category creation payload
+     * @return a Mono emitting the created category response
+     * @throws NameExistException if a category with the same name (case-insensitive) already exists
+     */
     @Transactional
     public Mono<CategoryResponse> createCategory(CategoryRequest request) {
 
@@ -53,6 +64,15 @@ public class CategoryService {
                 .map(categoryMapper::toCategoryResponse);
     }
 
+    /**
+     * Links a child category as a subcategory of the specified parent.
+     *
+     * @param parentId the ID of the parent category
+     * @param childId  the ID of the category to become a subcategory
+     * @return a Mono emitting the updated child category response
+     * @throws CategoryNotFoundException if either category does not exist
+     * @throws BusinessRuleException if the child already belongs to a parent, or if parent and child are the same
+     */
     @Transactional
     public Mono<CategoryResponse> addSubCategories(UUID parentId, UUID childId) {
 
@@ -87,6 +107,12 @@ public class CategoryService {
 
     }
 
+    /**
+     * Retrieves a paginated list of all categories.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of category responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllCategories(Pageable pageable) {
 
@@ -101,6 +127,12 @@ public class CategoryService {
 
     }
 
+    /**
+     * Retrieves a paginated list of only active categories.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of active category responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllActiveCategories(Pageable pageable) {
 
@@ -117,6 +149,13 @@ public class CategoryService {
                                 page.getNumberOfElements()));
     }
 
+    /**
+     * Searches categories whose name contains the given string (case-insensitive).
+     *
+     * @param name     the search term
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching category responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> searchCategories(String name, Pageable pageable) {
 
@@ -134,6 +173,13 @@ public class CategoryService {
                                 name, page.getTotalElements()));
     }
 
+    /**
+     * Searches only active categories by name.
+     *
+     * @param name     the search term
+     * @param pageable pagination information
+     * @return a Mono emitting a page of matching active category responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> searchActiveCategories(String name, Pageable pageable) {
 
@@ -152,6 +198,13 @@ public class CategoryService {
                                 name, page.getTotalElements()));
     }
 
+    /**
+     * Retrieves a paginated list of subcategories for a given parent category.
+     *
+     * @param parentId the parent category ID
+     * @param pageable pagination information
+     * @return a Mono emitting a page of subcategory responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllSubCategories(UUID parentId, Pageable pageable) {
 
@@ -169,6 +222,13 @@ public class CategoryService {
                                 page.getTotalElements(), parentId));
     }
 
+    /**
+     * Retrieves a paginated list of only active subcategories for a given parent.
+     *
+     * @param parentId the parent category ID
+     * @param pageable pagination information
+     * @return a Mono emitting a page of active subcategory responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllActiveSubCategories(UUID parentId, Pageable pageable) {
 
@@ -186,6 +246,13 @@ public class CategoryService {
                                 page.getTotalElements(), parentId));
     }
 
+    /**
+     * Retrieves a paginated list of only disabled/inactive subcategories for a given parent.
+     *
+     * @param parentId the parent category ID
+     * @param pageable pagination information
+     * @return a Mono emitting a page of disabled subcategory responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllDisabledSubCategories(UUID parentId, Pageable pageable) {
 
@@ -203,6 +270,12 @@ public class CategoryService {
                                 page.getTotalElements(), parentId));
     }
 
+    /**
+     * Retrieves a paginated list of all disabled/inactive categories.
+     *
+     * @param pageable pagination information
+     * @return a Mono emitting a page of disabled category responses
+     */
     @Transactional(readOnly = true)
     public Mono<Page<CategoryResponse>> findAllDisabledCategories(Pageable pageable) {
 
@@ -219,6 +292,15 @@ public class CategoryService {
                                 page.getTotalElements()));
     }
 
+    /**
+     * Updates an existing category's fields. Validates for duplicate names before saving.
+     *
+     * @param categoryId the ID of the category to update
+     * @param request    the update payload
+     * @return a Mono emitting the updated category response
+     * @throws CategoryNotFoundException if the category does not exist
+     * @throws NameExistException         if the new name already belongs to another category
+     */
     @Transactional
     public Mono<CategoryResponse> updateCategory(UUID categoryId, CategoryUpdateRequest request) {
 
@@ -234,6 +316,14 @@ public class CategoryService {
                 .map(categoryMapper::toCategoryResponse);
     }
 
+    /**
+     * Activates a previously deactivated category.
+     *
+     * @param categoryId the ID of the category to activate
+     * @return a Mono that completes when the operation is done
+     * @throws CategoryNotFoundException if the category does not exist
+     * @throws BusinessRuleException if the category is already active
+     */
     @Transactional
     public Mono<Void> activeCategory(UUID categoryId) {
 
@@ -251,6 +341,15 @@ public class CategoryService {
                 .then();
     }
 
+    /**
+     * Unlinks a child category from its parent, making it a root category again.
+     *
+     * @param parentId the parent category ID
+     * @param childId  the child category ID to unlink
+     * @return a Mono that completes when the operation is done
+     * @throws CategoryNotFoundException if either category does not exist
+     * @throws BusinessRuleException if the child is already a root category or if parent/child IDs are invalid
+     */
     @Transactional
     public Mono<Void> removeSubCategories(UUID parentId, UUID childId) {
 
@@ -292,6 +391,14 @@ public class CategoryService {
 
     }
 
+    /**
+     * Soft-deactivates a category by setting its active flag to false.
+     *
+     * @param categoryId the ID of the category to disable
+     * @return a Mono that completes when the operation is done
+     * @throws CategoryNotFoundException if the category does not exist
+     * @throws BusinessRuleException if the category is already disabled
+     */
     @Transactional
     public Mono<Void> disableCategory(UUID categoryId) {
 
@@ -311,6 +418,14 @@ public class CategoryService {
                 .then();
     }
 
+    /**
+     * Permanently deletes a category. If it is a root category, its subcategories are unlinked
+     * (ON DELETE SET NULL).
+     *
+     * @param categoryId the ID of the category to delete
+     * @return a Mono that completes when the operation is done
+     * @throws CategoryNotFoundException if the category does not exist
+     */
     @Transactional
     public Mono<Void> deleteCategory(UUID categoryId) {
 
