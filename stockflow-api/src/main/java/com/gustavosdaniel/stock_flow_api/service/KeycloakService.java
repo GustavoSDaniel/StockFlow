@@ -71,9 +71,8 @@ public class KeycloakService {
             }
 
 
-            RoleRepresentation roleToAdd = realmResource.roles()
-                    .get(newRole.name())
-                    .toRepresentation();
+            RoleRepresentation roleToAdd = new RoleRepresentation();
+            roleToAdd.setName(newRole.name());
 
             userResource.roles().realmLevel().add(Collections.singletonList(roleToAdd));
 
